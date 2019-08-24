@@ -111,7 +111,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await message.channel.send("test", delete_after=5)
+        pass
 
       elif (args[1] == "countdown"):
         await ClocksAndCountdowns.main(self, message, client)

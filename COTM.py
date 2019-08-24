@@ -33,6 +33,24 @@ async def main(args, message, client):
     await DynoBot(message, client)
   '''
   if (args[0][-19:-1] == moBot or args[0] == "test"):
+    if (args[1] == "test"):
+      workbook = await openSpreadsheet()
+      sheet = workbook.worksheet("Voting")
+      r = sheet.range("D3:D" + str(sheet.row_count))
+      reply = ""
+      channel = message.guild.get_channel(608472349712580608)
+      for member in channel.members:
+        memberVoted = False
+        for i in range(len(r)):
+          if (r[i].value is ""):
+            break
+          elif (member.id == int(r[i].value)):
+            memberVoted = True
+            break
+        if (not memberVoted):
+          reply += "<@" + str(member.id) + ">"
+      await channel.send(reply, delete_after=2)          
+
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, client)
     '''  
@@ -128,14 +146,13 @@ async def main(args, message, client):
 
 async def mainReactionAdd(message, payload, client):
   user = message.guild.get_member(payload.user_id)
-  qualifyingChannel = message.guild.get_channel(607693838642970819)
   qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
 
   member = message.guild.get_member(payload.user_id)
 
   if (user.name != "MoBot"):
-    if (message.channel == qualifyingChannel):
-      if (payload.emoji.name == "⏱"):
+    if (message.id == 614836845267910685): # message id for "Do you need to submit quali time"
+      if (payload.emoji.name == "✅"):
         await addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, client)
         await message.remove_reaction(payload.emoji, user)
     elif (message.id == 609588876272730112): # message id for message "Do you need to vote?"
@@ -494,7 +511,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   
   qualiTable = sorted(qualiTable, key=operator.itemgetter(2, 1)) # sorts in ascending order both times
 
-  qualiScreenShotReactionMsg = await qualifyingChannel.fetch_message(607694452747665428)
+  qualiScreenShotReactionMsg = await qualifyingChannel.fetch_message(614836845267910685)
   history = await qualifyingChannel.history(after=qualiScreenShotReactionMsg).flatten()
   for hMsg in history:
     try:
