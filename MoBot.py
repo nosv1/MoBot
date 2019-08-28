@@ -884,7 +884,7 @@ async def moBotEmbed(message, args, isEdit):
 
       embed = discord.Embed().from_dict(embed)
     except:
-      await message.channel.send("Looks like something wasn't quite right... Either the MessageID you typed isn't correct, or the MessageID of the message doesn't have an embed already. Use `@MoBot#0697 embed help` for further guidence.")
+      await message.channel.send("Looks like something wasn't quite right... Either the MessageID you typed isn't correct, or the MessageID of the message doesn't have an embed already. You also need to be in the same channel as the embed. Use `@MoBot#0697 embed help` for further guidence.")
 
   # get color
   try:
