@@ -83,6 +83,7 @@ async def createTicketChannel(message, ticketLog, ticketCategory, user, fromReac
   else:
     try:
       reason = message.content.split("open ")[1].strip()
+      ticketChannel = await createChannel()
       ticketResponse = ticketChannel.name + " opened by <@" + str(user.id) + "> - " +  reason
       ticketChannel = await createChannel()
       await sendTicketResponses(ticketResponse, ticketChannel)
