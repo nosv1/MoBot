@@ -1192,9 +1192,9 @@ async def signup(message):
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Off-Season"])
   seedingSheet = workbook.worksheet("Seeding")
   registerIDSheet = workbook.worksheet("RegisterID")
-  calculationsSheet= workbook.worksheet("Calculations")
+  calculationsSheet = workbook.worksheet("Calculations")
   weekHeaders = calculationsSheet.range(2, 3, 2, calculationsSheet.col_count)
-  seedingTable = seedingSheet.range(2, 2, 2, calculationsSheet.col_count)
+  seedingTable = seedingSheet.range(2, 2, 2, seedingSheet.col_count)
 
   # get current week
   currentWeek = 0

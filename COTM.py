@@ -19,19 +19,10 @@ spaceChar = "⠀"
 cotmLogo = "https://images-ext-1.discordapp.net/external/hfR_lFnAstqRKPjx8YxHR2F4BiIVS4DyMJdIEAQx-9w/https/cdn.discordapp.com/attachments/467085640245182475/607295008118276243/COTM_LOGO2.png?width=676&height=676"
 
 async def main(args, message, client):
-  roles = []
-  for role in message.guild.get_member(message.author.id).roles:
-    roles.append(role.name.lower())
-  # check if author is DynoBot
-
   authorPerms = message.channel.permissions_for(message.author)
   qualifyingChannel = message.guild.get_channel(607693838642970819)
   qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
-  
-  '''
-  if (str(author) == str("Dyno#3861")):
-    await DynoBot(message, client)
-  '''
+
   if (args[0][-19:-1] == moBot or args[0] == "test"):
     if (args[1] == "test"):
       workbook = await openSpreadsheet()

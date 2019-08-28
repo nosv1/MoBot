@@ -30,6 +30,7 @@ import AdminFunctions
 
 import COTM
 import AOR
+import Noble2sLeague
 
 client = discord.Client()
 moBot = "449247895858970624"
@@ -110,8 +111,8 @@ async def on_message(message):
     }
       
     if (len(args) > 1):
-      if (args[1] == "test"):
-        pass
+      if (args[1] == "signup"):
+        await Noble2sLeague.signup(message)
 
       elif (args[1] == "countdown"):
         await ClocksAndCountdowns.main(self, message, client)
