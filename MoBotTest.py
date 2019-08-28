@@ -626,8 +626,8 @@ async def makeEmbed(message):
   moBotUser = message.guild.get_member(int(moBot))
   embed = discord.Embed(colour=discord.Embed().Empty)
   embed.set_thumbnail(url=moBotUser.avatar_url)
-  embed.set_author(name="Test\n" + spaceChar, url="https://google.com/MoBotReservation/collection=605980661492350976/id=605980829818159128/left=605980830430658581/right=605980830430658581/emojis=👑,🔧/sub_specifiers=host,pit_marshall", icon_url="https://images.discordapp.net/avatars/449247895858970624/6e2a9f666b1190d5bf59be5c3bb20327.png?size=512")
-  embed.add_field(name="Field Name", value='Field Value', inline=True)
+  embed.set_author(name="Test\ntest" + spaceChar, url="https://google.com/MoBotReservation/collection=605980661492350976/id=605980829818159128/left=605980830430658581/right=605980830430658581/emojis=👑,🔧/sub_specifiers=host,pit_marshall", icon_url="https://images.discordapp.net/avatars/449247895858970624/6e2a9f666b1190d5bf59be5c3bb20327.png?size=512")
+  embed.add_field(name="Field Name\ntest", value='Field Value', inline=True)
   embed.description = "**Big test** <@" + str(moBot) + ">"
 
   embed.set_image(url=message.author.avatar_url)
@@ -641,22 +641,36 @@ async def moBotEmbed(message, args, isEdit):
   color = empty
   authorIcon = empty
   authorLine = None
+  authorURL = None
   thumbnail = empty
   fields = []
   embedPicture = None
   footer = None
   embed = None
+  isCollection = False
+  isReservation = False
   if (isEdit):
     try:
       msg = await message.channel.fetch_message(int(args[3]))
       mc = mc.replace(args[3] + " ", "")
       embed = msg.embeds[0]
       color = embed.color
-      print (embed.to_dict())
       embed = embed.to_dict()
 
       try:
         authorIcon = embed["author"]["icon_url"]
+      except KeyError:
+        pass
+
+      try:
+        authorURL = embed["author"]["url"]
+        isCollection = "MoBotCollection" in authorURL
+        isReservation = "MoBotReservation" in authorURL
+      except KeyError:
+        pass
+
+      try:
+        descripton = embed["description"]
       except KeyError:
         pass
 
@@ -689,7 +703,7 @@ async def moBotEmbed(message, args, isEdit):
 
       embed = discord.Embed().from_dict(embed)
     except:
-      await message.channel.send("Looks like something wasn't quite right... Either the MessageID you typed isn't correct, or the MessageID of the message doesn't have an embed already. Use `@MoBot#0697 embed help` for further guidence.")
+      await message.channel.send("Looks like something wasn't quite right... Either the MessageID you typed isn't correct, or the MessageID of the message doesn't have an embed already. You also need to be in the same channel as the embed. Use `@MoBot#0697 embed help` for further guidence.")
 
   # get color
   try:
@@ -715,14 +729,26 @@ async def moBotEmbed(message, args, isEdit):
     pass
 
   try:
-    authorLine = mc.split("!!")[1].split("\n")[0].strip()
+    authorLine = mc.split("!!")[1].split("\n")[0].strip().replace("\\n", "\n")
   except IndexError:
     pass
 
   if (authorIcon != empty and authorLine == None):
-    embed.set_author(name=spaceChar, icon_url=authorIcon)
+    if (isCollection):
+      embed.set_author(name=spaceChar, icon_url=authorIcon, url=authorURL)
+    else:
+      embed.set_author(name=spaceChar, icon_url=authorIcon)
   elif (authorLine != None):
-    embed.set_author(name=authorLine, icon_url=authorIcon)
+    if (isCollection or isReservation):
+      embed.set_author(name=authorLine, icon_url=authorIcon, url=authorURL)
+    else:
+      embed.set_author(name=authorLine, icon_url=authorIcon)
+    
+  try:
+    description = mc.split("^^")[1].split("\n")[0].strip()
+    embed.description = description.replace("\\n", "\n")
+  except IndexError:
+    pass
 
   # get footer
   try:
@@ -778,10 +804,9 @@ async def moBotEmbed(message, args, isEdit):
   newFields = []
   # get fields
   lines = mc.split("\n")
-  symbols = ["!!", "@@", "##", "$$", "%%", "&&"]
+  symbols = ["!!", "^^", "@@", "##", "$$", "%%", "&&"]
   i = 1
   while (i < len(lines)):
-    print("i =", i)
     if (lines[i].strip() == ""):
       lines[i] = spaceChar
 
@@ -804,7 +829,6 @@ async def moBotEmbed(message, args, isEdit):
       i += 1
       j = i
       while (j < len(lines)):
-        print("j =", j)
         if (lines[j].strip() == ""):
           lines[j] = spaceChar
 
@@ -839,13 +863,18 @@ async def moBotEmbed(message, args, isEdit):
   if (len(newFields) != 0):
     embed.clear_fields()
     for field in fields:
-      embed.add_field(name=field[0], value=field[1], inline=False)
+      embed.add_field(name=field[0], value=field[1].replace("\\n", "\n"), inline=False)
 
-  if (isEdit):
-    await msg.edit(embed=embed)
-    print ("edited")
-  else:
-    await message.channel.send(embed=embed)
+  try:
+    if (isEdit):
+      await msg.edit(embed=embed)
+      if (isCollection or isReservation):
+        await Collections.replaceCollectionEmbed(message, msg.id, msg.id, client)
+    else:
+      msg = await message.channel.send(embed=embed)
+      await message.channel.send("If you'd like to edit the embed above, in your original message, replace `say embed` with `edit embed " + str(msg.id) + "`. You don't need to copy and paste, or re-send the message, simply edit your original message, and press enter. You can also copy your embed to another channel by using `@MoBot#0697 copy embed  " + str(msg.id) + " [#destination-channel]`.")
+  except discord.errors.HTTPException:
+    await message.channel.send("Looks like something didn't go quite right... Discord has a limit on how long a message can be, 2000 characters  ... but there is also a limit on how big a field value can be, 1024 characters. If you have a large field value, perhaps adding another field header, and splitting the field value might work.")
 # end moBotEmbed
 
 async def getRLStats(message, args):

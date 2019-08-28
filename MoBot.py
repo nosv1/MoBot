@@ -910,7 +910,7 @@ async def moBotEmbed(message, args, isEdit):
     pass
 
   try:
-    authorLine = mc.split("!!")[1].split("\n")[0].strip()
+    authorLine = mc.split("!!")[1].split("\n")[0].strip().replace("\\n", "\n")
   except IndexError:
     pass
 
@@ -927,7 +927,7 @@ async def moBotEmbed(message, args, isEdit):
     
   try:
     description = mc.split("^^")[1].split("\n")[0].strip()
-    embed.description = description
+    embed.description = description.replace("\\n", "\n")
   except IndexError:
     pass
 
@@ -1044,7 +1044,7 @@ async def moBotEmbed(message, args, isEdit):
   if (len(newFields) != 0):
     embed.clear_fields()
     for field in fields:
-      embed.add_field(name=field[0], value=field[1], inline=False)
+      embed.add_field(name=field[0].replace("\\n", "\n"), value=field[1].replace("\\n", "\n"), inline=False)
 
   try:
     if (isEdit):
