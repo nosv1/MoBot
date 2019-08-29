@@ -448,6 +448,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
         return
 
       if (payload.emoji.name == "✅"):
+        await moBotMessage.clear_reactions()
         break
       else:
         looped = True
@@ -589,7 +590,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
 # end submitQualiTime
 
 async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, client):
-  await qualiScreenshotsChannel.set_permissions(user, read_message_history=False, read_messages=True, send_messages=True)
+  await qualiScreenshotsChannel.set_permissions(user, read_messages=True, send_messages=True)
   moBotMessage = await qualiScreenshotsChannel.send("<@" + str(user.id) + ">, you have 60 seconds to submit your screenshot.")
 
   def check(msg):
@@ -604,7 +605,7 @@ async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, clie
         msg = await client.wait_for("message", timeout=120.0, check=check)
       except asyncio.TimeoutError:
         pass
-      await qualiScreenshotsChannel.set_permissions(user, read_message_history=True, send_messages=False)
+      await qualiScreenshotsChannel.set_permissions(user, read_messages=True, send_messages=False)
       await moBotMessage.delete()
       return
     else:
