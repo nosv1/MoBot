@@ -1714,11 +1714,11 @@ async def updateDriverRoles(message):
             hasRole = True
           elif ("division" in mRole.name.lower() and "reserve" not in mRole.name.lower()):
             await member.remove_roles(mRole)
-            await divUpdateChannel.send("<@" + member.id + "> has been removed from " + mRole.name + ".")
+            await divUpdateChannel.send("<@" + str(member.id) + "> has been removed from " + mRole.name + ".")
 
         if (not hasRole):
           await member.add_roles(role)
-          await divUpdateChannel.send("<@" + member.id + "> has been added to " + role.name + ".")  
+          await divUpdateChannel.send("<@" + str(member.id) + "> has been added to " + role.name + ".")  
       except ValueError:
         pass
 # end updateDriverRoles
