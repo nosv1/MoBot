@@ -608,6 +608,7 @@ async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, clie
       await moBotMessage.delete()
       return
     else:
+      await qualiScreenshotsChannel.send("**Please only send an attachment of your screenshot or a link to it.**\nIf this was an error, contact Mo#9991.", delete_after=10.0)
       await msg.delete()
   except asyncio.TimeoutError:
     await moBotMessage.delete()

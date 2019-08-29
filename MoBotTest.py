@@ -27,6 +27,7 @@ import MoBotTimeZones
 import RLRanks
 import RandomFunctions
 import AdminFunctions
+import EventScheduler
 
 import COTM
 import AOR
@@ -309,6 +310,8 @@ async def on_raw_reaction_add(payload):
         await Collections.mainReactionAdd(message, payload, message.embeds[0], client)
         if ("MoBotReservation" in message.embeds[0].author.url):
           await Reservations.mainReactionAdd(message, payload, client)
+      if ("EventScheduler" in message.embeds[0].author.url):
+        pass
       if (message.id == 600723441888264211):
         if (payload.emoji.name == "✅" or payload.emoji.name == "❌"):
           await streamScheduler(message, payload, client)

@@ -20,6 +20,7 @@ import SecretStuff
 import ClocksAndCountdowns
 import MessageScheduler
 import MoBotTimeZones
+import EventScheduler
 
 import AOR
   
@@ -61,14 +62,18 @@ async def main(client):
 
       sys.stdout.write("\rCurrent Time: " + str(currentTime))
       sys.stdout.flush()
-
-      if (second == 0): 
-        #await AOR.udpateRSSChannel(client)
-        pass
         
       if (second % 30 == 0): # check for every 30 seconds
-        await AOR.udpateRSSChannel(client)
         await updateMoBotStatus(client)
+
+        if (second == 0): 
+          pass
+        eventSheet, eventRange = await EventScheduler.getEventRange()
+        scheduledEvents= await EventScheduler.getScheduledEvents(eventSheet, eventRange)
+        for event in events:
+          eventTime = await EventScheduler.getEventTime(event)
+          if (eventTime < currentTime):
+            scheduledEvents= await EventScheduler.performScheduledEvent(event, client)
 
     except:
       print ("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))

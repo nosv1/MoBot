@@ -599,15 +599,15 @@ async def on_raw_reaction_add(payload):
 
     if (not member.bot):
       logActionToConsole(message, member, "reactionAdd")
+      if (len(message.embeds) > 0):
+        if ("RLScrims" in embedAuthor):
+          await RLScrims.mainReactionAdd(message, payload, client, member)
 
-      if (len(message.embeds) > 0 and "RLScrims" in embedAuthor):
-        await RLScrims.mainReactionAdd(message, payload, client, member)
-
-      elif (len(message.embeds) > 0 and ("MoBotCollection" in embedAuthorURL or "MoBotReservation" in embedAuthorURL) and message.author.id == int(moBot)):
-        if (message.author.id == int(moBot)):
-          await Collections.mainReactionAdd(message, payload, message.embeds[0], client)
-          if ("MoBotReservation" in message.embeds[0].author.url):
-            await Reservations.mainReactionAdd(message, payload, client)
+        elif ("MoBotCollection" in embedAuthorURL or "MoBotReservation" in embedAuthorURL) and message.author.id == int(moBot)):
+          if (message.author.id == int(moBot)):
+            await Collections.mainReactionAdd(message, payload, message.embeds[0], client)
+            if ("MoBotReservation" in message.embeds[0].author.url):
+              await Reservations.mainReactionAdd(message, payload, client)
 
       elif ("open a ticket" in message.content.lower()):
         if (payload.emoji.name == "✅"):

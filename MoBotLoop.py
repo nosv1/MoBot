@@ -17,7 +17,7 @@ import feedparser
 import SecretStuff
 
 import ClocksAndCountdowns
-import MessageScheduler
+import EventScheduler
 
 import MoBotTimeZones
   
@@ -62,8 +62,9 @@ async def on_ready():
 
 async def main(client):
   try:
-    scheduledMessages = await getScheduledMessages() # get the scheduled messages before anything happens for the first time
-    print ("Scheduled Messages Received")
+    eventSheet, eventRange = await EventScheduler.getEventRange()
+    scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
+    print ("Scheduled Events Received")
     
     workbook = await openGuildClocksSpreadsheet()
     clocks = await getGuildClocks(workbook)
@@ -99,19 +100,15 @@ async def main(client):
         if (second == 0):
           if (currentTime.minute % 5 == 0): # check for new scheduled messages every 5 minutes
             try:
-              scheduledMessages = await getScheduledMessages()
+              eventSheet, eventRange = await EventScheduler.getEventRange()
+              scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
             except gspread.exceptions.APIError:
-              pass
-          messageSent = False
-          for i in range(len(scheduledMessages)): # getScheduledMessages() returns an array of scheduled messages, holding the relevant details of each message
-            if (currentTime >= scheduledMessages[i][5]): # check if the current time is after scheduled message time, if so, send it.
-              messageSent = True
-              try:
-                await MessageScheduler.sendScheduledMessages(client, scheduledMessages, i)
-              except:
-                print ("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
-          if (messageSent): # if there were messages sent, get the new array of messages, given the spreadsheet wehre the messages are stored is updated in sendScheduledMessages() to remove the messages that were sent, so we need a new array that doesn't have those sent messages
-            scheduledMessages = await getScheduledMessages()
+              print ("\nCould Not Get Scheduled Events\n")
+            
+          for event in scheduledEvents:
+            eventTime = await EventScheduler.getEventTime(event)
+            if (eventTime < currentTime):
+              scheduledEvents = await EventScheduler.performScheduledEvent(event, client)
 
           try:
             workbook = await openGuildClocksSpreadsheet()
@@ -430,45 +427,6 @@ async def convertTime(currentTime, tz, toFrom):
     convertedTime = timezone(timeZones[tz]).localize(currentTime).astimezone(timezone("US/Central"))
   return convertedTime
 # end convertTime
-
-async def getScheduledMessages():
-  workbook = await MessageScheduler.openSpreadsheet()
-  scheduledMessagesSheet = workbook.worksheet("Scheduled Messages")
-  scheduledMessagesRange = scheduledMessagesSheet.range("A2:L" + str(scheduledMessagesSheet.row_count))
-
-  scheduledMessages = []
-  for i in range(0, len(scheduledMessagesRange), 12):
-    if (scheduledMessagesRange[i].value != ""):
-      scheduledMessages.append([])
-      for j in range(0, 12):
-        scheduledMessages[len(scheduledMessages)-1].append(scheduledMessagesRange[i+j].value)
-
-  for i in range(len(scheduledMessages)):
-    guildId = int(scheduledMessages[i][0]) 
-    msgLocationId = int(scheduledMessages[i][1])
-    msgId = int(scheduledMessages[i][2])
-    destChannel = int(scheduledMessages[i][3])
-    lastEditedBy = int(scheduledMessages[i][4])
-    month = int(scheduledMessages[i][5])
-    day = int(scheduledMessages[i][6])
-    year = int(scheduledMessages[i][7])
-    hour = int(scheduledMessages[i][8])
-    minute = int(scheduledMessages[i][9])
-    amPm = scheduledMessages[i][10]
-    timezone = scheduledMessages[i][11]
-
-    if (amPm == "PM" and hour < 12):
-      hour += 12
-    elif (amPm == "AM" and hour == 12):
-      hour = 0
-
-    msgTime = datetime(year, month, day, hour, minute)
-    convertedTime = await convertTime(msgTime, timezone, "from")
-    convertedTime = datetime(convertedTime.year, convertedTime.month, convertedTime.day, convertedTime.hour, convertedTime.minute)
-    scheduledMessages[i] = [guildId, msgLocationId, msgId, destChannel, lastEditedBy, convertedTime]
-
-  return scheduledMessages
-# end getScheduledMessages
 
 async def openGuildClocksSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']

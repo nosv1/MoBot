@@ -1,6 +1,10 @@
 import discord
 import asyncio
 from datetime import datetime
+import gspread 
+from oauth2client.service_account import ServiceAccountCredentials
+
+import SecretStuff
 
 moBot = 449247895858970624
 moBotTest = 476974462022189056
