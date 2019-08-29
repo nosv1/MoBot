@@ -6,6 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import random
 import asyncio
 import operator
+import traceback
 
 import SecretStuff
 
@@ -1720,7 +1721,7 @@ async def updateDriverRoles(message):
           await member.add_roles(role)
           await divUpdateChannel.send("<@" + str(member.id) + "> has been added to " + role.name + ".")  
       except ValueError:
-        pass
+        print (str(traceback.format_exc()))
 # end updateDriverRoles
 
 async def clearContents(cells):
