@@ -612,7 +612,7 @@ async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, clie
       await msg.delete()
   except asyncio.TimeoutError:
     await moBotMessage.delete()
-    await message.channel.send("<@" + str(user.id) + ">, you took too long. If you still need to submit a screenshot, click the ⏱ at the top of the channel.", delete_after=120.0)
+    await message.channel.send("<@" + str(user.id) + ">, you took too long. If you still need to submit a screenshot, click the ✅ at the top of the channel.", delete_after=120.0)
   
   await qualiScreenshotsChannel.set_permissions(user, overwrite=None)
 # end addUserToQualiScreenshots
