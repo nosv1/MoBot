@@ -21,8 +21,8 @@ cotmLogo = "https://images-ext-1.discordapp.net/external/hfR_lFnAstqRKPjx8YxHR2F
 async def main(args, message, client):
   try:
     authorPerms = message.channel.permissions_for(message.author)
-  except AttributeError:
-    authorPerms = message.channel.permissions_for(message.guild.get_member(message.author.id))
+  except:
+    pass
     
   qualifyingChannel = message.guild.get_channel(607693838642970819)
   qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
