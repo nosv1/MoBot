@@ -1683,23 +1683,24 @@ async def updateDivList(message):
 async def updateDriverRoles(message):
   divUpdateChannel = message.guild.get_channel(527319768911314944)
   workbook = await openSpreadsheet()
-  standingsSheet = workbook.worksheet("Qualifying")
+  standingsSheet = workbook.worksheet("Standings")
   driversSheet = workbook.worksheet("Drivers")
   drivers = standingsSheet.range("C3:E" + str(standingsSheet.row_count))
 
   divRoles = []
   for role in message.guild.roles:
-    if ("division" in role.name and "reserve" not in role.name):
-      divRoles.append([int(role.name[:-1]), role])
+    if ("division" in role.name.lower() and "reserve" not in role.name.lower()):
+      divRoles.append([int(role.name[-1]), role])
   divRoles.sort(key=lambda x:x[0])
 
   for member in message.guild.members:
-    driverIndex = findDriver(drivers, member.id)
+    driverIndex = await findDriver(drivers, member.id)
     if (driverIndex >= 0):
       try:
         div = str(int(drivers[driverIndex-1].value[-1]))
         gamertag = drivers[driverIndex+1].value
-        role = divRoles[int(div)][1]
+        print (divRoles)
+        role = divRoles[int(div)-1][1]
         print (div, gamertag, role.name)
 
         newNick = "[D" + div + "] " + gamertag 
@@ -1710,8 +1711,7 @@ async def updateDriverRoles(message):
         for mRole in member.roles:
           if (mRole.name == role.name):
             hasRole = True
-            break
-          elif ("division" in role.name and "reserve" not in role.name):
+          elif ("division" in mRole.name.lower() and "reserve" not in mRole.name.lower()):
             await member.remove_roles(mRole)
             print ("Role removed")
             #await divUpdateChannel.send("<@" + member.id + "> has been removed from " + mRole.name + ".")
@@ -1997,7 +1997,7 @@ async def getQualiPosition(message, driver, qualiTable, numCols):
   await message.channel.send(reply)
 # end getQualiPosition
 
-def findDriver(table, driver):
+async def findDriver(table, driver):
   driverFound = -1
   for i in range(len(table)):
     if (table[i].value == str(driver)):

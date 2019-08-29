@@ -111,7 +111,7 @@ async def on_message(message):
     }
       
     if (len(args) > 1):
-      if (args[1] == "test."):
+      if (args[1] == "test"):
         await COTM.updateDriverRoles(message)
         print ("done")
 
