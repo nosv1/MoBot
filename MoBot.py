@@ -603,7 +603,7 @@ async def on_raw_reaction_add(payload):
         if ("RLScrims" in embedAuthor):
           await RLScrims.mainReactionAdd(message, payload, client, member)
 
-        elif ("MoBotCollection" in embedAuthorURL or "MoBotReservation" in embedAuthorURL) and message.author.id == int(moBot)):
+        elif (("MoBotCollection" in embedAuthorURL or "MoBotReservation" in embedAuthorURL) and message.author.id == int(moBot)):
           if (message.author.id == int(moBot)):
             await Collections.mainReactionAdd(message, payload, message.embeds[0], client)
             if ("MoBotReservation" in message.embeds[0].author.url):
