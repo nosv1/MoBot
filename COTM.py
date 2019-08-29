@@ -585,6 +585,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   topMsgEmbed["author"]["url"] += "/top=" + str(topMsgID)
   topMsgEmbed["author"]["url"] += "/bottom=" + str(bottomMsgID)
   await topMsg.edit(embed=discord.Embed.from_dict(topMsgEmbed))
+  await updateDriverRoles(message)
 # end submitQualiTime
 
 async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, client):
