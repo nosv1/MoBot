@@ -609,6 +609,16 @@ async def on_raw_reaction_add(payload):
             if ("MoBotReservation" in message.embeds[0].author.url):
               await Reservations.mainReactionAdd(message, payload, client)
 
+        elif ("Countdown Editor" in embedAuthor):
+          await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
+        elif ("Clock Editor" in embedAuthor):
+          await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "clock")
+        elif ("•" in embedFooter and "-- (" in embedFooter and ")" in embedFooter):
+          if (payload.emoji.name == "⬅"):
+            await CollectionsOLD.leftRightCollection(message, "left", message.embeds[0], client)
+          elif (payload.emoji.name == "➡"):
+            await CollectionsOLD.leftRightCollection(message, "right", message.embeds[0], client)
+
       elif ("open a ticket" in message.content.lower()):
         if (payload.emoji.name == "✅"):
           await message.remove_reaction(payload.emoji, client.get_user(payload.user_id))
