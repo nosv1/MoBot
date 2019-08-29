@@ -1699,9 +1699,7 @@ async def updateDriverRoles(message):
       try:
         div = str(int(drivers[driverIndex-1].value[-1]))
         gamertag = drivers[driverIndex+1].value
-        print (divRoles)
         role = divRoles[int(div)-1][1]
-        print (div, gamertag, role.name)
 
         newNick = "[D" + div + "] " + gamertag 
         if (newNick is not member.display_name):
@@ -1713,13 +1711,11 @@ async def updateDriverRoles(message):
             hasRole = True
           elif ("division" in mRole.name.lower() and "reserve" not in mRole.name.lower()):
             await member.remove_roles(mRole)
-            print ("Role removed")
-            #await divUpdateChannel.send("<@" + member.id + "> has been removed from " + mRole.name + ".")
+            await divUpdateChannel.send("<@" + member.id + "> has been removed from " + mRole.name + ".")
 
         if (not hasRole):
           await member.add_roles(role)
-          print ("role added")
-          #await divUpdateChannel.send("<@" + member.id + "> has been added to " + role.name + ".")  
+          await divUpdateChannel.send("<@" + member.id + "> has been added to " + role.name + ".")  
       except ValueError:
         pass
 # end updateDriverRoles

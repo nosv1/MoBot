@@ -257,9 +257,6 @@ async def on_message(message):
   elif ("!" in args[0]):
     await GTACCHub.main(args, message, client)
 
-  if (message.guild.id == 527156310366486529): # cotm
-    await COTM.main(args, message, client)
-
 @client.event
 async def on_raw_reaction_add(payload):
   channelID = payload.channel_id
