@@ -19,7 +19,11 @@ spaceChar = "⠀"
 cotmLogo = "https://images-ext-1.discordapp.net/external/hfR_lFnAstqRKPjx8YxHR2F4BiIVS4DyMJdIEAQx-9w/https/cdn.discordapp.com/attachments/467085640245182475/607295008118276243/COTM_LOGO2.png?width=676&height=676"
 
 async def main(args, message, client):
-  authorPerms = message.channel.permissions_for(message.author)
+  try:
+    authorPerms = message.channel.permissions_for(message.author)
+  except AttributeError:
+    authorPerms = message.channel.permissions_for(message.guild.get_member(message.author.id))
+    
   qualifyingChannel = message.guild.get_channel(607693838642970819)
   qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
 
