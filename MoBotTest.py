@@ -111,8 +111,9 @@ async def on_message(message):
     }
       
     if (len(args) > 1):
-      if (args[1] == "signup"):
-        await Noble2sLeague.signup(message)
+      if (args[1] == "test."):
+        await COTM.updateDriverRoles(message)
+        print ("done")
 
       elif (args[1] == "countdown"):
         await ClocksAndCountdowns.main(self, message, client)

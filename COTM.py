@@ -23,25 +23,7 @@ async def main(args, message, client):
   qualifyingChannel = message.guild.get_channel(607693838642970819)
   qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
 
-  if (args[0][-19:-1] == moBot or args[0] == "test"):
-    if (args[1] == "test"):
-      workbook = await openSpreadsheet()
-      sheet = workbook.worksheet("Voting")
-      r = sheet.range("D3:D" + str(sheet.row_count))
-      reply = ""
-      channel = message.guild.get_channel(608472349712580608)
-      for member in channel.members:
-        memberVoted = False
-        for i in range(len(r)):
-          if (r[i].value is ""):
-            break
-          elif (member.id == int(r[i].value)):
-            memberVoted = True
-            break
-        if (not memberVoted):
-          reply += "<@" + str(member.id) + ">"
-      await channel.send(reply, delete_after=2)          
-
+  if (args[0][-19:-1] == moBot):
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, client)
     '''  
@@ -139,20 +121,18 @@ async def mainReactionAdd(message, payload, client):
   user = message.guild.get_member(payload.user_id)
   qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
 
-  member = message.guild.get_member(payload.user_id)
-
   if (user.name != "MoBot"):
     if (message.id == 614836845267910685): # message id for "Do you need to submit quali time"
       if (payload.emoji.name == "✅"):
         await addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, client)
-        await message.remove_reaction(payload.emoji, user)
+        await message.remove_reaction(payload.emoji.name, user)
     elif (message.id == 609588876272730112): # message id for message "Do you need to vote?"
       if (payload.emoji.name == "✅"):
-        await openVotingChannel(message, member)
-        await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+        await openVotingChannel(message, user)
+        await message.remove_reaction(payload.emoji.name, user)
     elif ("are you ready to vote" in message.content):
       if (payload.emoji.name == "✅"):
-        await votingProcess(message, member, client)
+        await votingProcess(message, user, client)
       elif (payload.emoji.name == "🔄"):
         await resetVotes(message)
 
@@ -552,6 +532,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
     if (qualiTable[i][0] == userGT):
       userEntry = qualiTable[i]
       position = i + 1
+      driverDiv = division
       fastestInDiv = qualiTable[(division - 1) * 15]
       if (i != 0):
         driverAhead = qualiTable[i-1]
@@ -1696,61 +1677,47 @@ async def updateDivList(message):
 # end updateDivList
 
 async def updateDriverRoles(message):
-  workbook = await openSpreadsheet()
-  standingsSheet = workbook.worksheet("Standings")
-  # div update channel, to log the movements of divisions and to tag the people so they know
   divUpdateChannel = message.guild.get_channel(527319768911314944)
-  
-  # get standings list and current divs off of standings page
-  drivers = standingsSheet.range("G7:H124")
-  
-  # create dict for user names : id -- removing the [D#] if necessary
-  members = message.guild.members
-  userIds = {}
-  for member in members:
-    if (member.nick != None):
-      if ("[D" in member.nick): # checking if [D#] is in nickname, if so remove it
-        userIds[member.nick[5:]] = member.id
-      elif (member.nick != None):
-        userIds[member.nick] = member.id
-      else:
-        userIds[member.name] = member.id
-    else:
-      userIds[member.name] = member.id
-  
-  # loop through drivers from standings updating name/roll if necessary
-  for i in range(0, len(drivers), 2):
-    try:
-      driverId = str(userIds[drivers[i+1].value])
-      member = message.guild.get_member(int(driverId))
-      # check if driver role needs to be updated
-      currentDivRole = None
-      currentDiv = drivers[i].value[-1]
-      if (currentDiv != "T"):
-        await member.edit(nick=("[D" + currentDiv + "] " + drivers[i+1].value))
-        for role in member.roles:
-          if ("Division" in role.name and "Reserve" not in role.name):
-            currentDivRole = role.name[-1]
-          if (currentDivRole != None):
-            if (currentDivRole != currentDiv): # if currentDivRole is not the same div as driver is in, remove role
-              await member.remove_roles(role)
-              await divUpdateChannel.send("<@" + driverId + "> has been removed from " + role.name + ".") # TAG WHEN CONFIRMED WORKING use <@ driverId >
-              # get correct role and add driver to that role, then update their nickname
-              for gRole in message.guild.roles:
-                if (gRole.name == "Division " + currentDiv):
-                  await member.add_roles(gRole)
-                  await divUpdateChannel.send("<@" + driverId + "> has been added to " + gRole.name + ".")
-                  break
-              break
-        if (currentDivRole == None):
-          # get correct role and add driver to that role, then update their nickname
-          for gRole in message.guild.roles:
-            if (gRole.name == "Division " + drivers[i].value[-1]):
-              await member.add_roles(gRole)
-              await divUpdateChannel.send("<@" + driverId + "> has been added to " + gRole.name + ".")
-              break
-    except KeyError:
-      continue
+  workbook = await openSpreadsheet()
+  standingsSheet = workbook.worksheet("Qualifying")
+  driversSheet = workbook.worksheet("Drivers")
+  drivers = standingsSheet.range("C3:E" + str(standingsSheet.row_count))
+
+  divRoles = []
+  for role in message.guild.roles:
+    if ("division" in role.name and "reserve" not in role.name):
+      divRoles.append([int(role.name[:-1]), role])
+  divRoles.sort(key=lambda x:x[0])
+
+  for member in message.guild.members:
+    driverIndex = findDriver(drivers, member.id)
+    if (driverIndex >= 0):
+      try:
+        div = str(int(drivers[driverIndex-1].value[-1]))
+        gamertag = drivers[driverIndex+1].value
+        role = divRoles[int(div)][1]
+        print (div, gamertag, role.name)
+
+        newNick = "[D" + div + "] " + gamertag 
+        if (newNick is not member.display_name):
+          await member.edit(nick=newNick)
+
+        hasRole = False
+        for mRole in member.roles:
+          if (mRole.name == role.name):
+            hasRole = True
+            break
+          elif ("division" in role.name and "reserve" not in role.name):
+            await member.remove_roles(mRole)
+            print ("Role removed")
+            #await divUpdateChannel.send("<@" + member.id + "> has been removed from " + mRole.name + ".")
+
+        if (not hasRole):
+          await member.add_roles(role)
+          print ("role added")
+          #await divUpdateChannel.send("<@" + member.id + "> has been added to " + role.name + ".")  
+      except ValueError:
+        pass
 # end updateDriverRoles
 
 async def clearContents(cells):
@@ -2026,10 +1993,10 @@ async def getQualiPosition(message, driver, qualiTable, numCols):
   await message.channel.send(reply)
 # end getQualiPosition
 
-async def findDriver(table, driver):
+def findDriver(table, driver):
   driverFound = -1
   for i in range(len(table)):
-    if (table[i].value == driver):
+    if (table[i].value == str(driver)):
       driverFound = i
       break
   return driverFound
