@@ -549,7 +549,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   userEntry = []
   position = 0
   for i in range(len(qualiTable)):
-    division = int((i + 1) / 15) + 1
+    division = int(i / 15) + 1
     if (i == 0):
       fastestOverall = qualiTable[i]
     if (qualiTable[i][0] == userGT):
