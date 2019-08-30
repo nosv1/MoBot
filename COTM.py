@@ -546,14 +546,19 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   fastestOverall = []
   fastestInDiv = []
   driverAhead = []
-  userEntry = []
+  userEntry = [] # [name, date, laptime, id]
   position = 0
   for i in range(len(qualiTable)):
     division = int(i / 15) + 1
+    name = qualiTable[i][0]
+    lTime = qualiTable[i][2]
+    driverIndex = await findDriver(driversRange, name)
+    userID = driversRange[driverIndex - 1].value
+
     if (i == 0):
       fastestOverall = qualiTable[i]
     if (qualiTable[i][0] == userGT):
-      userEntry = qualiTable[i]
+      userEntry = qualiTable[i].append(userID)
       position = i + 1
       driverDiv = division
       fastestInDiv = qualiTable[(division - 1) * 15]
@@ -561,8 +566,6 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
         driverAhead = qualiTable[i-1]
       else:
         driverAhead = fastestOverall
-    name = qualiTable[i][0]
-    lTime = qualiTable[i][2]
 
     qualifyingRange[i*3+0].value = name 
     qualifyingRange[i*3+1].value = qualiTable[i][1].strftime("%m/%d/%Y %H:%M")
@@ -576,15 +579,13 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
 
     qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + "[D" + str(division) + "] " + name + " - " + floatTimeToStringTime(lTime)
 
-    driverIndex = await findDriver(driversRange, name)
-    userID = driversRange[driverIndex - 1].value
 
   qualifyingSheet.update_cells(qualifyingRange, value_input_option="USER_ENTERED")
 
   embed = discord.Embed(color=int("0xd1d1d1", 16))
   embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
   value = ""
-  value += "**Driver:** <@" + userID + ">"
+  value += "**Driver:** <@" + str(userEntry[4]) + ">"
   value += "\n**Time:** " + floatTimeToStringTime(lapTime)
   value += "\n**Division:** " + str(int(position / 15) + 1)
   value += "\n**Position:** " + str(position)
