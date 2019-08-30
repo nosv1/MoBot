@@ -463,7 +463,6 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
 
       if (payload.emoji.name == "✅"):
         await moBotMessage.delete()
-        await message.channel.trigger_typing()
         break
       else:
         looped = True
@@ -481,6 +480,9 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
 
   else:
     userGT = driversRange[driverIndex+1].value
+
+  await message.channel.trigger_typing()
+  await updateDriverRoles(message)
 
   driverIndex = await findDriver(qualifyingRange, userGT)
   if (driverIndex == -1):
@@ -606,7 +608,6 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   topMsgEmbed["author"]["url"] += "/top=" + str(topMsgID)
   topMsgEmbed["author"]["url"] += "/bottom=" + str(bottomMsgID)
   await topMsg.edit(embed=discord.Embed.from_dict(topMsgEmbed))
-  await updateDriverRoles(message)
 # end submitQualiTime
 
 async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, client):
