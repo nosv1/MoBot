@@ -568,13 +568,17 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
     if (i % 15 == 0):
       embed = discord.Embed(color=int("0xd1d1d1", 16))
       embed.add_field(name="Division " + str(division), value="", inline=False)
-      embed.set_thumbnail(url=logos["d" + str(division)])
       embed = embed.to_dict()
       qualiStandingEmbeds.append(embed)
 
     driverIndex = await findDriver(driversRange, name)
     userID = driversRange[driverIndex - 1].value
-    qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". <@" + userID + "> - " + floatTimeToStringTime(lTime)
+    try:
+      user = message.guild.get_member(int(userID)).display_name
+    except:
+      print (str(traceback.format_exc()))
+      user = "<@" + userID + ">"
+    qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + user + " - " + floatTimeToStringTime(lTime)
 
   qualifyingSheet.update_cells(qualifyingRange, value_input_option="USER_ENTERED")
 
