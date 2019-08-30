@@ -482,7 +482,8 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
     userGT = driversRange[driverIndex+1].value
 
   await message.channel.trigger_typing()
-  await updateDriverRoles(message)
+  divList = await updateDriverRoles(message)
+  await message.channel.trigger_typing()
 
   driverIndex = await findDriver(qualifyingRange, userGT)
   if (driverIndex == -1):
@@ -573,14 +574,10 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
       embed = embed.to_dict()
       qualiStandingEmbeds.append(embed)
 
+    qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + "[" + str(division) + "] " + name + " - " + floatTimeToStringTime(lTime)
+
     driverIndex = await findDriver(driversRange, name)
     userID = driversRange[driverIndex - 1].value
-    try:
-      user = message.guild.get_member(int(userID)).display_name
-    except:
-      print (str(traceback.format_exc()))
-      user = "<@" + userID + ">"
-    qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + user + " - " + floatTimeToStringTime(lTime)
 
   qualifyingSheet.update_cells(qualifyingRange, value_input_option="USER_ENTERED")
 
@@ -608,6 +605,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   topMsgEmbed["author"]["url"] += "/top=" + str(topMsgID)
   topMsgEmbed["author"]["url"] += "/bottom=" + str(bottomMsgID)
   await topMsg.edit(embed=discord.Embed.from_dict(topMsgEmbed))
+  await updateDivList(message, divList)
 # end submitQualiTime
 
 async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, client):
@@ -639,6 +637,97 @@ async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, clie
   await qualiScreenshotsChannel.set_permissions(user, overwrite=None)
 # end addUserToQualiScreenshots
 
+async def updateDivList(message, divList):
+  divListChannel = message.guild.get_channel(527226061100941312)
+
+  divListEmbeds = {
+    "sortedByGamertag" : [],
+    "sortedByDivision" : [],
+  }
+
+  for key in divListEmbeds:
+    embed = discord.Embed(color=int("0xd1d1d1", 16))
+    if (key == "sortedByGamertag"):
+      divList.sort(key=lambda x:x[1])
+      embed.set_author(name="Children of the Mountain - Season 5\nSorted By Gamertag", icon_url=logos["cotmFaded"], url="https://www.google.com/DivisionList")
+      embed = embed.to_dict()
+      divListEmbeds["sortedByGamertag"].append(embed)
+
+    else:
+      divList.sort(key=lambda x:x[0])
+      embed.set_author(name="Children of the Mountain - Season 5\nSorted By Division", icon_url=logos["cotmFaded"], url="https://www.google.com/DivisionList")
+      embed = embed.to_dict()
+      divListEmbeds["sortedByDivision"].append(embed)
+
+    nameRange = ["", ""]
+    for i in range(len(divList)):
+      nameRange[1] = divList[i][1]
+      if (i % 15 == 0):
+        nameRange[0] = divList[i][1]
+        div = int(i/15) + 1
+
+        embed = discord.Embed(color=int("0xd1d1d1", 16))
+        if (key == "sortedByGamertag"):
+          embed.add_field(name="", value="", inline=False)
+        else:
+          embed.add_field(name="Division " + str(div), value="", inline=False)
+        embed = embed.to_dict()
+        divListEmbeds[key].append(embed)
+      if (key == "sortedByGamertag"):
+        divListEmbeds[key][len(divListEmbeds[key])-1]["fields"][0]["name"] = nameRange[0] + " - " + nameRange[1]
+      divListEmbeds[key][len(divListEmbeds[key])-1]["fields"][0]["value"] += "[D" + str(divList[i][0]) + "] " + divList[i][1] + "\n"
+  
+  await divListChannel.purge()
+  for embed in divListEmbeds["sortedByGamertag"]:
+    await divListChannel.send(embed=discord.Embed.from_dict(embed))
+  for embed in divListEmbeds["sortedByDivision"]:
+    await divListChannel.send(embed=discord.Embed.from_dict(embed))
+# end updateDivList
+
+async def updateDriverRoles(message):
+  divUpdateChannel = message.guild.get_channel(527319768911314944)
+  workbook = await openSpreadsheet()
+  standingsSheet = workbook.worksheet("Standings")
+  driversSheet = workbook.worksheet("Drivers")
+  drivers = standingsSheet.range("C3:E" + str(standingsSheet.row_count))
+
+  divRoles = []
+  for role in message.guild.roles:
+    if ("division" in role.name.lower() and "reserve" not in role.name.lower()):
+      divRoles.append([int(role.name[-1]), role])
+  divRoles.sort(key=lambda x:x[0])
+
+  divList = []
+  for member in message.guild.members:
+    driverIndex = await findDriver(drivers, member.id)
+    if (driverIndex >= 0):
+      try:
+        div = str(int(drivers[driverIndex-1].value[-1]))
+        gamertag = drivers[driverIndex+1].value
+        role = divRoles[int(div)-1][1]
+
+        newNick = "[D" + div + "] " + gamertag
+        divList.append([int(div), gamertag])
+        if (newNick is not member.display_name):
+          await member.edit(nick=newNick)
+
+        hasRole = False
+        for mRole in member.roles:
+          if (mRole.name == role.name):
+            hasRole = True
+          elif ("division" in mRole.name.lower() and "reserve" not in mRole.name.lower()):
+            await member.remove_roles(mRole)
+            await divUpdateChannel.send("<@" + str(member.id) + "> has been removed from " + mRole.name + ".")
+
+        if (not hasRole):
+          await member.add_roles(role)
+          await divUpdateChannel.send("<@" + str(member.id) + "> has been added to " + role.name + ".")  
+      except ValueError:
+        print (str(traceback.format_exc()))
+  return divList
+# end updateDriverRoles
+
+############# OLD FUNCITONS #############
 async def removeDriver(message):
   # remove from standings sheet
   workbook = await openSpreadsheet()
@@ -1635,7 +1724,7 @@ async def newWeek(message):
   await updateStartOrders(message)
 # end newWeek
 
-async def updateDivList(message):
+async def updateDivListOLD(message):
   workbook = await openSpreadsheet()
   standingsSheet = workbook.worksheet("Standings")
   driverHistorySheet = workbook.worksheet("Driver History")
@@ -1704,57 +1793,11 @@ async def updateDivList(message):
     await i.delete()
 # end updateDivList
 
-async def updateDriverRoles(message):
-  divUpdateChannel = message.guild.get_channel(527319768911314944)
-  workbook = await openSpreadsheet()
-  standingsSheet = workbook.worksheet("Standings")
-  driversSheet = workbook.worksheet("Drivers")
-  drivers = standingsSheet.range("C3:E" + str(standingsSheet.row_count))
-
-  divRoles = []
-  for role in message.guild.roles:
-    if ("division" in role.name.lower() and "reserve" not in role.name.lower()):
-      divRoles.append([int(role.name[-1]), role])
-  divRoles.sort(key=lambda x:x[0])
-
-  for member in message.guild.members:
-    driverIndex = await findDriver(drivers, member.id)
-    if (driverIndex >= 0):
-      try:
-        div = str(int(drivers[driverIndex-1].value[-1]))
-        gamertag = drivers[driverIndex+1].value
-        role = divRoles[int(div)-1][1]
-
-        newNick = "[D" + div + "] " + gamertag 
-        if (newNick is not member.display_name):
-          await member.edit(nick=newNick)
-
-        hasRole = False
-        for mRole in member.roles:
-          if (mRole.name == role.name):
-            hasRole = True
-          elif ("division" in mRole.name.lower() and "reserve" not in mRole.name.lower()):
-            await member.remove_roles(mRole)
-            await divUpdateChannel.send("<@" + str(member.id) + "> has been removed from " + mRole.name + ".")
-
-        if (not hasRole):
-          await member.add_roles(role)
-          await divUpdateChannel.send("<@" + str(member.id) + "> has been added to " + role.name + ".")  
-      except ValueError:
-        print (str(traceback.format_exc()))
-# end updateDriverRoles
-
 async def clearContents(cells):
   for i in range(len(cells)):
     cells[i].value = ""
   return cells
 # end clearContents
-
-async def openSpreadsheet():
-  clientSS = gspread.authorize(creds)  
-  workbook = clientSS.open("COTM (XBOX) S4 Official Spreadsheet")    
-  return workbook
-# end openSpreadsheet
 
 async def updateQualiStandings(message):
   moBotMessages = []
@@ -2017,6 +2060,7 @@ async def getQualiPosition(message, driver, qualiTable, numCols):
   reply += "```"
   await message.channel.send(reply)
 # end getQualiPosition
+############# END OLD FUNCITONS #############
 
 async def findDriver(table, driver):
   driverFound = -1
@@ -2034,3 +2078,4 @@ async def openSpreadsheet():
   season5Key = "14L5u8GmPh4udQk85KCOlCTSen78mB8SxgPecdGMUk1E"
   workbook = clientSS.open_by_key(season5Key)
   return workbook
+# end openSpreadsheet
