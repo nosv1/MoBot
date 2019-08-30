@@ -638,6 +638,7 @@ async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, clie
 # end addUserToQualiScreenshots
 
 async def updateDivList(message, divList):
+  await message.channel.trigger_typing()
   divListChannel = message.guild.get_channel(527226061100941312)
 
   divListEmbeds = {
