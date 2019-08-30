@@ -17,7 +17,16 @@ mardoniusTag = "<@445996484240998400>"
 moBot = "449247895858970624"
 
 spaceChar = "⠀"
-cotmLogo = "https://images-ext-1.discordapp.net/external/hfR_lFnAstqRKPjx8YxHR2F4BiIVS4DyMJdIEAQx-9w/https/cdn.discordapp.com/attachments/467085640245182475/607295008118276243/COTM_LOGO2.png?width=676&height=676"
+logos = {
+  "cotmFaded" : "https://i.gyazo.com/e720604af6507b3fc905083e8c92edf7.png",
+  "d1" : "https://i.gyazo.com/6e47789b04f7dcd859893da2d2ee623d.png",
+  "d2" : "https://i.gyazo.com/095a118003220990734330eb74ce14fe.png",
+  "d3" : "https://i.gyazo.com/53ab40295fcdd9cbef5b443fd118a1a1.png",
+  "d4" : "https://i.gyazo.com/1892dfb94a9d9d8fba6242991fb4d691.png",
+  "d5" : "https://i.gyazo.com/5a56e3281bfb37b8467b1c125168b04f.png",
+  "d6" : "https://i.gyazo.com/91d5cb3aa8688fe885a4e907fbf3bb78.png",
+  "d7" : "https://i.gyazo.com/33e6ec2a82539f251a66aa8f2c6ee2fa.png",
+}
 
 async def main(args, message, client):
   try:
@@ -310,7 +319,7 @@ async def closeVotingChannel(message, member, totalVoters, log):
   await currentVotersMsg.edit(embed=discord.Embed.from_dict(currentVotersEmbed))
 
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="Children of the Mountain - Season 5", icon_url=cotmLogo)
+  embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmLogoFaded"])
   embed.add_field(name=member.display_name + ":", value="", inline=False)
   embed.add_field(name="Total Votes:", value="", inline=False)
   embed.add_field(name="Total Voters:", value=totalVotersEmojiNumbers)
@@ -512,7 +521,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   
   qualiStandingEmbeds = []
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="Children of the Mountain - Season 5\nQualifying Standings", icon_url=cotmLogo, url="https://www.google.com/COTMQualifying")
+  embed.set_author(name="Children of the Mountain - Season 5\nQualifying Standings", icon_url=logos["cotmLogoFaded"], url="https://www.google.com/COTMQualifying")
   embed = embed.to_dict()
   qualiStandingEmbeds.append(embed)
 
@@ -559,6 +568,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
     if (i % 15 == 0):
       embed = discord.Embed(color=int("0xd1d1d1", 16))
       embed.add_field(name="Division " + str(division), value="", inline=False)
+      embed.set_thumbnail(url=logos["d" + str(division)])
       embed = embed.to_dict()
       qualiStandingEmbeds.append(embed)
 
@@ -569,7 +579,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   qualifyingSheet.update_cells(qualifyingRange, value_input_option="USER_ENTERED")
 
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="Children of the Mountain - Season 5", icon_url=cotmLogo)
+  embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmLogoFaded"])
   value = ""
   value += "**Driver:** <@" + str(user.id) + ">"
   value += "\n**Time:** " + floatTimeToStringTime(lapTime)
