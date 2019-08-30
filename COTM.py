@@ -481,7 +481,6 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   else:
     userGT = driversRange[driverIndex+1].value
 
-  await message.channel.trigger_typing()
   divList = await updateDriverRoles(message)
   await message.channel.trigger_typing()
 
@@ -686,6 +685,7 @@ async def updateDivList(message, divList):
 # end updateDivList
 
 async def updateDriverRoles(message):
+  await message.channel.trigger_typing()
   divUpdateChannel = message.guild.get_channel(527319768911314944)
   workbook = await openSpreadsheet()
   standingsSheet = workbook.worksheet("Standings")
