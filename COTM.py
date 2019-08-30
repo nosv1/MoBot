@@ -585,7 +585,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   embed = discord.Embed(color=int("0xd1d1d1", 16))
   embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
   value = ""
-  value += "**Driver:** <@" + str(user.id) + ">"
+  value += "**Driver:** <@" + userID + ">"
   value += "\n**Time:** " + floatTimeToStringTime(lapTime)
   value += "\n**Division:** " + str(int(position / 15) + 1)
   value += "\n**Position:** " + str(position)
