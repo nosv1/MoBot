@@ -574,7 +574,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
       embed = embed.to_dict()
       qualiStandingEmbeds.append(embed)
 
-    qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + "[" + str(division) + "] " + name + " - " + floatTimeToStringTime(lTime)
+    qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + "[D" + str(division) + "] " + name + " - " + floatTimeToStringTime(lTime)
 
     driverIndex = await findDriver(driversRange, name)
     userID = driversRange[driverIndex - 1].value
