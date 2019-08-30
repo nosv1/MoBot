@@ -577,7 +577,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
       embed = embed.to_dict()
       qualiStandingEmbeds.append(embed)
 
-    qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + "[D" + str(division) + "] " + name + " - " + floatTimeToStringTime(lTime)
+    qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + name + " - " + floatTimeToStringTime(lTime)
 
 
   qualifyingSheet.update_cells(qualifyingRange, value_input_option="USER_ENTERED")
