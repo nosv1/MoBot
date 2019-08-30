@@ -395,6 +395,10 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
     userID = int(message.content.split("@")[-1].strip().split(">")[0])
   except ValueError:
     userID = int(message.content.split("@")[-1].strip().split(">")[0][1:])
+  if (userID == int(moBot)):
+    await message.channel.send("**Driver Not Found**\nEdit your message to follow this command: `@MoBot#0697 quali @User x.xx.xxx`")
+    return
+
   user = message.guild.get_member(userID)
   lapTime = message.content.split(str(user.id))[1].strip().split(" ")[1].strip().replace(":", ".")
 
@@ -449,7 +453,8 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
         return
 
       if (payload.emoji.name == "✅"):
-        await moBotMessage.clear_reactions()
+        await moBotMessage.delete()
+        await message.channel.trigger_typing()
         break
       else:
         looped = True
@@ -1728,6 +1733,7 @@ async def clearContents(cells):
   for i in range(len(cells)):
     cells[i].value = ""
   return cells
+# end clearContents
 
 async def openSpreadsheet():
   clientSS = gspread.authorize(creds)  
