@@ -557,7 +557,8 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
     if (i == 0):
       fastestOverall = qualiTable[i]
     if (qualiTable[i][0] == userGT):
-      userEntry = qualiTable[i].append(userID)
+      qualiTable[i].append(userID)
+      userEntry = qualiTable[i]
       position = i + 1
       driverDiv = division
       fastestInDiv = qualiTable[(division - 1) * 15]
@@ -638,7 +639,6 @@ async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, clie
 # end addUserToQualiScreenshots
 
 async def updateDivList(message, divList):
-  await message.channel.trigger_typing()
   divListChannel = message.guild.get_channel(527226061100941312)
 
   divListEmbeds = {
