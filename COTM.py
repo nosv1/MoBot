@@ -150,7 +150,7 @@ async def mainReactionAdd(message, payload, client):
         await votingProcess(message, member, client)
       elif (payload.emoji.name == "🔄"):
         await resetVotes(message)
-    elif (message.channel.id == qualiScreenshotsChannel.id or message.channel.id == 527168346404159488):
+    elif (message.channel.id == qualiScreenshotsChannel.id):
       if (message.channel.permissions_for(member).administrator and payload.emoji.name == "👍"):
         await waitForQualiTime(message, member, payload, qualifyingChannel, client)
 
