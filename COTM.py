@@ -360,7 +360,7 @@ async def openVotingChannel(message, member):
   workbook = await openSpreadsheet()
   votingSheet = workbook.worksheet("Voting")
   pastVotersRange = votingSheet.range("D3:D" + str(votingSheet.row_count))
-  isPastVoter = await findDriver(pastVotersRange, str(member.id)) >= 0
+  isPastVoter = findDriver(pastVotersRange, str(member.id)) >= 0
 
   # create voting channel
   if (str(member.id) not in currentVoters and not isPastVoter):
@@ -417,7 +417,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   qualifyingSheet = workbook.worksheet("Qualifying")
   qualifyingRange = qualifyingSheet.range("G3:I" + str(qualifyingSheet.row_count))
 
-  driverIndex = await findDriver(driversRange, str(user.id))
+  driverIndex = findDriver(driversRange, str(user.id))
   if (driverIndex == -1):
     def checkMsg(msg):
       return msg.author.id == message.author.id and msg.channel.id == message.channel.id
@@ -426,9 +426,9 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
     def checkEmoji(payload):
       return payload.user_id == message.author.id and payload.channel_id == message.channel.id and (payload.emoji.name == "✅" or payload.emoji.name == "❌")
 
+    moBotMessage = await message.channel.send("This user has not had a time inputted yet. What is their gamertag in the screenshot?")
     looped = False
     while True:
-      moBotMessage = await message.channel.send("This user has not had a time inputted yet. What is their gamertag in the screenshot?")
       try:
         if (not looped):
           msg = await client.wait_for("message", timeout=30.0, check=checkMsg)
@@ -463,6 +463,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
 
       if (payload.emoji.name == "✅"):
         await moBotMessage.delete()
+        moBotMessage = await message.channel.send("**Submitting Lap Time**")
         break
       else:
         looped = True
@@ -481,10 +482,12 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   else:
     userGT = driversRange[driverIndex+1].value
 
-  divList = await updateDriverRoles(message)
+  await moBotMessage.edit(content="**Updating Driver Roles**")
+  divList = await updateDriverRoles(message, workbook)
+  await moBotMessage.delete()
   await message.channel.trigger_typing()
 
-  driverIndex = await findDriver(qualifyingRange, userGT)
+  driverIndex = findDriver(qualifyingRange, userGT)
   if (driverIndex == -1):
     for i in range(len(qualifyingRange)):
       if (qualifyingRange[i].value == ""):
@@ -551,7 +554,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
     division = int(i / 15) + 1
     name = qualiTable[i][0]
     lTime = qualiTable[i][2]
-    driverIndex = await findDriver(driversRange, name)
+    driverIndex = findDriver(driversRange, name)
     userID = driversRange[driverIndex - 1].value
 
     if (i == 0):
@@ -589,9 +592,9 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   value += "\n**Time:** " + floatTimeToStringTime(lapTime)
   value += "\n**Division:** " + str(int(position / 15) + 1)
   value += "\n**Position:** " + str(position)
-  value += "\n\n**Fastest Overall:**\n" + spaceChar + floatTimeToStringTime(fastestOverall[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestOverall[2]) + ") by <@" + driversRange[await findDriver(driversRange, fastestOverall[0])-1].value + ">"
-  value += "\n**Fastest In Division:**\n" + spaceChar + floatTimeToStringTime(fastestInDiv[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestInDiv[2]) + ") by <@" + driversRange[await findDriver(driversRange, fastestInDiv[0])-1].value + ">"
-  value += "\n**Driver Ahead:**\n" + spaceChar + floatTimeToStringTime(driverAhead[2]) + " (" + lapTimeDifferenceToString(lapTime - driverAhead[2]) + ") by <@" + driversRange[await findDriver(driversRange, driverAhead[0])-1].value + ">"
+  value += "\n\n**Fastest Overall:**\n" + spaceChar + floatTimeToStringTime(fastestOverall[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestOverall[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestOverall[0])-1].value + ">"
+  value += "\n**Fastest In Division:**\n" + spaceChar + floatTimeToStringTime(fastestInDiv[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestInDiv[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestInDiv[0])-1].value + ">"
+  value += "\n**Driver Ahead:**\n" + spaceChar + floatTimeToStringTime(driverAhead[2]) + " (" + lapTimeDifferenceToString(lapTime - driverAhead[2]) + ") by <@" + driversRange[findDriver(driversRange, driverAhead[0])-1].value + ">"
   embed.add_field(name="__New Qualifying Time__", value=value, inline=False)
   await message.channel.send(embed=embed)
 
@@ -685,12 +688,10 @@ async def updateDivList(message, divList):
     await divListChannel.send(embed=discord.Embed.from_dict(embed))
 # end updateDivList
 
-async def updateDriverRoles(message):
+async def updateDriverRoles(message, workbook):
   await message.channel.trigger_typing()
   divUpdateChannel = message.guild.get_channel(527319768911314944)
-  workbook = await openSpreadsheet()
   standingsSheet = workbook.worksheet("Standings")
-  driversSheet = workbook.worksheet("Drivers")
   drivers = standingsSheet.range("C3:E" + str(standingsSheet.row_count))
 
   divRoles = []
@@ -701,7 +702,7 @@ async def updateDriverRoles(message):
 
   divList = []
   for member in message.guild.members:
-    driverIndex = await findDriver(drivers, member.id)
+    driverIndex = findDriver(drivers, member.id)
     if (driverIndex >= 0):
       try:
         div = str(int(drivers[driverIndex-1].value[-1]))
@@ -744,8 +745,8 @@ async def removeDriver(message):
   upperDivs = standingsSheet.range("B7:C96")
   bottomDiv = standingsSheet.range("L7:L34")
   
-  driverFoundU = await findDriver(upperDivs, gt)
-  driverFoundB = await findDriver(bottomDiv, gt)  
+  driverFoundU = findDriver(upperDivs, gt)
+  driverFoundB = findDriver(bottomDiv, gt)  
   
   currentDiv = ""
   if (driverFoundU > -1):
@@ -1002,7 +1003,7 @@ async def reserveAvailable(message):
   reserve = message.content.split("available ")[1]
   reserves = weeklyInformationSheet.range("D4:D23")
   
-  driverFoundR = await findDriver(reserves, reserve)
+  driverFoundR = findDriver(reserves, reserve)
   if (driverFoundR > -1):
     await message.channel.send("```" + reserve + " is already available to reserve.```")
   else:
@@ -1028,8 +1029,8 @@ async def reserveFound(message):
   reserves = weeklyInformationSheet.range("D4:D23")
   drivers = weeklyInformationSheet.range("C4:C23")
   
-  driverFoundR = await findDriver(reserves, reserve)
-  driverFoundD = await findDriver(drivers, driver)
+  driverFoundR = findDriver(reserves, reserve)
+  driverFoundD = findDriver(drivers, driver)
   
   reserveUpdated = False
   if (driverFoundD > -1):
@@ -1044,7 +1045,7 @@ async def reserveFound(message):
       reserves[driverFoundD].value = reserve
       reserveUpdated = True
   else:
-    driverFoundD = await findDriver(standingsSheet.range("H7:H124"), driver)
+    driverFoundD = findDriver(standingsSheet.range("H7:H124"), driver)
     if (driverFoundD > -1):
       for i in range(len(drivers)):
         if (drivers[i].value == "" and reserves[i].value == ""):
@@ -1057,7 +1058,7 @@ async def reserveFound(message):
       
   if (reserveUpdated):
     divs = standingsSheet.range("G7:G124")
-    driverFoundD = await findDriver(standingsSheet.range("H7:H124"), driver)
+    driverFoundD = findDriver(standingsSheet.range("H7:H124"), driver)
     
     members = message.guild.members
     user = None
@@ -1086,7 +1087,7 @@ async def reserveNotNeeded(message, args):
   driver = await compileDriverFromArgs(args, 4, len(args))
   
   reservesNeeded = weeklyInformationSheet.range("C4:D23")
-  driverFoundR = await findDriver(reservesNeeded, driver)
+  driverFoundR = findDriver(reservesNeeded, driver)
   
   if (driverFoundR > -1):
     reserve = reservesNeeded[driverFoundR + 1].value
@@ -1128,11 +1129,11 @@ async def reserveNeeded(message, args):
   standingsSheet = workbook.worksheet("Standings")
   
   driver = await compileDriverFromArgs(args, 3, len(args))          
-  driverFoundS = await findDriver(standingsSheet.range("H7:H124"), driver)
+  driverFoundS = findDriver(standingsSheet.range("H7:H124"), driver)
   
   if (driverFoundS > -1): # driver was in standings
     reservesNeeded = weeklyInformationSheet.range("C4:C23")
-    driverFoundR = await findDriver(reservesNeeded, driver)
+    driverFoundR = findDriver(reservesNeeded, driver)
     if (driverFoundR == -1):
       for i in range(0, len(reservesNeeded)):
         if (reservesNeeded[i].value == "" or reservesNeeded[i].value == driver):
@@ -1959,7 +1960,7 @@ async def voting(message, payload, messageIds):
 async def submitVote(trackVotingSheet, votes, driver, driverId):
   alreadyVoted = False
   count = 0
-  driverFound = await findDriver(trackVotingSheet.range("D5:D122"), str(driverId))
+  driverFound = findDriver(trackVotingSheet.range("D5:D122"), str(driverId))
   votingTable = trackVotingSheet.range("C5:H122")
   if (driverFound > -1):
     for i in range(0, len(votingTable), 6):
@@ -2064,7 +2065,7 @@ async def getQualiPosition(message, driver, qualiTable, numCols):
 # end getQualiPosition
 ############# END OLD FUNCITONS #############
 
-async def findDriver(table, driver):
+def findDriver(table, driver):
   driverFound = -1
   for i in range(len(table)):
     if (table[i].value == str(driver)):
