@@ -401,7 +401,7 @@ async def openVotingChannel(message, member):
     await msg.delete()
 # end openVotingChannel
 
-async def waitForQualiTime(message, member, payload, qualifyingChannel,client):
+async def waitForQualiTime(message, member, payload, qualifyingChannel, client):
   def check(msg):
     return msg.author.id == member.id and message.channel.id == msg.channel.id
 
