@@ -418,6 +418,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   qualifyingRange = qualifyingSheet.range("G3:I" + str(qualifyingSheet.row_count))
 
   driverIndex = findDriver(driversRange, str(user.id))
+  moBotMessage = None
   if (driverIndex == -1):
     def checkMsg(msg):
       return msg.author.id == message.author.id and msg.channel.id == message.channel.id
@@ -463,7 +464,6 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
 
       if (payload.emoji.name == "✅"):
         await moBotMessage.delete()
-        moBotMessage = await message.channel.send("**Submitting Lap Time**")
         break
       else:
         looped = True
@@ -482,11 +482,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   else:
     userGT = driversRange[driverIndex+1].value
 
-  await moBotMessage.edit(content="**Updating Driver Roles**")
-  divList = await updateDriverRoles(message, workbook)
-  await moBotMessage.delete()
-  await message.channel.trigger_typing()
-
+  moBotMessage = await message.channel.send("**Submitting Lap Time**")
   driverIndex = findDriver(qualifyingRange, userGT)
   if (driverIndex == -1):
     for i in range(len(qualifyingRange)):
@@ -582,8 +578,10 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
 
     qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + name + " - " + floatTimeToStringTime(lTime)
 
-
   qualifyingSheet.update_cells(qualifyingRange, value_input_option="USER_ENTERED")
+  
+  await moBotMessage.edit(content="**Updating Driver Roles**")
+  divList = await updateDriverRoles(message, workbook)
 
   embed = discord.Embed(color=int("0xd1d1d1", 16))
   embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
@@ -596,6 +594,7 @@ async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, c
   value += "\n**Fastest In Division:**\n" + spaceChar + floatTimeToStringTime(fastestInDiv[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestInDiv[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestInDiv[0])-1].value + ">"
   value += "\n**Driver Ahead:**\n" + spaceChar + floatTimeToStringTime(driverAhead[2]) + " (" + lapTimeDifferenceToString(lapTime - driverAhead[2]) + ") by <@" + driversRange[findDriver(driversRange, driverAhead[0])-1].value + ">"
   embed.add_field(name="__New Qualifying Time__", value=value, inline=False)
+  await moBotMessage.delete()
   await message.channel.send(embed=embed)
 
   topMsgID = None
@@ -711,7 +710,7 @@ async def updateDriverRoles(message, workbook):
 
         newNick = "[D" + div + "] " + gamertag
         divList.append([int(div), gamertag])
-        if (newNick is not member.display_name):
+        if (newNick != member.display_name):
           await member.edit(nick=newNick)
 
         hasRole = False

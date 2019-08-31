@@ -805,7 +805,7 @@ def logActionToConsole(message, user, logType):
 
     if (logType == "message"): 
       logMessage += " : MS - "
-      if (str(message.author.id) is not moBot and message.author.bot):
+      if (str(message.author.id) != moBot and message.author.bot):
         return
     elif (logType == "reactionAdd"):
       logMessage += " : RA - "

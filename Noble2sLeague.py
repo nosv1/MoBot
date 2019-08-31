@@ -480,7 +480,7 @@ async def tCaptain(message, tCommandLog):
   if (not captainExists):
     moBotMessages.append(await message.channel.send("```You are not a captain of a team. Only captains can assign a new captain.```"))
   elif (not playerExists):
-    moBotMessages.append(await message.channel.send("```The player you are trying to assign captain is not on your team. Add him/her to your team, then try again.```"))
+    moBotMessages.append(await message.channel.send("```The player you are trying to assign captain != on your team. Add him/her to your team, then try again.```"))
 
   await asyncio.sleep(5)
   await deleteMoBotMessages(moBotMessages)

@@ -122,7 +122,7 @@ async def openTicket(message, user, fromReaction, client):
     await message.channel.send("**Cannot Create Ticket**\nTry again when one of your current tickets has been resolved.")
   else:
     ticketChannel = await createTicketChannel(message, ticketLog, ticketCategory, user, fromReaction, client)
-    if (ticketChannel is not None):
+    if (ticketChannel != None):
       msg = await message.channel.send("**Ticket Channel Created**\n<#" + str(ticketChannel.id) + ">")
       await asyncio.sleep(5)
       await msg.delete()

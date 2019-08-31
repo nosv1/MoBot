@@ -91,12 +91,12 @@ async def sendMessageEvent(event, client):
     embed = sourceMessage.embeds[0]
   except IndexError:
     embed = None
-  if (content is not ""):
-    if (embed is not None):
+  if (content != ""):
+    if (embed != None):
       await destinationChannel.send(content=content, embed=embed)
     else:
       await destinationChannel.send(content=content)
-  elif (embed is not None):
+  elif (embed != None):
     await destinationChannel.send(embed=embed)
 # end sendMessageEvent
 
@@ -124,7 +124,7 @@ async def removeCompletedEvent(event):
 async def getScheduledEvents(eventSheet, eventRange):
   events = []
   for i in range(0, len(eventRange), numCols):
-    if (eventRange[i].value is not ""):
+    if (eventRange[i].value != ""):
       event = Event(eventSheet, eventRange, int(eventRange[i].value), int(eventRange[i+1].value), eventRange[i+2].value, int(eventRange[i+3].value), int(eventRange[i+4].value), eventRange[i+5].value, eventRange[i+6].value, int(eventRange[i+7].value), int(eventRange[i+8].value), int(eventRange[i+9].value), int(eventRange[i+10].value), int(eventRange[i+11].value), int(eventRange[i+12].value), eventRange[i+13].value)
       events.append(event)
     else:
