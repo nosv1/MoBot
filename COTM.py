@@ -39,7 +39,7 @@ async def main(args, message, client):
 
   if (args[0][-19:-1] == moBot):
     if (args[1] == "quali" and authorPerms.administrator):
-      await submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, client)
+      await submitQualiTime(message, qualifyingChannel, None, client)
     '''  
     elif (args[1] == "quali" and args[2] == "start"):
       await message.delete()
@@ -132,23 +132,27 @@ async def main(args, message, client):
 # end main
 
 async def mainReactionAdd(message, payload, client):
-  user = message.guild.get_member(payload.user_id)
+  member = message.guild.get_member(payload.user_id)
+  qualifyingChannel = message.guild.get_channel(607693838642970819)
   qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
 
-  if (user.name != "MoBot"):
+  if (member.name != "MoBot"):
     if (message.id == 614836845267910685): # message id for "Do you need to submit quali time"
       if (payload.emoji.name == "✅"):
-        await addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, client)
-        await message.remove_reaction(payload.emoji.name, user)
+        await addUserToQualiScreenshots(message, member, qualiScreenshotsChannel, client)
+        await message.remove_reaction(payload.emoji.name, member)
     elif (message.id == 609588876272730112): # message id for message "Do you need to vote?"
       if (payload.emoji.name == "✅"):
-        await openVotingChannel(message, user)
-        await message.remove_reaction(payload.emoji.name, user)
+        await openVotingChannel(message, member)
+        await message.remove_reaction(payload.emoji.name, member)
     elif ("are you ready to vote" in message.content):
       if (payload.emoji.name == "✅"):
-        await votingProcess(message, user, client)
+        await votingProcess(message, member, client)
       elif (payload.emoji.name == "🔄"):
         await resetVotes(message)
+    elif (message.channel.id == qualiScreenshotsChannel.id or message.channel.id == 527168346404159488):
+      if (message.channel.permissions_for(member).administrator and payload.emoji.name == "👍"):
+        await waitForQualiTime(message, member, payload, qualifyingChannel, client)
 
     '''if (message.channel.id == 528303438132543499): # voting channel
       votingMessagesIds = [528307697133682698, 528307713403256852, 528307733456355331, 528307794936463374]
@@ -397,19 +401,38 @@ async def openVotingChannel(message, member):
     await msg.delete()
 # end openVotingChannel
 
-async def submitQualiTime(message, qualiScreenshotsChannel, qualifyingChannel, client):  
+async def waitForQualiTime(message, member, payload, qualifyingChannel,client):
+  def check(msg):
+    return msg.author.id == member.id and message.channel.id == msg.channel.id
+
+  reactions = message.reactions
+  for reaction in reactions:
+    if (reaction.emoji == payload.emoji.name):
+      if (reaction.count == 1):
+        moBotMessage = await message.channel.send(member.mention + ", please type the time from the screenshot that you added the reaction to.")
+        msg = await client.wait_for("message", timeout=60.0, check=check)
+        await submitQualiTime(message, qualifyingChannel, msg.content, client)
+      break
+# end waitForQualiTime
+
+async def submitQualiTime(message, qualifyingChannel, lapTime, client):  
   await message.channel.trigger_typing()
   
-  try:
-    userID = int(message.content.split("@")[-1].strip().split(">")[0])
-  except ValueError:
-    userID = int(message.content.split("@")[-1].strip().split(">")[0][1:])
-  if (userID == int(moBot)):
-    await message.channel.send("**Driver Not Found**\nEdit your message to follow this command: `@MoBot#0697 quali @User x.xx.xxx`")
-    return
+  if (lapTime is None):
+    try:
+      userID = int(message.content.split("@")[-1].strip().split(">")[0])
+    except ValueError:
+      userID = int(message.content.split("@")[-1].strip().split(">")[0][1:])
+    if (userID == int(moBot)):
+      await message.channel.send("**Driver Not Found**\nEdit your message to follow this command: `@MoBot#0697 quali @User x.xx.xxx`")
+      return
 
-  user = message.guild.get_member(userID)
-  lapTime = message.content.split(str(user.id))[1].strip().split(" ")[1].strip().replace(":", ".")
+    user = message.guild.get_member(userID)
+    lapTime = message.content.split(str(user.id))[1].strip().split(" ")[1].strip().replace(":", ".")
+  else:
+    user = message.author
+    lapTime = lapTime.replace(":", ".")
+    await message.channel.send(user.mention + ", your lap has been submitted.")
 
   workbook = await openSpreadsheet()
   driversSheet = workbook.worksheet("Drivers")
