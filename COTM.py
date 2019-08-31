@@ -412,6 +412,7 @@ async def waitForQualiTime(message, member, payload, qualifyingChannel,client):
         moBotMessage = await message.channel.send(member.mention + ", please type the time from the screenshot that you added the reaction to.")
         msg = await client.wait_for("message", timeout=60.0, check=check)
         await submitQualiTime(message, qualifyingChannel, msg.content, client)
+        await moBotMessage.delete()
       break
 # end waitForQualiTime
 
