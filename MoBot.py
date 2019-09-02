@@ -41,6 +41,7 @@ import Reservations
 import MoBotTimeZones
 import RLRanks
 import AdminFunctions
+import EventScheduler
 
 import Hangman
 
@@ -208,6 +209,8 @@ async def on_message(message):
         await MoBotTimeZones.main(args, message, client)
       elif (args[1] == "rlrank"):
         await RLRanks.main(args, message, client)
+      elif (args[1] == "remindme"):
+        await EventScheduler.setReminder(message)
 
       ## general use server commands
       elif (args[1] == "say" and permissions["manageMessagePerms"]):

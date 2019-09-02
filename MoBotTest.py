@@ -255,6 +255,8 @@ async def on_message(message):
         await RLRanks.main(args, message, client)
       elif (args[1] == "admin"):
         await AdminFunctions.main(args, message, client)
+      elif (args[1] == "remindme"):
+        await EventScheduler.setReminder(message)
         
   elif ("!" in args[0]):
     await GTACCHub.main(args, message, client)
@@ -321,9 +323,9 @@ async def on_raw_reaction_add(payload):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
     else:
-      if (message.guild.id == 527156310366486529 or "are you ready to vote" in message.content.lower() or "do you need to vote" in message.content.lower()): # cotm
-        await COTM.mainReactionAdd(message, payload, client)
-      elif ("open a ticket" in message.content.lower()):
+      #if (message.guild.id == 527156310366486529 or "are you ready to vote" in message.content.lower() or "do you need to vote" in message.content.lower()): # cotm
+        #await COTM.mainReactionAdd(message, payload, client)
+      if ("open a ticket" in message.content.lower()):
         if (payload.emoji.name == "✅"):
           await ticketManager.openTicket(message, member, True, client)
 

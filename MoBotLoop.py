@@ -41,6 +41,9 @@ donations = {
   }
 }
 
+scheduledEvents = []
+reminders = []
+
 started = False
 # when bot is first online
 @client.event
@@ -62,8 +65,12 @@ async def on_ready():
 
 async def main(client):
   try:
-    eventSheet, eventRange = await EventScheduler.getEventRange()
+    global scheduledEvents, reminders
+    workbook = await EventScheduler.openSpreadsheet()
+    eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
     scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
+    remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
+    reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
     print ("Scheduled Events Received")
     
     workbook = await openGuildClocksSpreadsheet()
@@ -81,6 +88,7 @@ async def main(client):
   while (True):
     try:
       currentTime = datetime.now() + timedelta(seconds=5)
+      currentUTC = datetime.utcnow()
       second = currentTime.second
       if (lastSecond == second):
         await asyncio.sleep(1)
@@ -100,8 +108,11 @@ async def main(client):
         if (second == 0):
           if (currentTime.minute % 5 == 0): # check for new scheduled messages every 5 minutes
             try:
-              eventSheet, eventRange = await EventScheduler.getEventRange()
+              workbook = await EventScheduler.openSpreadsheet()
+              eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
               scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
+              remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
+              reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
             except gspread.exceptions.APIError:
               print ("\nCould Not Get Scheduled Events\n")
             
@@ -109,6 +120,10 @@ async def main(client):
             eventTime = await EventScheduler.getEventTime(event)
             if (eventTime < currentTime):
               scheduledEvents = await EventScheduler.performScheduledEvent(event, client)
+          for reminder in reminders:
+            reminderTime = reminder.date
+            if (reminderTime < currentUTC):
+              reminders = await EventScheduler.sendReminder(reminder, client)
 
           try:
             workbook = await openGuildClocksSpreadsheet()
