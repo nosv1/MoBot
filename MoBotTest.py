@@ -11,6 +11,7 @@ from pytz import timezone
 import gspread 
 from oauth2client.service_account import ServiceAccountCredentials
 import random
+import traceback
 
 import SecretStuff
 
@@ -651,8 +652,23 @@ async def moBotEmbed(message, args, isEdit):
   isCollection = False
   isReservation = False
   if (isEdit):
+    print ('---YES---')
     try:
-      msg = await message.channel.fetch_message(int(args[3]))
+      msg = None
+      try:
+        msg = await message.channel.fetch_message(int(args[3]))
+      except discord.errors.NotFound:
+        for channel in message.guild.channels:
+          try:
+            msg = await channel.fetch_message(int(args[3]))
+            break
+          except discord.errors.NotFound:
+            pass
+          except AttributeError:
+            pass
+      if (msg is None):
+        await message.channel.send("**Message ID Not Found**")
+        return
       mc = mc.replace(args[3] + " ", "")
       embed = msg.embeds[0]
       color = embed.color
@@ -704,7 +720,9 @@ async def moBotEmbed(message, args, isEdit):
 
       embed = discord.Embed().from_dict(embed)
     except:
+      print ("Error -- " + str(traceback.format_exc()))
       await message.channel.send("Looks like something wasn't quite right... Either the MessageID you typed isn't correct, or the MessageID of the message doesn't have an embed already. You also need to be in the same channel as the embed. Use `@MoBot#0697 embed help` for further guidence.")
+      return
 
   # get color
   try:
