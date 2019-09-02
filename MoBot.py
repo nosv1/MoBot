@@ -842,7 +842,18 @@ async def moBotEmbed(message, args, isEdit):
   isReservation = False
   if (isEdit):
     try:
-      msg = await message.channel.fetch_message(int(args[3]))
+      msg = None
+      try:
+        msg = await message.channel.fetch_message(int(args[3]))
+      except discord.errors.NotFound:
+        async for channel in message.guild.channels:
+          try:
+            msg = await channel.fetch_message(int(args[3]))
+          except discord.errors.NotFound:
+            pass
+      if (msg is None):
+        await message.channel.send("**Message ID Not Found**")
+        return
       mc = mc.replace(args[3] + " ", "")
       embed = msg.embeds[0]
       color = embed.color
