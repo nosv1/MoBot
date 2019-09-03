@@ -416,6 +416,30 @@ async def waitForQualiTime(message, member, payload, qualifyingChannel, client):
       break
 # end waitForQualiTime
 
+async def getMissingQualifiers(driversRange, guild):
+  members = guild.members
+  driverIDs = []
+  missingDrivers = []
+  for i in range(len(driversRange)):
+    if (driversRange[i].value != ""):
+      try:
+        driverIDs.append(int(driversRange[i].value))
+      except ValueError:
+        pass
+    else:
+      break
+  for member in members:
+    isCOTM = False
+    for role in member.roles:
+      if (role.name == "COTM"):
+        isCOTM = True
+    if (isCOTM):
+      if (member.id not in driverIDs):
+        missingDrivers.append(member.display_name)
+  missingDrivers.sort(key=lambda x: x[0])
+  return missingDrivers
+# end getMissingQualifiers
+
 async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, client):  
   await message.channel.trigger_typing()
   
@@ -619,6 +643,16 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
       qualiStandingEmbeds.append(embed)
 
     qualiStandingEmbeds[len(qualiStandingEmbeds)-1]["fields"][0]["value"] += "\n" + str(i+1) + ". " + name + " - " + floatTimeToStringTime(lTime)
+    
+  embed = discord.Embed(color=int("0xd1d1d1", 16))
+  missingDrivers = await getMissingQualifiers(driversRange, message.guild)
+  value = ""
+  for driver in missingDrivers:
+    value += "\n" + driver
+  embed.add_field(name="Missing Qualifiers", value=value, inline=False)
+  embed.set_footer(text="Missing Drivers: " + str(len(missingDrivers)))
+  embed = embed.to_dict()
+  qualiStandingEmbeds.append(embed)
 
   qualifyingSheet.update_cells(qualifyingRange, value_input_option="USER_ENTERED")
   
@@ -1420,45 +1454,6 @@ async def updateStartOrders(message):
   for i in moBotMessages:
     await i.delete()
 # end getStartOrders
-
-async def getMissingLaps(message):
-  await message.delete()
-  missingDrivers = []
-  members = message.guild.members
-  workbook = await openSpreadsheet()
-  qualifying = workbook.worksheet("Qualifying")
-  drivers = qualifying.range("C3:C120")
-  driverNames = []
-  for i in range(0, len(drivers)):
-    if (drivers[i].value != ""):
-      driverNames.append(drivers[i].value)
-      
-  staffCount = 0
-  outsiderCount = 0
-
-  for member in members:    
-    roles = []
-    for role in member.roles:
-      roles.append(role.name.lower())
-      
-    memberName = member.nick
-    if (memberName == None):
-      memberName = member.name
-    if (not (member.bot) and memberName not in driverNames):
-       if ("staff" not in roles and "peeker" not in roles):
-          missingDrivers.append(member)
-       if ("peeker" in roles):
-        outsiderCount += 1
-       elif ("staff" in roles):
-        staffCount += 1
-      
-      
-  reply = ""
-  for member in missingDrivers:
-    reply += "<@" + str(member.id) + "> "
-  await message.channel.send(reply)
-  await message.channel.send("Laps Missing: " + str(len(missingDrivers)) + "\nLaps Inputted: " + str(len(driverNames)) + "\nStaff Excluded: " + str(staffCount) + "\nPeeker Excluded: " + str(outsiderCount))
-# end getMissingLaps
   
 async def getNonVoters(message):
   await message.delete()
