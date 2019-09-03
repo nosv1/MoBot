@@ -15,7 +15,7 @@ import Collections
 moBot = "449247895858970624"
 ssIDs = {
   "2s League [XB1/PC]" : "1qzDGDOzgaqR7Mmsda-tE1tYn71oU52Gt1okEHqScEnU",
-  "Noble Leagues Off-Season" : "1yt94GS9TcS70BBkbnawlO3zbIMu7dhq6zNPrTmIcBhk",
+  "Noble Leagues Off-Season" : "1M8wij5yJXNplkRdrhIj-sMqfHBC8KmKHlFqyOCMaARw",
   "Noble Leagues Qualifiers" : "1Ut8QSZ48uB-H1wpE3-NxpPwBKLybkK-uo6Jb5LOSIxY"
 }
 
