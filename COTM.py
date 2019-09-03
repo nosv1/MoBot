@@ -39,7 +39,7 @@ async def main(args, message, client):
 
   if (args[0][-19:-1] == moBot):
     if (args[1] == "quali" and authorPerms.administrator):
-      await submitQualiTime(message, qualifyingChannel, None, client)
+      await submitQualiTime(message, qualifyingChannel, None, None, client)
     '''  
     elif (args[1] == "quali" and args[2] == "start"):
       await message.delete()
@@ -411,12 +411,12 @@ async def waitForQualiTime(message, member, payload, qualifyingChannel, client):
       if (reaction.count == 1):
         moBotMessage = await message.channel.send(member.mention + ", please type the time from the screenshot that you added the reaction to.")
         msg = await client.wait_for("message", timeout=60.0, check=check)
-        await submitQualiTime(message, qualifyingChannel, msg.content, client)
+        await submitQualiTime(message, qualifyingChannel, msg.content, payload, client)
         await moBotMessage.delete()
       break
 # end waitForQualiTime
 
-async def submitQualiTime(message, qualifyingChannel, lapTime, client):  
+async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, client):  
   await message.channel.trigger_typing()
   
   if (lapTime is None):
@@ -445,11 +445,29 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, client):
   moBotMessage = None
   if (driverIndex == -1):
     def checkMsg(msg):
-      return msg.author.id == message.author.id and msg.channel.id == message.channel.id
+      if (msg.channel.id == message.channel.id):
+        if (lapTime is None):
+          return msg.author.id == message.author.id
+        else:
+          return msg.author.id == reactionPayload.user_id
+      else:
+        return False
     def checkMsgEdit(payload):
-      return payload.author_id == message.author.id and payload.channel_id == message.channel.id
+      if (payload.channel_id == message.channel.id):
+        if (lapTime is None):
+          return msg.author.id == message.author.id
+        else:
+          return payload.author_id == reactionPayload.user_id
+      else:
+        return False
     def checkEmoji(payload):
-      return payload.user_id == message.author.id and payload.channel_id == message.channel.id and (payload.emoji.name == "✅" or payload.emoji.name == "❌")
+      if (payload.channel_id == message.channel.id and (payload.emoji.name == "✅" or payload.emoji.name == "❌")):
+        if (lapTime is None):
+          return payload.author_id == message.author.id
+        else:
+          return payload.author_id == reactionPayload.user_id
+      else:
+        return False
 
     moBotMessage = await message.channel.send("This user has not had a time inputted yet. What is their gamertag in the screenshot?")
     looped = False
@@ -458,7 +476,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, client):
         if (not looped):
           msg = await client.wait_for("message", timeout=30.0, check=checkMsg)
         else:
-          payload = await client.wait_for("raw_message_edit", timeout=30.0, check=checkMsg)
+          payload = await client.wait_for("raw_message_edit", timeout=30.0, check=checkMsgEdit)
           msg = await message.channel.fetch_message(payload.message_id)
         await moBotMessage.delete()
       except asyncio.TimeoutError:
