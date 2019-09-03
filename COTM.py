@@ -457,15 +457,15 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
         if (reactionPayload is None):
           return msg.author.id == message.author.id
         else:
-          return payload.author_id == reactionPayload.user_id
+          return payload.user_id == reactionPayload.user_id
       else:
         return False
     def checkEmoji(payload):
       if (payload.channel_id == message.channel.id and (payload.emoji.name == "✅" or payload.emoji.name == "❌")):
         if (reactionPayload is None):
-          return payload.author_id == message.author.id
+          return payload.user_id == message.author.id
         else:
-          return payload.author_id == reactionPayload.user_id
+          return payload.user_id == reactionPayload.user_id
       else:
         return False
 
