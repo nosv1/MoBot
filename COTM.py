@@ -446,7 +446,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   if (driverIndex == -1):
     def checkMsg(msg):
       if (msg.channel.id == message.channel.id):
-        if (lapTime is None):
+        if (reactionPayload is None):
           return msg.author.id == message.author.id
         else:
           return msg.author.id == reactionPayload.user_id
@@ -454,7 +454,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
         return False
     def checkMsgEdit(payload):
       if (payload.channel_id == message.channel.id):
-        if (lapTime is None):
+        if (reactionPayload is None):
           return msg.author.id == message.author.id
         else:
           return payload.author_id == reactionPayload.user_id
@@ -462,7 +462,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
         return False
     def checkEmoji(payload):
       if (payload.channel_id == message.channel.id and (payload.emoji.name == "✅" or payload.emoji.name == "❌")):
-        if (lapTime is None):
+        if (reactionPayload is None):
           return payload.author_id == message.author.id
         else:
           return payload.author_id == reactionPayload.user_id
