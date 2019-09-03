@@ -650,7 +650,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   for driver in missingDrivers:
     value += "\n" + driver
   embed.add_field(name="Missing Qualifiers", value=value, inline=False)
-  embed.set_footer(text="Missing Drivers: " + str(len(missingDrivers)))
+  embed.set_footer(text="Missing Qualifiers: " + str(len(missingDrivers)))
   embed = embed.to_dict()
   qualiStandingEmbeds.append(embed)
 
