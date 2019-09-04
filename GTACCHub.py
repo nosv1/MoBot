@@ -13,6 +13,8 @@ spaceChar = "⠀"
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
 
+catalogueLink = "https://bit.ly/cchubCatalogue"
+
 async def main(args, message, client):
   
   catalogue = ["catalogue", "catalog", "catelogue", "catelog", "catalogur", "catlog", "cataloge", "catalgoue"]
@@ -132,7 +134,7 @@ async def getJob(message, args):
       if (jobName == "x"):
         value += "Here is a random list of jobs due to the 'job name' being 'x'.\n\n"
       else:
-        value += "The job you inputted was not found. Here are some close matches.\n\n"
+        value += "The job you inputted was not found; here are some close matches.\n"
       returnAmount = int(((.015 * len(potentialJobs)) + 1) / 2)
       if (returnAmount < 5):
         returnAmount = 5
@@ -141,16 +143,16 @@ async def getJob(message, args):
       for i in range(0, returnAmount):
         for j in range(0, len(jobs)):
           if (jobs[j].value == potentialJobs[i][0]):
-            value += "**" + jobs[j].value + "**\n"
+            value += "\n__**[" + jobs[j].value + "](" + catalogueLink + ")**__"
             try:
-              value += "<" + platSheet.cell(jobs[j].row, jobs[j].col, value_render_option='FORMULA').value.split('"')[1] + ">\n"
+              value.replace(catalogueLink, platSheet.cell(jobs[j].row, jobs[j].col, value_render_option='FORMULA').value.split('"')[1])
             except IndexError:
               print (jobs[j])
+              value += " - *Link Not Available*"
             break
-
-      value += "\n*If the track you have searched for is not appearing, it is most likely not currently on the Catalogue. Please DM a member of the admin team who can assist you and hopefully you will have the track added shortly! (You can request your own tracks or anyone else's)*"
         
   embed.add_field(name="Result(s):", value=value)
+  embed.set_footer(text="If the track you have searched for is not appearing, it is most likely not currently on the Catalogue. Please DM a member of the admin team who can assist you and hopefully you will have the track added shortly! (You can request your own tracks or anyone else's)")
 
   await message.channel.send(embed=embed)
 
