@@ -40,6 +40,8 @@ async def main(args, message, client):
   if (args[0][-19:-1] == moBot):
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
+    if ("missingqualifiers" in args[1].lower()):
+      await tagMissingQualifiers(message)
     '''  
     elif (args[1] == "quali" and args[2] == "start"):
       await message.delete()
@@ -187,6 +189,14 @@ async def mainReactionAdd(message, payload, client):
 async def mainReactionRemove(message, payload, client):
   channelName = message.channel.name
 # end mainReactionRemove
+
+async def tagMissingQualifiers(message):
+  driversRange, driverSheet = await getDriversRange(await openSpreadsheet())
+  missingQualifiers = await getMissingQualifiers(driversRange, message.guild)
+  reply = ""
+  for member in missingQualifiers:
+    reply += member.mention
+  print (reply)
 
 async def resetVotes(message):
   await message.clear_reactions()
@@ -435,8 +445,7 @@ async def getMissingQualifiers(driversRange, guild):
         isCOTM = True
     if (isCOTM):
       if (member.id not in driverIDs):
-        missingDrivers.append(member.display_name)
-  missingDrivers.sort(key=lambda x: x[0])
+        missingDrivers.append(member)
   return missingDrivers
 # end getMissingQualifiers
 
@@ -460,8 +469,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
     await message.channel.send(user.mention + ", your lap has been submitted.")
 
   workbook = await openSpreadsheet()
-  driversSheet = workbook.worksheet("Drivers")
-  driversRange = driversSheet.range("B3:C" + str(driversSheet.row_count))
+  driversRange, driversSheet = await getDriversRange(workbook)
   qualifyingSheet = workbook.worksheet("Qualifying")
   qualifyingRange = qualifyingSheet.range("G3:I" + str(qualifyingSheet.row_count))
 
@@ -646,9 +654,12 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
     
   embed = discord.Embed(color=int("0xd1d1d1", 16))
   missingDrivers = await getMissingQualifiers(driversRange, message.guild)
+  for i in range(len(missingDrivers)):
+    missingDrivers[i] = missingDrivers[i].display_name
+  missingDrivers.sort(key=lambda x: x[0])
   value = ""
-  for driver in missingDrivers:
-    value += "\n" + driver
+  for member in missingDrivers:
+    value += "\n" + member.display_name
   embed.add_field(name="Missing Qualifiers", value=value, inline=False)
   embed.set_footer(text="Missing Qualifiers: " + str(len(missingDrivers)))
   embed = embed.to_dict()
@@ -664,7 +675,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   value = ""
   value += "**Driver:** <@" + str(userEntry[3]) + ">"
   value += "\n**Time:** " + floatTimeToStringTime(lapTime)
-  value += "\n**Division:** " + str(int(position / 15) + 1)
+  value += "\n**Division:** " + str(int((position - 1) / 15) + 1)
   value += "\n**Position:** " + str(position)
   value += "\n\n**Fastest Overall:**\n" + spaceChar + floatTimeToStringTime(fastestOverall[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestOverall[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestOverall[0])-1].value + ">"
   value += "\n**Fastest In Division:**\n" + spaceChar + floatTimeToStringTime(fastestInDiv[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestInDiv[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestInDiv[0])-1].value + ">"
@@ -677,7 +688,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   for embed in qualiStandingEmbeds:
     embed = discord.Embed.from_dict(embed)
     msg = await qualifyingChannel.send(embed=embed)
-    topMsgID = msg.id if (topMsgID == None) else topMsgID
+    topMsgID = msg.id if (topMsgID is None) else topMsgID
   bottomMsgID = msg.id
   topMsg = await qualifyingChannel.fetch_message(topMsgID)
   topMsgEmbed = topMsg.embeds[0].to_dict()
@@ -804,6 +815,12 @@ async def updateDriverRoles(message, workbook):
         print (str(traceback.format_exc()))
   return divList
 # end updateDriverRoles
+
+async def getDriversRange(workbook):
+  driversSheet = workbook.worksheet("Drivers")
+  driversRange = driversSheet.range("B3:C" + str(driversSheet.row_count))
+  return driversRange, driversSheet
+# end getDriversRange
 
 ############# OLD FUNCITONS #############
 async def removeDriver(message):

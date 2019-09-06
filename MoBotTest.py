@@ -114,7 +114,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.updateDivList(message, await COTM.updateDriverRoles(message))
+        await COTM.tagMissingQualifiers(message)
         print ("done")
 
       elif (args[1] == "countdown"):
