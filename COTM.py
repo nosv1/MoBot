@@ -659,7 +659,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   missingDrivers.sort(key=lambda x: x[0])
   value = ""
   for member in missingDrivers:
-    value += "\n" + member.display_name
+    value += "\n" + member
   embed.add_field(name="Missing Qualifiers", value=value, inline=False)
   embed.set_footer(text="Missing Qualifiers: " + str(len(missingDrivers)))
   embed = embed.to_dict()
