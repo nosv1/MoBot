@@ -125,7 +125,7 @@ async def mainReactionAdd(message, payload, client, member):
               await pickCaptains(message, host, embed)
             else:
               await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-              msg = await message.channel.send("<@" + str(member.id) + ">, you cannot start a match with an odd number of players.")
+              msg = await message.channel.send("" + member.mention + ", you cannot start a match with an odd number of players.")
               await asyncio.sleep(5)
               await msg.delete()
         elif (payload.emoji.name == "❌"):
@@ -252,7 +252,7 @@ async def playerJoin(message, host, member, embed):
 
   playerPool = embed["fields"][-1]["value"] + "\n"
   if ("@" not in playerPool): # if no players have joined yet
-    playerPool = "<@" + str(member.id) + ">\n"
+    playerPool = "" + member.mention + "\n"
     embed["fields"][-1]["value"] = playerPool
   elif (str(member.id) not in playerPool):
     players = playerPool.split("\n")
@@ -260,7 +260,7 @@ async def playerJoin(message, host, member, embed):
     playerPool = ""
     for player in players:
       playerPool += player + "\n"
-    playerPool += "<@" + str(member.id) + ">\n"
+    playerPool += "" + member.mention + "\n"
     embed["fields"][-1]["value"] = playerPool
 
   if (len(playerPool.split("\n")) - 1 == lobbySize):

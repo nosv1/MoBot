@@ -81,7 +81,7 @@ async def addRemoveNameToList(message, payload, client):
               for line in lines:
                 if (addRemove == "add"):
                   if (line == spaceChar):
-                    line = spaceChar + "- " + "<@" + str(member.id) + ">\n"
+                    line = spaceChar + "- " + "" + member.mention + "\n"
                     newValue += line
                   elif (str(member.id) not in line):
                     newValue += line + "\n"

@@ -216,7 +216,7 @@ async def votingProcess(message, member, client):
   # get vote options
   voteOptionsMsg = await getCurrentVotersVoteOptionsMsg(message)
   voteOptionsEmbed = voteOptionsMsg.embeds[0].to_dict()
-  voteOptions = voteOptionsEmbed["fields"][0]["value"].split("\n")
+  voteOptions = voteOptionsEmbed["fields"][1]["value"].split("\n")
   del voteOptions[-1]
 
   voteOptionsDict = {}
@@ -320,7 +320,7 @@ async def closeVotingChannel(message, member, totalVoters, log):
   totalVotersEmojiNumbers = await RandomFunctions.numberToEmojiNumbers(totalVoters)
   currentVotersMsg = await getCurrentVotersVoteOptionsMsg(message)
   currentVotersEmbed = currentVotersMsg.embeds[0].to_dict()
-  currentVoters = (currentVotersEmbed["fields"][1]["value"] + "\n").split("\n")
+  currentVoters = (currentVotersEmbed["fields"][2]["value"] + "\n").split("\n")
   value = ""
   for voter in currentVoters:
     if (str(member.id) not in voter and "@" in voter):
@@ -328,8 +328,8 @@ async def closeVotingChannel(message, member, totalVoters, log):
   if (value.split(spaceChar)[0].strip() == ""):
     value = "None" 
   value += "\n" + spaceChar
-  currentVotersEmbed["fields"][1]["value"] = value
-  currentVotersEmbed["fields"][2]["value"] = totalVotersEmojiNumbers + "\n" + spaceChar
+  currentVotersEmbed["fields"][2]["value"] = value
+  currentVotersEmbed["fields"][3]["value"] = totalVotersEmojiNumbers + "\n" + spaceChar
   await currentVotersMsg.edit(embed=discord.Embed.from_dict(currentVotersEmbed))
 
   embed = discord.Embed(color=int("0xd1d1d1", 16))
@@ -368,7 +368,7 @@ async def openVotingChannel(message, member):
   # get current voters
   currentVotersMsg = await getCurrentVotersVoteOptionsMsg(message)
   currentVotersEmbed = currentVotersMsg.embeds[0].to_dict()
-  currentVoters = currentVotersEmbed["fields"][1]["value"]
+  currentVoters = currentVotersEmbed["fields"][2]["value"]
 
   # get past voters
   workbook = await openSpreadsheet()
@@ -381,9 +381,9 @@ async def openVotingChannel(message, member):
     votingChannel = await message.guild.create_text_channel(name="voting " + member.display_name)
 
     # udpate current voters
-    currentVotersEmbed["fields"][1]["value"] = "" if ("None" in currentVoters) else currentVoters.split(spaceChar)[0].strip() 
-    currentVotersEmbed["fields"][1]["value"] += "\n<@" + str(member.id) + "> - <#" + str(votingChannel.id) + ">"
-    currentVotersEmbed["fields"][1]["value"] += "\n" + spaceChar
+    currentVotersEmbed["fields"][2]["value"] = "" if ("None" in currentVoters) else currentVoters.split(spaceChar)[0].strip() 
+    currentVotersEmbed["fields"][2]["value"] += "\n" + member.mention + " - <#" + str(votingChannel.id) + ">"
+    currentVotersEmbed["fields"][2]["value"] += "\n" + spaceChar
     await currentVotersMsg.edit(embed=discord.Embed.from_dict(currentVotersEmbed))
 
     # set permissions
@@ -397,16 +397,16 @@ async def openVotingChannel(message, member):
     # get vote options
     voteOptionsMsg = await getCurrentVotersVoteOptionsMsg(message)
     voteOptionsEmbed = voteOptionsMsg.embeds[0].to_dict()
-    voteOptions = voteOptionsEmbed["fields"][0]["value"].split("\n")
+    voteOptions = voteOptionsEmbed["fields"][1]["value"].split("\n")
     del voteOptions[-1]
 
     await votingChannel.send("This season there's been a change to how the voting works. As you can see there are " + str(len(voteOptions)) + " options to vote from. You have " + str(len(voteOptions)) + " votes to 'spend'. You can use them all on one option, or spread them out.")
 
-    moBotMessage = await votingChannel.send("**<@" + str(member.id) + ">, are you ready to vote?**")
+    moBotMessage = await votingChannel.send("**" + member.mention + ", are you ready to vote?**")
     await moBotMessage.add_reaction("✅")
 
   else:
-    msg = await message.channel.send("**Cannot open a voting channel.**\n**<@" + str(member.id) + ">, you either already have a voting channel open, or you have already voted.**")
+    msg = await message.channel.send("**Cannot open a voting channel.**\n**" + member.mention + ", you either already have a voting channel open, or you have already voted.**")
     await asyncio.sleep(10)
     await msg.delete()
 # end openVotingChannel
@@ -806,11 +806,11 @@ async def updateDriverRoles(message, workbook):
             hasRole = True
           elif ("division" in mRole.name.lower() and "reserve" not in mRole.name.lower()):
             await member.remove_roles(mRole)
-            await divUpdateChannel.send("<@" + str(member.id) + "> has been removed from " + mRole.name + ".")
+            await divUpdateChannel.send("" + member.mention + " has been removed from " + mRole.name + ".")
 
         if (not hasRole):
           await member.add_roles(role)
-          await divUpdateChannel.send("<@" + str(member.id) + "> has been added to " + role.name + ".")  
+          await divUpdateChannel.send("" + member.mention + " has been added to " + role.name + ".")  
       except ValueError:
         print (str(traceback.format_exc()))
   return divList
@@ -1495,7 +1495,7 @@ async def getNonVoters(message):
       nonVoters.append(member)
   reply = ""
   for member in nonVoters:
-    reply += "<@" + str(member.id) + "> "
+    reply += "" + member.mention + " "
   await message.channel.send(reply[:-1])
 # end getNonVoters
 
@@ -1770,7 +1770,7 @@ async def newWeek(message):
     for role in member.roles:
       if ("Reserve" in role.name):
         await member.remove_roles(role)
-        await divUpdateChannel.send("<@" + str(member.id) + "> has been removed from " + role.name + ".")
+        await divUpdateChannel.send("" + member.mention + " has been removed from " + role.name + ".")
         
   # update driver roles in server
   await updateDriverRoles(message)

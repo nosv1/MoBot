@@ -590,10 +590,10 @@ async def on_raw_reaction_add(payload):
           if (role.id == int(roleID)):
             if (msg["RoleID"][1] == "add"):
               await member.add_roles(role)
-              await message.channel.send(content="**" + role.name + " Role Added to <@" + str(member.id) + ">**", delete_after=5.0)
+              await message.channel.send(content="**" + role.name + " Role Added to " + member.mention + "**", delete_after=5.0)
             else:
               await member.remove_roles(role)
-              await message.channel.send(content="**" + role.name + " Role Removed from <@" + str(member.id) + ">**", delete_after=5.0)
+              await message.channel.send(content="**" + role.name + " Role Removed from " + member.mention + "**", delete_after=5.0)
     except KeyError:
       pass
     except discord.errors.Forbidden:
@@ -730,10 +730,10 @@ async def on_raw_reaction_remove(payload):
           if (role.id == int(roleID)):
             if (msg["RoleID"][1] == "add"):
               await member.remove_roles(role)
-              await message.channel.send(content="**" + role.name + " Role Removed from <@" + str(member.id) + ">**", delete_after=5.0)
+              await message.channel.send(content="**" + role.name + " Role Removed from " + member.mention + "**", delete_after=5.0)
             else:
               await member.add_roles(role)
-              await message.channel.send(content="**" + role.name + " Role Added to <@" + str(member.id) + ">**", delete_after=5.0)
+              await message.channel.send(content="**" + role.name + " Role Added to " + member.mention + "**", delete_after=5.0)
     except KeyError:
       pass
     except discord.errors.Forbidden:

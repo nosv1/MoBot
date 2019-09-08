@@ -96,11 +96,11 @@ async def sendCollection(message, args, toDms, client):
                 for member in role.members:
                   try:
                     msg = await member.send(embed=embed)
-                    await message.channel.send("Message sent to <@" + str(member.id) + ">.")
+                    await message.channel.send("Message sent to " + member.mention + ".")
                     await msg.add_reaction("⬅")
                     await msg.add_reaction("➡")
                   except discord.errors.Forbidden:
-                    await message.channel.send("Message not sent to <@" + str(member.id) + ">.")
+                    await message.channel.send("Message not sent to " + member.mention + ".")
                 break
         else:
           msg = await message.channel.send(embed=embed)

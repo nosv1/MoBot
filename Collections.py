@@ -657,7 +657,7 @@ async def displayCollection(message, toDMs, collectionName, guildID, isReservati
                   try:
                     firstEmbed = await correctMoBotHelpMenu(firstEmbedMsg, firstEmbed)
                     embedMsg = await message.channel.send(embed=firstEmbed)
-                    await message.channel.send("Message sent to <@" + str(member.id) + ">.")
+                    await message.channel.send("Message sent to " + member.mention + ".")
                     await embedMsg.add_reaction("💾")
                     await embedMsg.add_reaction("⬅")
                     await embedMsg.add_reaction("➡")
@@ -667,7 +667,7 @@ async def displayCollection(message, toDMs, collectionName, guildID, isReservati
                       await embedMsg.add_reaction("➖")
 
                   except discord.errors.Forbidden:
-                    await message.channel.send("Message not sent to <@" + str(member.id) + ">.")
+                    await message.channel.send("Message not sent to " + member.mention + ".")
                 break
 
         else:

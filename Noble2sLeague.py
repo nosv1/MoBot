@@ -167,7 +167,7 @@ async def memberRemove(member):
 async def memberRoleAdd(member, role):
   if (role.id == 519297202795839488): # if role == verified
     activityLog = member.guild.get_channel(445265120549928962)
-    await activityLog.send("<@209584832030834688>, <@" + str(member.id) + "> has been added to `Verified`.")
+    await activityLog.send("<@209584832030834688>, " + member.mention + " has been added to `Verified`.")
 # end memberRoleAdd
 
 async def clearStreamScheduler(message, client):
@@ -247,10 +247,10 @@ async def streamScheduler(message, payload, client):
 
         if (tDay == day[1] and tHour == hour[1]):
           if (payload.emoji.name == emojis["confirm"]):
-            tLine = line.split("\n")[0] + " <@" + str(member.id) + ">\n"
+            tLine = line.split("\n")[0] + " " + member.mention + "\n"
           else:
             if (str(member.id) in line):
-              tLine = tLine.replace(" <@" + str(member.id) + ">", "")
+              tLine = tLine.replace(" " + member.mention + "", "")
 
       newValue += tLine
     

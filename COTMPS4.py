@@ -17,7 +17,7 @@ async def memberJoin(member):
   await member.send("Welcome to the Children of the Mountain (PS4) server. At this moment we are still gathering interest for the event. If you have joined via an invite and have not filled out the interest form (https://goo.gl/QDPqUX), please take 5 minutes and fill it out; otherwise, feel free to share the form link or the invite link (https://invite.gg/cotmps4).\n\nWe start qualifying (if all goes to plan) 5th April 5:00pm UTC.\n\nIf you have any questions, please message Mo#9991 or tag @Mo#9991 in #chat.")
   
   memberLog = member.guild.get_channel(554885483063279616) # member-log
-  await memberLog.send("<@" + str(member.id) + "> joined.")
+  await memberLog.send("" + member.mention + " joined.")
 # end memberJoin
 
 async def memberRemove(member):

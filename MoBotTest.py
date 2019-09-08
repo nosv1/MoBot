@@ -556,10 +556,10 @@ async def streamScheduler(message, payload, client):
 
         if (tDay == day[1] and tHour == hour[1]):
           if (payload.emoji.name == emojis["confirm"]):
-            tLine = line.split("\n")[0] + " <@" + str(member.id) + ">\n"
+            tLine = line.split("\n")[0] + " " + member.mention + "\n"
           else:
             if (str(member.id) in line):
-              tLine = tLine.replace(" <@" + str(member.id) + ">", "")
+              tLine = tLine.replace(" " + member.mention + "", "")
 
       newValue += tLine
     
