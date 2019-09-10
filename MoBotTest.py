@@ -306,7 +306,22 @@ async def on_raw_reaction_add(payload):
   if (not member.bot):        
     logMessageToConsole(message, member, "reaction")
 
+    if (message.id == 620740642443886611): # message id for Reserves Embed
+      if (payload.emoji.name == "👋"):
+        await COTM.reserveNeeded(message, member)
+      elif (payload.emoji.name == "✊"):
+        await COTM.reserveAvailable(message, member)
+      elif (payload.emoji.name == "❌"):
+        await COTM.clearReserves(message)
+
     if (len(message.embeds) > 0):
+      if (message.id == 600723441888264211):
+        if (payload.emoji.name == "✅" or payload.emoji.name == "❌"):
+          await streamScheduler(message, payload, client)
+          await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+        elif (payload.emoji.name == "🗑"):
+          await clearStreamScheduler(message, client)
+          await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
       if ("Countdown Editor" in message.embeds[0].author.name):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
       if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
@@ -315,13 +330,6 @@ async def on_raw_reaction_add(payload):
           await Reservations.mainReactionAdd(message, payload, client)
       if ("EventScheduler" in message.embeds[0].author.url):
         pass
-      if (message.id == 600723441888264211):
-        if (payload.emoji.name == "✅" or payload.emoji.name == "❌"):
-          await streamScheduler(message, payload, client)
-          await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
-        elif (payload.emoji.name == "🗑"):
-          await clearStreamScheduler(message, client)
-          await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
     else:
       #if (message.guild.id == 527156310366486529 or "are you ready to vote" in message.content.lower() or "do you need to vote" in message.content.lower()): # cotm
         #await COTM.mainReactionAdd(message, payload, client)
@@ -370,6 +378,12 @@ async def on_raw_reaction_remove(payload):
 
   if (not member.bot):    
     logMessageToConsole(message, member, "reaction")
+
+    if (message.id == 620740642443886611): # message id for Reserves Embed
+      if (payload.emoji.name == "👋"):
+        await COTM.reserveNotNeeded(message, member)
+      elif (payload.emoji.name == "✊"):
+        await COTM.reserveNotAvailable(message, member)
 
     if (len(message.embeds) > 0):
       if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
@@ -654,7 +668,6 @@ async def moBotEmbed(message, args, isEdit):
   isCollection = False
   isReservation = False
   if (isEdit):
-    print ('---YES---')
     try:
       msg = None
       try:
@@ -722,7 +735,6 @@ async def moBotEmbed(message, args, isEdit):
 
       embed = discord.Embed().from_dict(embed)
     except:
-      print ("Error -- " + str(traceback.format_exc()))
       await message.channel.send("Looks like something wasn't quite right... Either the MessageID you typed isn't correct, or the MessageID of the message doesn't have an embed already. You also need to be in the same channel as the embed. Use `@MoBot#0697 embed help` for further guidence.")
       return
 
@@ -884,16 +896,16 @@ async def moBotEmbed(message, args, isEdit):
   if (len(newFields) != 0):
     embed.clear_fields()
     for field in fields:
-      embed.add_field(name=field[0], value=field[1].replace("\\n", "\n"), inline=False)
+      embed.add_field(name=field[0].replace("\\n", "\n"), value=field[1].replace("\\n", "\n"), inline=False)
 
   try:
     if (isEdit):
       await msg.edit(embed=embed)
+      await message.channel.send("**Message Edited**", delete_after=5.0)
       if (isCollection or isReservation):
         await Collections.replaceCollectionEmbed(message, msg.id, msg.id, client)
     else:
       msg = await message.channel.send(embed=embed)
-      await message.channel.send("If you'd like to edit the embed above, in your original message, replace `say embed` with `edit embed " + str(msg.id) + "`. You don't need to copy and paste, or re-send the message, simply edit your original message, and press enter. You can also copy your embed to another channel by using `@MoBot#0697 copy embed  " + str(msg.id) + " [#destination-channel]`.")
   except discord.errors.HTTPException:
     await message.channel.send("Looks like something didn't go quite right... Discord has a limit on how long a message can be, 2000 characters  ... but there is also a limit on how big a field value can be, 1024 characters. If you have a large field value, perhaps adding another field header, and splitting the field value might work.")
 # end moBotEmbed

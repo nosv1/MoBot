@@ -16,6 +16,11 @@ moTag = "<@405944496665133058>"
 mardoniusTag = "<@445996484240998400>"
 moBot = "449247895858970624"
 
+CHECKMARK_EMOJI = "✅"
+ARROWS_COUNTERCLOCKWISE_EMOJI  = "🔄"
+THUMBSUP_EMOJI = "👍"
+WAVE_EMOJI = "👋"
+FIST_EMOJI = "✊"
 spaceChar = "⠀"
 logos = {
   "cotmFaded" : "https://i.gyazo.com/e720604af6507b3fc905083e8c92edf7.png",
@@ -26,6 +31,15 @@ logos = {
   "d5" : "https://i.gyazo.com/5a56e3281bfb37b8467b1c125168b04f.png",
   "d6" : "https://i.gyazo.com/91d5cb3aa8688fe885a4e907fbf3bb78.png",
   "d7" : "https://i.gyazo.com/33e6ec2a82539f251a66aa8f2c6ee2fa.png",
+}
+divisionEmojis = {
+  "1" : 527285368240734209,
+  "2" : 527285430526148618,
+  "3" : 527285478764969984,
+  "4" : 527285532099870730,
+  "5" : 527285566501552129,
+  "6" : 527285612160614410,
+  "7" : 527285647837364244,
 }
 
 async def main(args, message, client):
@@ -135,59 +149,44 @@ async def main(args, message, client):
 
 async def mainReactionAdd(message, payload, client):
   member = message.guild.get_member(payload.user_id)
+  memberPerms = message.channel.permissions_for(member)
   qualifyingChannel = message.guild.get_channel(607693838642970819)
   qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
 
-  if (member.name != "MoBot"):
-    if (message.id == 614836845267910685): # message id for "Do you need to submit quali time"
-      if (payload.emoji.name == "✅"):
+  if ("MoBot" not in member.name):
+    if (payload.emoji.name == CHECKMARK_EMOJI):
+      if (message.id == 614836845267910685): # message id for "Do you need to submit quali time"  
         await addUserToQualiScreenshots(message, member, qualiScreenshotsChannel, client)
         await message.remove_reaction(payload.emoji.name, member)
-    elif (message.id == 609588876272730112): # message id for message "Do you need to vote?"
-      if (payload.emoji.name == "✅"):
+      elif (message.id == 620778190767390721): # message id for voting
         await openVotingChannel(message, member)
         await message.remove_reaction(payload.emoji.name, member)
-    elif ("are you ready to vote" in message.content):
-      if (payload.emoji.name == "✅"):
+
+    if ("are you ready to vote" in message.content):
+      if (payload.emoji.name == CHECKMARK_EMOJI):
         await votingProcess(message, member, client)
-      elif (payload.emoji.name == "🔄"):
+      elif (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
         await resetVotes(message)
-    elif (message.channel.id == qualiScreenshotsChannel.id):
-      if (message.channel.permissions_for(member).administrator and payload.emoji.name == "👍"):
+
+    if (message.channel.id == qualiScreenshotsChannel.id):
+      if (message.channel.permissions_for(member).administrator and payload.emoji.name == THUMBSUP_EMOJI):
         await waitForQualiTime(message, member, payload, qualifyingChannel, client)
 
-    '''if (message.channel.id == 528303438132543499): # voting channel
-      votingMessagesIds = [528307697133682698, 528307713403256852, 528307733456355331, 528307794936463374]
-      if (message.id in votingMessagesIds):
-        await voting(message, payload, votingMessagesIds)
-    elif (payload.emoji.name == "🔄"): # if update button is clicked 
-      if (message.id == 527321745968070689): # qualifying standings channel
-        await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-        await updateQualiStandings(message)
-      if (message.id == 527685885790126111): # qualifying channel
-        await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-        await updateQualiStartTimes(message)
-      if (message.id == 535553787948171284): # div list channel
-        await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-        await updateDivList(message)
-      if (message.id == 536878535827259432): # start order channel
-        await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-        await updateStartOrders(message)
-      if (message.id == 527563354877984810): # cotm-streams channel
-        await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-        await updateDivStreamers(message)
-      if ("pit-log" in channelName):
-        await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-        div = int(channelName[1])
-        await updateNamesPitLog(message, div)
-    elif ("pit-log" in channelName):
-      if (payload.emoji.name == "1⃣" or payload.emoji.name == "2⃣"):
-        await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-        await updatePitCount(message, payload)'''
+    if (message.id == 620740642443886611): # message id for Reserves Embed
+      if (payload.emoji.name == WAVE_EMOJI):
+        await reserveNeeded(message, member)
+      elif (payload.emoji.name == FIST_EMOJI):
+        await reserveAvailable(message, member)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
-  channelName = message.channel.name
+  member = message.guild.get_member(payload.user_id)
+  if ("MoBot" not in member.name):
+    if (message.id == 620740642443886611): # message id for Reserves Embed
+      if (payload.emoji.name == WAVE_EMOJI):
+        await reserveNotNeeded(message, member)
+      elif (payload.emoji.name == FIST_EMOJI):
+        await reserveNotAvailable(message, member)
 # end mainReactionRemove
 
 async def tagMissingQualifiers(message):
@@ -197,17 +196,79 @@ async def tagMissingQualifiers(message):
   for member in missingQualifiers:
     reply += member.mention
   print (reply)
+# end tagMissingQualifiers
+
+async def clearReserves(message):
+  embed = message.embeds[0].to_dict()
+  embed["fields"][0]["value"] = spaceChar
+  embed["fields"][0]["value"] = spaceChar
+
+  for reaction in message.reactions:
+    async for user in reaction.users():
+      if (reaction.emoji == FIST_EMOJI):
+        member = message.guild.get_member(user.id)
+        roles = member.roles
+        for role in roles:
+          if ("Reserve" in role.name):
+            await member.remove_roles(role)
+
+  await message.clear_reactions()
+  await message.add_reaction(WAVE_EMOJI)
+  await message.add_reaction(FIST_EMOJI)
+# end clearReserves
+
+async def reserveNeeded(message, member):
+  embed = message.embeds[0].to_dict()
+  reservesNeeded = embed["fields"][0]["value"][:-1].strip()
+  embed["fields"][0]["value"] = reservesNeeded + "\n" + member.mention + "\n" + spaceChar
+  await message.edit(embed=discord.Embed.from_dict(embed))
+# end reserveNeeded
+
+async def reserveNotNeeded(message, member):
+  embed = message.embeds[0].to_dict()
+  reservesNeeded = embed["fields"][0]["value"][:-1].strip().split("\n")
+  newReservesNeeded = ""
+  for reserve in reservesNeeded:
+    if (str(member.id) not in reserve):
+      newReservesNeeded += reserve + "\n"
+  newReservesNeeded += spaceChar
+  embed["fields"][0]["value"] = newReservesNeeded
+  await message.edit(embed=discord.Embed.from_dict(embed))
+# end reserveNotNeeded
+
+async def reserveAvailable(message, member):
+  embed = message.embeds[0].to_dict()
+  reservesNeeded = embed["fields"][1]["value"][:-1].strip()
+  embed["fields"][1]["value"] = reservesNeeded + "\n" + member.mention + "\n" + spaceChar
+  await message.edit(embed=discord.Embed.from_dict(embed))
+# end reserveAvailable
+
+async def reserveNotAvailable(message, member):
+  embed = message.embeds[0].to_dict()
+  reservesNeeded = embed["fields"][1]["value"][:-1].strip().split("\n")
+  newReservesNeeded = ""
+  for reserve in reservesNeeded:
+    if (str(member.id) not in reserve):
+      newReservesNeeded += reserve + "\n"
+  newReservesNeeded += spaceChar
+  embed["fields"][1]["value"] = newReservesNeeded
+  await message.edit(embed=discord.Embed.from_dict(embed))
+
+  for role in member.roles:
+    if ("Reserve" in role.name):
+      await member.remove_roles(role)
+# end reserveNotAvailable
 
 async def resetVotes(message):
   await message.clear_reactions()
   await message.channel.purge(after=message)
-  await message.add_reaction("✅")
-  await message.add_reaction("🔄")
+  await message.add_reaction(CHECKMARK_EMOJI)
+  await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
 # end resetVotes
 
 async def votingProcess(message, member, client):
   await message.clear_reactions()
-  await message.add_reaction("🔄")
+  await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
   numberEmojis = ["0⃣", "1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "6⃣", "7⃣", "8⃣", "9⃣", "🔟"]
   undoEmoji = "↩"
 
@@ -280,7 +341,7 @@ async def votingProcess(message, member, client):
       i = 0
 
   moBotMessage = await message.channel.send("**All votes have been used, would you like to submit?**\nIf not, click the 🔄 at the top to restart the voting process.")
-  await moBotMessage.add_reaction("✅")
+  await moBotMessage.add_reaction(CHECKMARK_EMOJI)
   def check(payload):
     return payload.message_id == moBotMessage.id and payload.user_id == member.id
   try:
@@ -329,7 +390,7 @@ async def closeVotingChannel(message, member, totalVoters, log):
     value = "None" 
   value += "\n" + spaceChar
   currentVotersEmbed["fields"][2]["value"] = value
-  currentVotersEmbed["fields"][3]["value"] = totalVotersEmojiNumbers + "\n" + spaceChar
+  currentVotersEmbed["fields"][3]["value"] = totalVotersEmojiNumbers
   await currentVotersMsg.edit(embed=discord.Embed.from_dict(currentVotersEmbed))
 
   embed = discord.Embed(color=int("0xd1d1d1", 16))
@@ -348,7 +409,7 @@ async def closeVotingChannel(message, member, totalVoters, log):
 
 async def getCurrentVotersVoteOptionsMsg(message):
   channel = message.guild.get_channel(608472349712580608)
-  currentVotersMsg = await channel.fetch_message(609588935747960864)
+  currentVotersMsg = await channel.fetch_message(620778154197385256)
   return currentVotersMsg
 # end getCurrentVotersVoteOptionsMsg
 
@@ -403,7 +464,7 @@ async def openVotingChannel(message, member):
     await votingChannel.send("This season there's been a change to how the voting works. As you can see there are " + str(len(voteOptions)) + " options to vote from. You have " + str(len(voteOptions)) + " votes to 'spend'. You can use them all on one option, or spread them out.")
 
     moBotMessage = await votingChannel.send("**" + member.mention + ", are you ready to vote?**")
-    await moBotMessage.add_reaction("✅")
+    await moBotMessage.add_reaction(CHECKMARK_EMOJI)
 
   else:
     msg = await message.channel.send("**Cannot open a voting channel.**\n**" + member.mention + ", you either already have a voting channel open, or you have already voted.**")
@@ -493,7 +554,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
       else:
         return False
     def checkEmoji(payload):
-      if (payload.channel_id == message.channel.id and (payload.emoji.name == "✅" or payload.emoji.name == "❌")):
+      if (payload.channel_id == message.channel.id and (payload.emoji.name == CHECKMARK_EMOJI or payload.emoji.name == "❌")):
         if (reactionPayload is None):
           return payload.user_id == message.author.id
         else:
@@ -524,7 +585,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
         moBotMessage = await message.channel.send(reply)
       else:
         await moBotMessage.edit(content=reply)
-      await moBotMessage.add_reaction("✅")
+      await moBotMessage.add_reaction(CHECKMARK_EMOJI)
       await moBotMessage.add_reaction("❌")
 
       try:
@@ -536,7 +597,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
         await msg.delete()
         return
 
-      if (payload.emoji.name == "✅"):
+      if (payload.emoji.name == CHECKMARK_EMOJI):
         await moBotMessage.delete()
         break
       else:
@@ -1085,162 +1146,6 @@ async def getReservesNeeded():
   
   return reserveTable
 # end getReservesNeeded
-
-async def reserveAvailable(message):
-  await message.channel.trigger_typing()
-  
-  workbook = await openSpreadsheet()
-  weeklyInformationSheet = workbook.worksheet("Weekly Information")
-  
-  reserve = message.content.split("available ")[1]
-  reserves = weeklyInformationSheet.range("D4:D23")
-  
-  driverFoundR = findDriver(reserves, reserve)
-  if (driverFoundR > -1):
-    await message.channel.send("```" + reserve + " is already available to reserve.```")
-  else:
-    for i in range(len(reserves) - 1, 0 - 1, -1):
-      if (reserves[i].value == ""):
-        reserves[i].value = reserve
-        break
-    await message.channel.send("```" + reserve + " is now available to reserve.```")
-    weeklyInformationSheet.update_cells(reserves, value_input_option="USER_ENTERED")
-    await message.channel.send("```" + await getReservesNeeded() + "```")
-# end reserveAvailable
-
-async def reserveFound(message):
-  await message.channel.trigger_typing()
-  
-  workbook = await openSpreadsheet()
-  weeklyInformationSheet = workbook.worksheet("Weekly Information")
-  standingsSheet = workbook.worksheet("Standings")
-  
-  reserve = message.content.split("reserve ")[1].split(" for")[0]
-  driver = message.content.split("for ")[1]
-  
-  reserves = weeklyInformationSheet.range("D4:D23")
-  drivers = weeklyInformationSheet.range("C4:C23")
-  
-  driverFoundR = findDriver(reserves, reserve)
-  driverFoundD = findDriver(drivers, driver)
-  
-  reserveUpdated = False
-  if (driverFoundD > -1):
-    if (driverFoundR > -1):
-      if (drivers[driverFoundR].value == ""):
-        reserves[driverFoundR].value = ""
-        reserves[driverFoundD].value = reserve
-        reserveUpdated = True
-      else:
-        await message.channel.send("```" + reserve + " is already reserving for someone. Update reserve manually.```")
-    else:
-      reserves[driverFoundD].value = reserve
-      reserveUpdated = True
-  else:
-    driverFoundD = findDriver(standingsSheet.range("H7:H124"), driver)
-    if (driverFoundD > -1):
-      for i in range(len(drivers)):
-        if (drivers[i].value == "" and reserves[i].value == ""):
-          drivers[i].value = driver
-          reserves[i].value = reserve
-          reserveUpdated = True
-          break
-    else:
-      await message.channel.send("```" + driver + " was not found. If you are sure the gamertag typed was correct, tag IStarki11er29I and/or Mo.```")
-      
-  if (reserveUpdated):
-    divs = standingsSheet.range("G7:G124")
-    driverFoundD = findDriver(standingsSheet.range("H7:H124"), driver)
-    
-    members = message.guild.members
-    user = None
-    for member in members:
-      if (member.nick != None):
-        if (reserve in member.nick):
-          user = member
-    for role in message.guild.roles:
-      if ("reserve" in role.name.lower() and role.name[-1] == divs[driverFoundD].value[-1]):
-        await user.add_roles(role)
-        await message.guild.get_channel(527319768911314944).send("<@" + str(user.id) + "> has been added to " + role.name + ".")
-    
-    await message.channel.send("```" + reserve + " is now reserving for " + driver + " in Division " + divs[driverFoundD].value[-1] + ".```")
-  
-    weeklyInformationSheet.update_cells(reserves, value_input_option="USER_ENTERED")
-    weeklyInformationSheet.update_cells(drivers, value_input_option="USER_ENTERED")
-    
-    await message.channel.send("```" + await getReservesNeeded() + "```")
-
-async def reserveNotNeeded(message, args):
-  await message.channel.trigger_typing()
-  
-  workbook = await openSpreadsheet()
-  weeklyInformationSheet = workbook.worksheet("Weekly Information")
-  
-  driver = await compileDriverFromArgs(args, 4, len(args))
-  
-  reservesNeeded = weeklyInformationSheet.range("C4:D23")
-  driverFoundR = findDriver(reservesNeeded, driver)
-  
-  if (driverFoundR > -1):
-    reserve = reservesNeeded[driverFoundR + 1].value
-    reservesNeeded[driverFoundR].value = ""
-    reservesNeeded[driverFoundR + 1].value = ""
-    
-    weeklyInformationSheet.update_cells(reservesNeeded, value_input_option="USER_ENTERED")
-    await message.channel.send("```" + driver + " has been removed from the 'Reserves Needed' list.```")
-    if (reserve != ""):
-      div = 0 
-      i = 0
-      members = message.guild.members
-      while (i < len(members)):
-        try:
-          if (div == 0):
-            if (driver.lower() in members[i].nick.lower()):
-              div = members[i].nick[2]
-              i = 0
-          elif (reserve.lower() in members[i].nick.lower()):
-            for role in message.guild.roles:
-              if ("reserve" in role.name.lower() and role.name[-1] == div):
-                await members[i].remove_roles(role)
-                await message.guild.get_channel(527319768911314944).send("<@" + str(members[i].id) + "> has been removed from " + role.name + ".")
-            break
-        except AttributeError:
-          i += 1
-          continue
-        i += 1
-    
-      await message.channel.send("```" + reserve + " is no longer a reserve.```")
-    
-    await message.channel.send("```" + await getReservesNeeded() + "```")
-
-async def reserveNeeded(message, args):
-  await message.channel.trigger_typing()
-  
-  workbook = await openSpreadsheet()
-  weeklyInformationSheet = workbook.worksheet("Weekly Information")
-  standingsSheet = workbook.worksheet("Standings")
-  
-  driver = await compileDriverFromArgs(args, 3, len(args))          
-  driverFoundS = findDriver(standingsSheet.range("H7:H124"), driver)
-  
-  if (driverFoundS > -1): # driver was in standings
-    reservesNeeded = weeklyInformationSheet.range("C4:C23")
-    driverFoundR = findDriver(reservesNeeded, driver)
-    if (driverFoundR == -1):
-      for i in range(0, len(reservesNeeded)):
-        if (reservesNeeded[i].value == "" or reservesNeeded[i].value == driver):
-          reservesNeeded[i].value = driver
-          break
-      weeklyInformationSheet.update_cells(reservesNeeded, value_input_option="USER_ENTERED")
-      divs = standingsSheet.range("G7:G124")
-      await message.channel.send("```" + driver + ", who is in Division " + divs[driverFoundS].value + ", has been added to the 'Reserves Needed' list.```")
-      await message.channel.send("```" + await getReservesNeeded() + "```")
-      await updateStartOrders(message)
-    else:
-      await message.channel.send("```" + driver + " has already been added to the 'Reserves Needed' list.```")
-  else:
-    await message.channel.send("```" + driver + " was not found. If you are sure the gamertag typed was correct, tag IStarki11er29I and/or Mo.```")
-# end reserveNeeded
 
 async def updateDivStreamers(message):
   workbook = await openSpreadsheet()
@@ -1917,7 +1822,7 @@ async def voting(message, payload, messageIds):
   two = "2⃣"
   three = "3⃣"
   four = "4⃣"
-  check = "✅"
+  check = CHECKMARK_EMOJI
   inputUser  = payload.user_id
   user = message.guild.get_member(inputUser)
   votingLog = message.guild.get_channel(530284914071961619)
