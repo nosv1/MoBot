@@ -172,7 +172,7 @@ async def mainReactionAdd(message, payload, client):
       if (message.channel.permissions_for(member).administrator and payload.emoji.name == THUMBSUP_EMOJI):
         await waitForQualiTime(message, member, payload, qualifyingChannel, client)
 
-    if (message.id == 620740642443886611): # message id for Reserves Embed
+    if (message.id == 620811567210037253): # message id for Reserves Embed
       if (payload.emoji.name == WAVE_EMOJI):
         await reserveNeeded(message, member)
       elif (payload.emoji.name == FIST_EMOJI):
@@ -180,10 +180,14 @@ async def mainReactionAdd(message, payload, client):
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
+  print ('yes')
   member = message.guild.get_member(payload.user_id)
   if ("MoBot" not in member.name):
-    if (message.id == 620740642443886611): # message id for Reserves Embed
+    print ('yes')
+    if (message.id == 620811567210037253): # message id for Reserves Embed
+      print ('yes')
       if (payload.emoji.name == WAVE_EMOJI):
+        print ('yes')
         await reserveNotNeeded(message, member)
       elif (payload.emoji.name == FIST_EMOJI):
         await reserveNotAvailable(message, member)

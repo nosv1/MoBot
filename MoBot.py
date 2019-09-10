@@ -751,9 +751,9 @@ async def on_raw_reaction_remove(payload):
         if (message.author.id == int(moBot)):
           await Collections.mainReactionRemove(message, payload, message.embeds[0], client)
 
-    # calling server specific file but mainReactionRemove function instead of main
-    elif (str(message.guild.id) in servers):
-      await eval(servers[str(message.guild.id)] + ".mainReactionRemove(message, payload, client)")
+      # calling server specific file but mainReactionRemove function instead of main
+      elif (str(message.guild.id) in servers):
+        await eval(servers[str(message.guild.id)] + ".mainReactionRemove(message, payload, client)")
   except discord.errors.NotFound:
     pass
 # end on_reaction_remove
