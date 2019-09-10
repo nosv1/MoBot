@@ -277,13 +277,18 @@ async def reserveAvailable(message, member, payload, client):
     embed = message.embeds[0].to_dict()
     reservesNeeded = embed["fields"][1]["value"][:-1].strip()
 
+    reserveAdded = False
     for reaction in moBotMessage.reactions:
       if (str(reaction.emoji) != CHECKMARK_EMOJI):
         async for user in reaction.users():
           if (user.id == member.id):
+            reserveAdded = True
             reservesNeeded += "\n" + str(reaction.emoji) + " - " + member.mention
-    embed["fields"][1]["value"] = reservesNeeded + "\n" + spaceChar
-    await message.edit(embed=discord.Embed.from_dict(embed))
+    if (reserveAdded):
+      embed["fields"][1]["value"] = reservesNeeded + "\n" + spaceChar
+      await message.edit(embed=discord.Embed.from_dict(embed))
+    else:
+      await message.remove_reaction(payload.emoji.name, member)
     await moBotMessage.delete()
 
   except asyncio.TimeoutError:
