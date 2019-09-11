@@ -892,8 +892,8 @@ async def updateDivList(message, divList):
 async def updateDriverRoles(message, workbook):
   await message.channel.trigger_typing()
   divUpdateChannel = message.guild.get_channel(527319768911314944)
-  standingsSheet = workbook.worksheet("Standings")
-  drivers = standingsSheet.range("C3:D" + str(standingsSheet.row_count))
+  driversSheet = workbook.worksheet("Drivers")
+  driversRange = driversSheet.range("B3:D" + str(driversSheet.row_count))
 
   divRoles = []
   for role in message.guild.roles:
@@ -903,11 +903,11 @@ async def updateDriverRoles(message, workbook):
 
   divList = []
   for member in message.guild.members:
-    driverIndex = findDriver(drivers, member.id)
+    driverIndex = findDriver(driversRange, member.id)
     if (driverIndex >= 0):
       try:
-        div = str(int(drivers[driverIndex-1].value[-1]))
-        gamertag = drivers[driverIndex].value
+        div = str(int(driversRange[driverIndex+2].value))
+        gamertag = driversRange[driverIndex+1].value
         role = divRoles[int(div)-1][1]
 
         newNick = "[D" + div + "] " + gamertag
