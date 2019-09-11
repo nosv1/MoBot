@@ -853,7 +853,7 @@ async def updateDivList(message, divList):
   for key in divListEmbeds:
     embed = discord.Embed(color=int("0xd1d1d1", 16))
     if (key == "sortedByGamertag"):
-      divList.sort(key=lambda x:x[1])
+      divList.sort(key=lambda x:x[2])
       embed.set_author(name="Children of the Mountain - Season 5\nSorted By Gamertag", icon_url=logos["cotmFaded"], url="https://www.google.com/DivisionList")
       embed = embed.to_dict()
       divListEmbeds["sortedByGamertag"].append(embed)
@@ -911,7 +911,7 @@ async def updateDriverRoles(message, workbook):
         role = divRoles[int(div)-1][1]
 
         newNick = "[D" + div + "] " + gamertag
-        divList.append([int(div), gamertag])
+        divList.append([int(div), gamertag, gamertag.lower()])
         if (newNick != member.display_name):
           await member.edit(nick=newNick)
 
