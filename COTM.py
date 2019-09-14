@@ -12,9 +12,12 @@ import SecretStuff
 
 import RandomFunctions
 
-moTag = "<@405944496665133058>"
+moID = 405944496665133058
 mardoniusTag = "<@445996484240998400>"
 moBot = "449247895858970624"
+
+# common channels
+COTM_STREAMS = 527161746473877504
 
 CHECKMARK_EMOJI = "✅"
 ARROWS_COUNTERCLOCKWISE_EMOJI  = "🔄"
@@ -56,95 +59,6 @@ async def main(args, message, client):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
     if ("missingqualifiers" in args[1].lower()):
       await tagMissingQualifiers(message)
-    '''  
-    elif (args[1] == "quali" and args[2] == "start"):
-      await message.delete()
-      reply = "```Qualifying Starts: 7th January 12:00am UK - " + str(datetime.strptime("6 Jan 2019 18:00", "%d %b %Y %H:%M") - datetime.now()) + "```"
-      reply += "```Race Day: 27th January - " + str(datetime.strptime("27 Jan 2019 11:30", "%d %b %Y %H:%M") - datetime.now()).split(",")[0] + "```"
-      await message.channel.send(reply)
-      
-    elif (args[1] == "helpquote"):
-      await helpQuote(message)
-    elif (args[1] == "addquote"):
-      await addQuote(message)
-    elif (args[1] == "sayquote"):
-      await message.delete()
-      
-      await sayQuote(message, 0)
-    elif (args[1] == "votes" and args[2] == "clear"):
-      await clearReactionVotes(message)
-    elif (args[1] == "vote" and args[2] == "count"):
-      await getVotes(message.channel)
-    elif (args[1] == "voters" and args[2] == "missing"):
-      await getNonVoters(message)
-    elif (args[1] == "laps" and args[2] == "missing"):
-      await getMissingLaps(message)
-    elif (args[1] == "driver" and args[2] == "add" and "staff" in roles):
-      await addDriver(message)
-    elif (args[1] == "driver" and args[2] == "remove" and "staff" in roles):
-      await removeDriver(message)
-    elif (args[1] == "add" and args[2] == "streamer" and "staff" in roles):
-      await addStreamer(message)
-    elif (args[1] == "remove" and args[2] == "streamer" and "staff" in roles):
-      await removeStreamer(message)
-    elif (args[1] == "reserve" and args[2] == "help"):
-      await reserveHelp(message)
-    elif (args[1] == "reserve" and "staff" in roles):
-      if (args[2] == "needed"):
-        await reserveNeeded(message, args)
-      elif (args[2] == "not" and args[3] == "needed"):
-        await reserveNotNeeded(message, args)
-        await updateStartOrders(message)
-      elif ("for" in message.content):
-        await reserveFound(message)
-        await updateStartOrders(message)
-      elif (args[2] == "available"):
-        await reserveAvailable(message)
-    elif (args[1] == "reserves"):
-      await message.channel.trigger_typing()
-      await message.channel.send("```" + await getReservesNeeded() + "```")
-    elif ("mute" in args[1] and "<@" in args[2]):
-      toMute = args[1] == "mute"
-      for role in message.guild.roles:
-        if (role.name == "Muted"):
-          userId = message.content.split("mute ")[1].split(">")[0][-18:]
-          user = message.guild.get_member(int(userId))
-          if (toMute):
-            await user.add_roles(role)
-            await message.channel.send("```User has been muted.```")
-          else:
-            await user.remove_roles(role)
-            await message.channel.send("```User has been unmuted.```")
-          await message.delete()
-    elif (args[1] == "new" and args[2] == "week" and message.author.name == "Mo"):
-      await newWeek(message)
-  else:
-    rand = int(random.random() * 1000) % 500
-    await sayQuote(message, rand)
-    '''
-  '''if (args[0] == moBot and args[1] == "move" and args[2] == "members"):
-    members = message.guild.members
-    roles = message.guild.roles
-    everyone = ""
-    for role in roles:
-      if (role.name == "COTM"):
-        everyone = role
-    for member in members:
-      await member.add_roles(everyone)'''
-      
-  '''if (args[0] == moBot and args[1] == "send" and args[2] == "mardonius" and args[3] == "message"):
-    botIds = [155149108183695360, 431247481267814410, 159985870458322944, 449247895858970624]
-    namesToNotPrint = [446031992879054858]
-    members = message.guild.members
-    moBotMessage = "To fellow member of the COTM Server and the GTAV Racing Community:\nSome of you may be unaware, but before the current COTM server you are in now, there was a different server. There was a switch made, and a transfer of ownership, due to a very unusual circumstance where the host seemed to start suffering from mental health problems. Unfortunately, this wasn't entirely false.\n\nThanks to Yodafox and others that helped him, Yodafox has been able to contact Mardonius's (Ed's) Mom to find out that \"very sadly it seems he has become quite unwell and has had to be hospitalized\" (Yodafox via Ed's Mom). At the time of this message, there has not been a diagnosis.\n\nIn attempt to show support, a Google Form has been made to submit a message to be sent to the family and Mardonius. The messages will be reviewed for appropriateness, then Yodafox will send the messages over to the family. If you have any questions, message Mo#9991.\n\nhttps://goo.gl/forms/xYDGnabNKuDASMPy2"
-    for i in range(38, len(members)):
-      member = members[i]
-      if (member.id not in namesToNotPrint):
-        print (i, member.id)
-        print (member)
-      if (member.id in botIds):
-        continue
-      await member.send(moBotMessage)'''
 # end main
 
 async def mainReactionAdd(message, payload, client):
@@ -177,6 +91,10 @@ async def mainReactionAdd(message, payload, client):
         await reserveNeeded(message, member)
       elif (payload.emoji.name == FIST_EMOJI):
         await reserveAvailable(message, member, payload, client)
+
+    if (message.id == 622137318513442816): # message id for streamer embed
+      if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
+        await addStreamer(message, member, payload)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
@@ -187,7 +105,68 @@ async def mainReactionRemove(message, payload, client):
         await reserveNotNeeded(message, member)
       elif (payload.emoji.name == FIST_EMOJI):
         await reserveNotAvailable(message, member)
+
+    if (message.id == 622137318513442816): # message id for streamer embed
+      if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
+        await removeStreamer(message, member, payload)
 # end mainReactionRemove
+
+async def mainMemberUpdate(before, after, client):
+  def startedStreaming(before, after):
+    try:
+      return before.activity.type != discord.ActivityType.streaming and after.activity.type == discord.ActivityType.streaming
+    except AttributeError: # when before.activity == None
+      return after.activity.type == discord.ActivityType.streaming
+  # end startedStreaming
+
+  if (startedStreaming(before, after)):
+    await memberStartedStreaming(after, client)
+# end mainMemberUpdate()
+
+async def addStreamer(message, member, payload):
+  streamEmbed = message.embeds[0]
+  streamEmbed = streamEmbed.to_dict()
+
+  for i in range(len(streamEmbed["fields"])):
+    if (payload.emoji.name.lower() in streamEmbed["fields"][i]["name"].lower()):
+      value = ""
+      for line in streamEmbed["fields"][i]["value"].split("\n"):
+        if (line == spaceChar):
+          value += member.mention + "\n"
+        else:
+          value += line + "\n"
+      value += spaceChar
+      streamEmbed["fields"][i]["value"] = value
+      break
+  await message.edit(embed=discord.Embed.from_dict(streamEmbed))
+# end addStreamer
+
+async def removeStreamer(message, member, payload):
+  streamEmbed = message.embeds[0]
+  streamEmbed = streamEmbed.to_dict()
+
+  for i in range(len(streamEmbed["fields"])):
+    if (payload.emoji.name.lower() in streamEmbed["fields"][i]["name"].lower()):
+      value = ""
+      for line in streamEmbed["fields"][i]["value"].split("\n"):
+        if (str(member.id) not in line):
+          value += line + "\n"
+      streamEmbed["fields"][i]["value"] = value
+      break
+  await message.edit(embed=discord.Embed.from_dict(streamEmbed))
+# end removeStreamer
+
+async def memberStartedStreaming(member, client):
+  try:
+    message = await member.guild.get_channel(COTM_STREAMS).fetch_message(622137318513442816)
+    streamEmbed = message.embeds[0]
+    streamEmbed = streamEmbed.to_dict()
+
+    twitchStreamers = streamEmbed["fields"][0]["value"]
+    #multiStreams = streamEmbed["fields"][3]["value"]
+  except:
+    await client.get_member(moID).send(str(traceback.format_exc()))
+# end startedStreaming
 
 async def tagMissingQualifiers(message):
   driversRange, driverSheet = await getDriversRange(await openSpreadsheet())

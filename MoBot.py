@@ -776,6 +776,12 @@ async def on_member_update(before, after):
       if (role not in aRoles):
         await on_member_role_remove(after, role)
         break
+  try:
+    await eval(servers[str(before.guild.id)] + ".mainMemberUpdate(before, after, client)")
+  except KeyError:
+    pass
+  except AttributeError:
+    pass
 # end on_member_update
 
 # called in on_member_update

@@ -396,6 +396,12 @@ async def on_member_join(member):
     await ReactionRole.addAutoRoleToUser(member, autoRoles[str(member.guild.id)]["RoleIDs"])
 # end on_member_join
 
+@client.event
+async def on_member_update(before, after):
+  print("TYPE", before.activity.type)
+  print("BOOL", before.activity.type == discord.ActivityType.playing)
+# end on_member_update
+
 def logMessageToConsole(message, user, logType):
   try:
     logMessage = str(datetime.now().strftime("%H:%M:%S.%f")) + " : G - " + str(message.guild) + " : C - " + str(message.channel)

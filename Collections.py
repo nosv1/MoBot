@@ -604,7 +604,7 @@ async def collectionControl(message, control, embed, client):
   else:
     await message.remove_reaction("➖", message.author)
 
-  isMoBotHelpMenu = "MoBot's Command Help Menu" in nextPageEmbed.author.name
+  '''isMoBotHelpMenu = "MoBot's Command Help Menu" in nextPageEmbed.author.name
   if (isMoBotHelpMenu):
     await asyncio.sleep(5)
     message = await message.channel.fetch_message(message.id)
@@ -617,7 +617,7 @@ async def collectionControl(message, control, embed, client):
       content = header + content
       embed = message.embeds[0]
       #if (str(member.id) != str(mo)):
-      await client.get_user(int(mo)).send(content=content, embed=embed)
+      #await client.get_user(int(mo)).send(content=content, embed=embed)'''
     
   await collectionMsg.delete()
 # end collectionControl
