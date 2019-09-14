@@ -13,11 +13,13 @@ import SecretStuff
 import RandomFunctions
 
 moID = 405944496665133058
-mardoniusTag = "<@445996484240998400>"
-moBot = "449247895858970624"
+moBot = 449247895858970624
 
 # common channels
 COTM_STREAMS = 527161746473877504
+QUALIFYING = 607693838642970819
+QUALI_SCREENSHOTS = 607694176133447680
+START_ORDERS = 622484589465829376
 
 CHECKMARK_EMOJI = "✅"
 ARROWS_COUNTERCLOCKWISE_EMOJI  = "🔄"
@@ -51,21 +53,23 @@ async def main(args, message, client):
   except:
     pass
     
-  qualifyingChannel = message.guild.get_channel(607693838642970819)
-  qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
+  qualifyingChannel = message.guild.get_channel(QUALIFYING)
+  qualiScreenshotsChannel = message.guild.get_channel(QUALI_SCREENSHOTS)
 
-  if (args[0][-19:-1] == moBot):
+  if (args[0][-19:-1] == str(moBot)):
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
     if ("missingqualifiers" in args[1].lower()):
       await tagMissingQualifiers(message)
+    if (args[1] == "end qualifying" and message.author.id == moID):
+      await endQualifying(message)
 # end main
 
 async def mainReactionAdd(message, payload, client):
   member = message.guild.get_member(payload.user_id)
   memberPerms = message.channel.permissions_for(member)
-  qualifyingChannel = message.guild.get_channel(607693838642970819)
-  qualiScreenshotsChannel = message.guild.get_channel(607694176133447680)
+  qualifyingChannel = message.guild.get_channel(QUALIFYING)
+  qualiScreenshotsChannel = message.guild.get_channel(QUALI_SCREENSHOTS)
 
   if ("MoBot" not in member.name):
     if (payload.emoji.name == CHECKMARK_EMOJI):
@@ -121,7 +125,24 @@ async def mainMemberUpdate(before, after, client):
 
   if (startedStreaming(before, after)):
     await memberStartedStreaming(after, client)
-# end mainMemberUpdate()
+# end mainMemberUpdate
+
+async def endQualifying(message):
+  members = message.guild.members
+  for member in members:
+    roles = member.roles
+    isCOTM = False
+    for role in roles:
+      if ("divison" in role.name.lower()):
+        isCOTM = True
+        break
+    if (not isCOTM):
+      for role in roles:
+        if ("cotm" in role.name.lower()):
+          await member.remove_roles(role)
+        elif ("peeker" in role.name.lower()):
+          await member.add_roles(role)
+# end endQualifying
 
 async def addStreamer(message, member, payload):
   streamEmbed = message.embeds[0]
@@ -169,7 +190,7 @@ async def memberStartedStreaming(member, client):
 # end startedStreaming
 
 async def tagMissingQualifiers(message):
-  driversRange, driverSheet = await getDriversRange(await openSpreadsheet())
+  driversRange, driverSheet = getDriversRange(await openSpreadsheet())
   missingQualifiers = await getMissingQualifiers(driversRange, message.guild)
   reply = ""
   for member in missingQualifiers:
@@ -230,7 +251,7 @@ async def reserveAvailable(message, member, payload, client):
       if (driversRange[i].value == str(member.id)):
         return int(driversRange[i+4].value)
     return -1
-  # end getReserveDivs
+  # end getReserveDiv
 
   reserveDiv = await getReserveDiv(member)
   divEmojisToAdd = []
@@ -551,7 +572,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
       userID = int(message.content.split("@")[-1].strip().split(">")[0])
     except ValueError:
       userID = int(message.content.split("@")[-1].strip().split(">")[0][1:])
-    if (userID == int(moBot)):
+    if (userID == moBot):
       await message.channel.send("**Driver Not Found**\nEdit your message to follow this command: `@MoBot#0697 quali @User x.xx.xxx`")
       return
 
@@ -563,7 +584,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
     await message.channel.send(user.mention + ", your lap has been submitted.")
 
   workbook = await openSpreadsheet()
-  driversRange, driversSheet = await getDriversRange(workbook)
+  driversRange, driversSheet = getDriversRange(workbook)
   qualifyingSheet = workbook.worksheet("Qualifying")
   qualifyingRange = qualifyingSheet.range("G3:I" + str(qualifyingSheet.row_count))
 
@@ -792,23 +813,23 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   await updateDivList(message, divList)
 # end submitQualiTime
 
-async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, client):
-  await qualiScreenshotsChannel.set_permissions(user, read_messages=True, send_messages=True)
-  moBotMessage = await qualiScreenshotsChannel.send("<@" + str(user.id) + ">, you have 60 seconds to submit your screenshot.")
+async def addUserToQualiScreenshots(message, member, qualiScreenshotsChannel, client):
+  await qualiScreenshotsChannel.set_permissions(member, read_messages=True, send_messages=True)
+  moBotMessage = await qualiScreenshotsChannel.send(member.mention + ", you have 60 seconds to submit your screenshot.")
 
   def check(msg):
-    return msg.author.id == user.id and msg.channel.id == qualiScreenshotsChannel.id
+    return msg.author.id == member.id and msg.channel.id == qualiScreenshotsChannel.id
   
   try:
     msg = await client.wait_for("message", timeout=60.0, check=check)
     await moBotMessage.delete()
     if (len(msg.attachments) > 0 or "http" in msg.content):
-      moBotMessage = await msg.channel.send("<@" + str(user.id) + ">, if there is more than one driver in the screenshot, please type which drivers need inputting, otherwise, thank you for submitting.")
+      moBotMessage = await msg.channel.send(member.mention + ", if there is more than one driver in the screenshot, please type which drivers need inputting, otherwise, thank you for submitting.")
       try:
         msg = await client.wait_for("message", timeout=120.0, check=check)
       except asyncio.TimeoutError:
         pass
-      await qualiScreenshotsChannel.set_permissions(user, read_messages=True, send_messages=False)
+      await qualiScreenshotsChannel.set_permissions(member, read_messages=True, send_messages=False)
       await moBotMessage.delete()
       return
     else:
@@ -816,9 +837,9 @@ async def addUserToQualiScreenshots(message, user, qualiScreenshotsChannel, clie
       await msg.delete()
   except asyncio.TimeoutError:
     await moBotMessage.delete()
-    await message.channel.send("<@" + str(user.id) + ">, you took too long. If you still need to submit a screenshot, click the ✅ at the top of the channel.", delete_after=120.0)
+    await message.channel.send(member.mention + ", you took too long. If you still need to submit a screenshot, click the ✅ at the top of the channel.", delete_after=120.0)
   
-  await qualiScreenshotsChannel.set_permissions(user, overwrite=None)
+  await qualiScreenshotsChannel.set_permissions(member, overwrite=None)
 # end addUserToQualiScreenshots
 
 async def updateDivList(message, divList):
@@ -910,7 +931,112 @@ async def updateDriverRoles(message, workbook):
   return divList
 # end updateDriverRoles
 
-async def getDriversRange(workbook):
+async def updateStartOrders(guild):
+  startOrdersChannel = guild.get_channel(START_ORDERS)
+
+  startOrders = getStartOrders(await openSpreadsheet())
+  startOrderEmbeds = []
+  embed = discord.Embed(color=int("0xd1d1d1", 16))
+  embed.set_author(name="Children of the Mountain - Season 5\nStart Orders", url=logos["cotmFaded"])
+  embed.description = "Pos. Driver - Reserve - Points - Last Week's Division"
+  embed = embed.to_dict()
+  startOrderEmbeds.append(embed)
+
+  for division in startOrders:
+    embed = discord.Embed(color=int("0xd1d1d1", 16))
+    embed.add_field(name="Division " + str(division), value="", inline=False)
+    embed = embed.to_dict()
+    for i in range(len(startOrders[division])):
+      driver = startOrders[division][i]
+      driverMember = guild.get_member(driver.driverID)
+      if (driver.reserveID != None):
+        driverMention = "~~" + driverMember.mention + "~~"
+        reserveMention = guild.get_member(driver.reserveID).mention
+        embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverMention, reserveMention, driver.totalPoints, driver.lastWeeksDiv))
+      else:
+        driverMention = driverMember.mention
+        embed["fields"][0]["value"] += ("%d. %s - %d - D%s\n" % (i+1, driverMention, driver.totalPoints, driver.lastWeeksDiv))
+    startOrderEmbeds.append(embed)
+
+  await startOrdersChannel.purge()
+  for embed in startOrderEmbeds:
+    try:
+      await startOrdersChannel.send(embed=discord.Embed.from_dict(embed))
+    except discord.errors.HTTPException: # when a division has no drivers
+      pass
+# end updateStartOrders
+
+def getReserves(workbook):
+  class Reserve:
+    def __init__(self, division, driverID, reserveID):
+      self.division = division
+      self.driverID = driverID
+      self.reserveID = reserveID
+  # end Reserve
+
+  reservesSheet = workbook.worksheet("Reserves")
+  reservesRange = reservesSheet.range("F4:S" + str(reservesSheet.row_count))
+  driversRange, driverSheet = getDriversRange(workbook)
+  numCols = 14
+  reserves = {}
+  for i in range(0, len(reservesRange), numCols):
+    blankRow = True
+    for j in range(i, numCols, 2):
+      if (reservesRange[i+j].value == ""):
+        continue
+      division = int((i+2) / 2)
+      driverID = int(driversRange[findDriver(driversRange, reservesRange[i+j].value) - 1].value)
+      reserveID = int(driversRange[findDriver(driversRange, reservesRange[i+j+1].value) - 1].value)
+      reserves[driverID] = Reserve(division, driverID, reserveID)
+      blankRow = False
+    if (blankRow):
+      break
+  return reserves    
+# end getReserve
+
+def getStartOrders(workbook):
+  class Driver:
+    def __init__(self, driverID, totalPoints, lastWeeksDiv, reserveID):
+      self.driverID = driverID
+      self.totalPoints = totalPoints
+      self.lastWeeksDiv = lastWeeksDiv
+      self.reserveID = reserveID
+  # end Driver
+
+  reserves = getReserves(workbook)
+
+  divisionRostersSheet = workbook.worksheet("Division Rosters")
+  driversRange, driversSheet = getDriversRange(workbook)
+
+  weekNumber = int(divisionRostersSheet.range("B1:B1")[0].value)
+  divisionRostersRanges = {}
+  startOrders = {}
+  for i in range(0, 7):
+    division = str(i+1)
+    topRow = ((int(division) - 1) * 31) + 5
+    bottomRow = topRow + 28
+    divisionRostersRanges[division] = divisionRostersSheet.range("B%1d:F%1d" % (topRow, bottomRow))
+  
+  for division in divisionRostersRanges:
+    startOrder = []
+    for i in range(0, len(divisionRostersRanges[division]), 5):
+      divisionRoster = divisionRostersRanges[division]
+      if (divisionRoster[i].value != ""):
+        driverID = int(driversRange[findDriver(driversRange, divisionRoster[i+2].value)-1].value)
+        totalPoints = int(divisionRoster[i+3].value.split(".")[0])
+        lastWeeksDiv = divisionRoster[i+1].value
+        if (driverID in reserves):
+          reserveID = reserves[driverID].reserveID
+        else:
+          reserveID = None
+        startOrder.append(Driver(driverID, totalPoints, lastWeeksDiv, reserveID))
+      else:
+        break
+    startOrders[division] = startOrder
+  return startOrders
+# end getStartOrders
+
+def getDriversRange(workbook):
   driversSheet = workbook.worksheet("Drivers")
   driversRange = driversSheet.range("B3:C" + str(driversSheet.row_count))
   return driversRange, driversSheet

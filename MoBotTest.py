@@ -114,7 +114,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.tagMissingQualifiers(message)
+        await COTM.updateStartOrders(message.guild)
         print ("done")
 
       elif (args[1] == "countdown"):
@@ -398,8 +398,7 @@ async def on_member_join(member):
 
 @client.event
 async def on_member_update(before, after):
-  print("TYPE", before.activity.type)
-  print("BOOL", before.activity.type == discord.ActivityType.playing)
+  pass
 # end on_member_update
 
 def logMessageToConsole(message, user, logType):

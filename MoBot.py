@@ -227,11 +227,22 @@ async def on_message(message):
         if (args[2] == "embed"):
           await moBotEmbed(message, args, True)
         else:
+          msg = None
           try:
-            msg = await message.channel.fetch_message(int(args[2]))
-          except:
+            msg = await message.channel.fetch_message(int(args[3]))
+          except discord.errors.NotFound:
+            for channel in message.guild.channels:
+              try:
+                msg = await channel.fetch_message(int(args[3]))
+                break
+              except discord.errors.NotFound:
+                pass
+              except AttributeError:
+                pass
+          if (msg is None):
             await message.channel.send("Looks like something didn't go quite right... The command for editing a regular message is, `@MoBot#0697 edit [MessageID] [new_text]`. The command for editing an embed can be found using `@MoBot#0697 embed help`.")
-          await msg.edit(content=message.content.split(args[2])[1].strip())
+          else:
+            await msg.edit(content=message.content.split(args[2])[1].strip())
       elif (args[1] == "channel" and permissions["manageChannelPerms"]):
         channel = message.guild.get_channel(int(args[2]))
         await channel.edit(name=message.content.split(str(channel.id))[1].strip())
