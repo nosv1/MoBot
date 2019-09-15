@@ -62,12 +62,13 @@ async def main(args, message, client):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
     if ("missingqualifiers" in args[1].lower()):
       await tagMissingQualifiers(message)
-    if (args[1] == "end" and args[2] == "qualifying" and message.author.id == moID):
+      
+  elif(message.author.id == moID):
+    if (args[0] == "cotm" and args[1] == "test"):
+      await updateStandings(message.guild, await openSpreadsheet())
+      print("DONE")
+    elif (args[1] == "end" and args[2] == "qualifying"):
       await endQualifying(message)
-
-  elif (args[0] == "cotm" and args[1] == "test" and message.author.id == moID):
-    await updateStandings(message.guild, await openSpreadsheet())
-    print("DONE")
   # end main
 # end main
 
@@ -99,8 +100,10 @@ async def mainReactionAdd(message, payload, client):
     if (message.id == 620811567210037253): # message id for Reserves Embed
       if (payload.emoji.name == WAVE_EMOJI):
         await reserveNeeded(message, member)
+        await message.channel.send(".", delete_after=0)
       elif (payload.emoji.name == FIST_EMOJI):
         await reserveAvailable(message, member, payload, client)
+        await message.channel.send(".", delete_after=0)
 
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
@@ -113,8 +116,10 @@ async def mainReactionRemove(message, payload, client):
     if (message.id == 620811567210037253): # message id for Reserves Embed
       if (payload.emoji.name == WAVE_EMOJI):
         await reserveNotNeeded(message, member)
+        await message.channel.send(".", delete_after=0)
       elif (payload.emoji.name == FIST_EMOJI):
         await reserveNotAvailable(message, member)
+        await message.channel.send(".", delete_after=0)
 
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
