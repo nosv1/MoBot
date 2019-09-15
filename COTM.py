@@ -67,7 +67,7 @@ async def main(args, message, client):
     if (args[0] == "cotm" and args[1] == "test"):
       await updateStandings(message.guild, await openSpreadsheet())
       print("DONE")
-    elif (args[1] == "end" and args[2] == "qualifying"):
+    elif (args[0] == "end" and args[1] == "qualifying"):
       await endQualifying(message)
   # end main
 # end main
