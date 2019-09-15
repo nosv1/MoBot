@@ -69,6 +69,7 @@ async def main(args, message, client):
     await updateStandings(message.guild, await openSpreadsheet())
     print("DONE")
   # end main
+# end main
 
 async def mainReactionAdd(message, payload, client):
   member = message.guild.get_member(payload.user_id)
