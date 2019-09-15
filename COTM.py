@@ -62,10 +62,10 @@ async def main(args, message, client):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
     if ("missingqualifiers" in args[1].lower()):
       await tagMissingQualifiers(message)
-    if (args[1] == "end qualifying" and message.author.id == moID):
+    if (args[1] == "end" and args[2] == "qualifying" and message.author.id == moID):
       await endQualifying(message)
 
-  elif (args[0] == "cotm" and args[1] == "test"):
+  elif (args[0] == "cotm" and args[1] == "test" and message.author.id == moID):
     await updateStandings(message.guild, await openSpreadsheet())
     print("DONE")
   # end main
