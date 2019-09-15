@@ -12,6 +12,7 @@ import SecretStuff
 
 import RandomFunctions
 
+# common member ids
 moID = 405944496665133058
 moBot = 449247895858970624
 
@@ -22,11 +23,15 @@ QUALI_SCREENSHOTS = 607694176133447680
 START_ORDERS = 622484589465829376
 STANDINGS = 622467542497099786
 
+# common emojis
 CHECKMARK_EMOJI = "✅"
 ARROWS_COUNTERCLOCKWISE_EMOJI  = "🔄"
 THUMBSUP_EMOJI = "👍"
 WAVE_EMOJI = "👋"
 FIST_EMOJI = "✊"
+CROWN = "👑"
+WRENCH = "🔧"
+
 spaceChar = "⠀"
 logos = {
   "cotmFaded" : "https://i.gyazo.com/e720604af6507b3fc905083e8c92edf7.png",
@@ -60,15 +65,11 @@ async def main(args, message, client):
   if (args[0][-19:-1] == str(moBot)):
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
-    if ("missingqualifiers" in args[1].lower()):
-      await tagMissingQualifiers(message)
       
   elif(message.author.id == moID):
     if (args[0] == "cotm" and args[1] == "test"):
       await updateStandings(message.guild, await openSpreadsheet())
       print("DONE")
-    elif (args[0] == "end" and args[1] == "qualifying"):
-      await endQualifying(message)
   # end main
 # end main
 
@@ -108,6 +109,13 @@ async def mainReactionAdd(message, payload, client):
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
         await addStreamer(message, member, payload)
+
+    if (message.id == 622831151320662036): # message id for pit marshall signup embed
+      if (payload.emoji.name == CROWN):
+        await addHost(message, payload, member)
+      elif (payload.emoji.name == WRENCH):
+        await addPitMarshall(message, payload, member)
+      await message.remove_reaction(payload.emoji.name, member)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
@@ -138,22 +146,17 @@ async def mainMemberUpdate(before, after, client):
     await memberStartedStreaming(after, client)
 # end mainMemberUpdate
 
-async def endQualifying(message):
-  members = message.guild.members
-  for member in members:
-    roles = member.roles
-    isCOTM = False
-    for role in roles:
-      if ("divison" in role.name.lower()):
-        isCOTM = True
-        break
-    if (not isCOTM):
-      for role in roles:
-        if ("cotm" in role.name.lower()):
-          await member.remove_roles(role)
-        elif ("peeker" in role.name.lower()):
-          await member.add_roles(role)
-# end endQualifying
+async def addPitMarshall(message, payload, member):
+  for role in message.guild.roles:
+    if (role.name == "Pit Marshall"):
+      await member.add_roles(role)
+# end addPitMarshall
+
+async def addHost(message, payload, member):
+  for role in message.guild.roles:
+    if (role.name == "Pit Marshall"):
+      await member.add_roles(role)
+# end addHost
 
 async def addStreamer(message, member, payload):
   streamEmbed = message.embeds[0]
@@ -199,15 +202,6 @@ async def memberStartedStreaming(member, client):
   except:
     await client.get_member(moID).send(str(traceback.format_exc()))
 # end startedStreaming
-
-async def tagMissingQualifiers(message):
-  driversRange, driverSheet = getDriversRange(await openSpreadsheet())
-  missingQualifiers = await getMissingQualifiers(driversRange, message.guild)
-  reply = ""
-  for member in missingQualifiers:
-    reply += member.mention
-  print (reply)
-# end tagMissingQualifiers
 
 async def clearReserves(message):
   embed = message.embeds[0].to_dict()
@@ -956,7 +950,7 @@ async def updateDriverRoles(message, workbook):
           await member.add_roles(role)
           await divUpdateChannel.send("" + member.mention + " has been added to " + role.name + ".")  
       except ValueError:
-        print (str(traceback.format_exc()))
+        pass
   return divList
 # end updateDriverRoles
 
@@ -1063,10 +1057,13 @@ def getReserves(workbook):
       if (reservesRange[i+j].value == ""):
         continue
       division = int((i+2) / 2)
-      driverID = int(driversRange[findDriver(driversRange, reservesRange[i+j].value) - 1].value)
-      reserveID = int(driversRange[findDriver(driversRange, reservesRange[i+j+1].value) - 1].value)
-      reserves[driverID] = Reserve(division, driverID, reserveID)
-      blankRow = False
+      try:
+        driverID = int(driversRange[findDriver(driversRange, reservesRange[i+j].value) - 1].value)
+        reserveID = int(driversRange[findDriver(driversRange, reservesRange[i+j+1].value) - 1].value)
+        reserves[driverID] = Reserve(division, driverID, reserveID)
+        blankRow = False
+      except ValueError: # when there's no reserve for the driver yet
+        continue
     if (blankRow):
       break
   return reserves    
