@@ -20,6 +20,7 @@ COTM_STREAMS = 527161746473877504
 QUALIFYING = 607693838642970819
 QUALI_SCREENSHOTS = 607694176133447680
 START_ORDERS = 622484589465829376
+STANDINGS = 622467542497099786
 
 CHECKMARK_EMOJI = "✅"
 ARROWS_COUNTERCLOCKWISE_EMOJI  = "🔄"
@@ -63,7 +64,11 @@ async def main(args, message, client):
       await tagMissingQualifiers(message)
     if (args[1] == "end qualifying" and message.author.id == moID):
       await endQualifying(message)
-# end main
+
+  elif (args[0] == "cotm" and args[1] == "test"):
+    await updateStandings(message.guild, await openSpreadsheet())
+    print("DONE")
+  # end main
 
 async def mainReactionAdd(message, payload, client):
   member = message.guild.get_member(payload.user_id)
@@ -798,6 +803,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   embed.add_field(name="__New Qualifying Time__", value=value, inline=False)
   await moBotMessage.delete()
   await message.channel.send(embed=embed)
+  moBotMessage = await message.channel.send("**Updating Qualifying Standings**")
 
   topMsgID = None
   for embed in qualiStandingEmbeds:
@@ -810,7 +816,13 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   topMsgEmbed["author"]["url"] += "/top=" + str(topMsgID)
   topMsgEmbed["author"]["url"] += "/bottom=" + str(bottomMsgID)
   await topMsg.edit(embed=discord.Embed.from_dict(topMsgEmbed))
+  await moBotMessage.edit(content="**Updating Division List**")
   await updateDivList(message, divList)
+  await moBotMessage.edit(content="**Updating Start Orders**")
+  await updateStartOrders(message.guild, workbook)
+  await moBotMessage.edit(content="**Updating Standings**")
+  await updateStandings(message.guild, workbook)
+  await moBotMessage.delete()
 # end submitQualiTime
 
 async def addUserToQualiScreenshots(message, member, qualiScreenshotsChannel, client):
@@ -864,23 +876,34 @@ async def updateDivList(message, divList):
       embed = embed.to_dict()
       divListEmbeds["sortedByDivision"].append(embed)
 
-    nameRange = ["", ""]
+    nameRange = [None, None]
+    oldDiv = 0
+    div = 1
     for i in range(len(divList)):
       nameRange[1] = divList[i][1]
-      if (i % 15 == 0):
-        nameRange[0] = divList[i][1]
-        div = int(i/15) + 1
 
-        embed = discord.Embed(color=int("0xd1d1d1", 16))
-        if (key == "sortedByGamertag"):
-          embed.add_field(name="", value="", inline=False)
-        else:
+      if (key == "sortedByDivision"):
+        if (i > 0):
+          div = int(divList[i-1][1].display_name[2])
+        if (div != oldDiv):
+          oldDiv = div
+          embed = discord.Embed(color=int("0xd1d1d1", 16))
           embed.add_field(name="Division " + str(div), value="", inline=False)
-        embed = embed.to_dict()
-        divListEmbeds[key].append(embed)
+          embed = embed.to_dict()
+          divListEmbeds[key].append(embed)
+
+      elif (key == "sortedByGamertag"):
+        if (i % 15 == 0):
+          nameRange[0] = divList[i][1]
+          embed = discord.Embed(color=int("0xd1d1d1", 16))
+          embed.add_field(name="", value="", inline=False)
+          embed = embed.to_dict()
+          divListEmbeds[key].append(embed)
+
+
       if (key == "sortedByGamertag"):
-        divListEmbeds[key][len(divListEmbeds[key])-1]["fields"][0]["name"] = nameRange[0] + " - " + nameRange[1]
-      divListEmbeds[key][len(divListEmbeds[key])-1]["fields"][0]["value"] += "[D" + str(divList[i][0]) + "] " + divList[i][1] + "\n"
+        divListEmbeds[key][len(divListEmbeds[key])-1]["fields"][0]["name"] = nameRange[0].display_name + " - " + nameRange[1].display_name
+      divListEmbeds[key][len(divListEmbeds[key])-1]["fields"][0]["value"] += divList[i][1].display_name + "\n"
   
   await divListChannel.purge()
   for embed in divListEmbeds["sortedByGamertag"]:
@@ -911,7 +934,7 @@ async def updateDriverRoles(message, workbook):
         role = divRoles[int(div)-1][1]
 
         newNick = "[D" + div + "] " + gamertag
-        divList.append([int(div), gamertag, gamertag.lower()])
+        divList.append([int(div), member, gamertag.lower()])
         if (newNick != member.display_name):
           await member.edit(nick=newNick)
 
@@ -931,14 +954,14 @@ async def updateDriverRoles(message, workbook):
   return divList
 # end updateDriverRoles
 
-async def updateStartOrders(guild):
+async def updateStartOrders(guild, workbook):
   startOrdersChannel = guild.get_channel(START_ORDERS)
 
-  startOrders = getStartOrders(await openSpreadsheet())
+  startOrders = getStartOrders(workbook)
   startOrderEmbeds = []
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="Children of the Mountain - Season 5\nStart Orders", url=logos["cotmFaded"])
-  embed.description = "Pos. Driver - Reserve - Points - Last Week's Division"
+  embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
+  embed.add_field(name="Start Orders", value="Pos. Driver - Reserve - Points - Last Week's Division", inline=False)
   embed = embed.to_dict()
   startOrderEmbeds.append(embed)
 
@@ -950,12 +973,12 @@ async def updateStartOrders(guild):
       driver = startOrders[division][i]
       driverMember = guild.get_member(driver.driverID)
       if (driver.reserveID != None):
-        driverMention = "~~" + driverMember.mention + "~~"
-        reserveMention = guild.get_member(driver.reserveID).mention
-        embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverMention, reserveMention, driver.totalPoints, driver.lastWeeksDiv))
+        driverName = "~~" + driverMember.display_name + "~~"
+        reserveName = guild.get_member(driver.reserveID).display_name
+        embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverName, reserveName, driver.totalPoints, driver.lastWeeksDiv))
       else:
-        driverMention = driverMember.mention
-        embed["fields"][0]["value"] += ("%d. %s - %d - D%s\n" % (i+1, driverMention, driver.totalPoints, driver.lastWeeksDiv))
+        driverName = driverMember.display_name
+        embed["fields"][0]["value"] += ("%d. %s - %d - D%s\n" % (i+1, driverName, driver.totalPoints, driver.lastWeeksDiv))
     startOrderEmbeds.append(embed)
 
   await startOrdersChannel.purge()
@@ -965,6 +988,55 @@ async def updateStartOrders(guild):
     except discord.errors.HTTPException: # when a division has no drivers
       pass
 # end updateStartOrders
+
+async def updateStandings(guild, workbook):
+  standingsChannel = guild.get_channel(STANDINGS)
+
+  standings = getStandings(workbook)
+  standingsEmbeds = []
+  embed = discord.Embed(color=int("0xd1d1d1", 16))
+  embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
+  embed.add_field(name="Standings", value="Pos. Driver - Points", inline=False)
+  embed = embed.to_dict()
+  standingsEmbeds.append(embed)
+
+  for i in range(len(standings)):
+    if (i % 15 == 0):
+      embed = discord.Embed(color=int("0xd1d1d1", 16))
+      embed.add_field(name=("Pos. %d - %d" % (i+1, i+15)), value="", inline=False)
+      embed = embed.to_dict()
+      standingsEmbeds.append(embed)
+
+    driverMember = guild.get_member(standings[i].driverID)
+    standingsEmbeds[len(standingsEmbeds)-1]["fields"][0]["value"] += ("%d. %s - %d" % (standings[i].position, driverMember.display_name, standings[i].points)) + "\n"
+
+  await standingsChannel.purge()
+  for embed in standingsEmbeds:
+    await standingsChannel.send(embed=discord.Embed.from_dict(embed))
+# end updateStandings
+
+def getStandings(workbook):
+  class Driver:
+    def __init__(self, position, driverID, points):
+      self.position = position
+      self.driverID = driverID
+      self.points= points
+  # end Driver
+
+  standingsSheet = workbook.worksheet("Standings")
+  standingsRange = standingsSheet.range("B3:E" + str(standingsSheet.row_count))
+  driversRange, driverSheet = getDriversRange(workbook)
+
+  standings = []
+  for i in range(0, len(standingsRange), 4):
+    if (standingsRange[i].value == ""):
+      break  
+    position = int(standingsRange[i].value)
+    driverID = int(driversRange[findDriver(driversRange, standingsRange[i+2].value)-1].value)
+    points = int(standingsRange[i+3].value.split(".")[0])
+    standings.append(Driver(position, driverID, points))
+  return standings
+# end getStandings
 
 def getReserves(workbook):
   class Reserve:

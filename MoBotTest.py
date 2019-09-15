@@ -655,6 +655,7 @@ async def makeEmbed(message):
 
   embed.set_image(url=message.author.avatar_url)
   embed.set_footer(text="Footer\nFooter")
+  print(embed.to_dict())
 
   await message.channel.send(embed=embed)
 
