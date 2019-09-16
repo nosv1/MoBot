@@ -284,7 +284,7 @@ async def addHost(message, payload, member, client):
         if (member.display_name in embed["fields"][i]["value"]):
           continue
         for line in embed["fields"][i]["value"].split("\n"):
-          if ("Host" in line and "@" not in line):
+          if ("Host" in line and "[" not in line):
             value += "Host  - " + member.display_name + "\n"
 
             for role in message.guild.roles:
