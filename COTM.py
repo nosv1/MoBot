@@ -407,7 +407,7 @@ async def reserveNotNeeded(message, member):
   await message.edit(embed=discord.Embed.from_dict(embed))
 
   workbook = await openSpreadsheet()
-  await setReservesNeeded(embed["fields"][0]["value"], workbook)
+  await setReservesNeeded(member, embed["fields"][0]["value"], workbook)
   await updateStartOrders(message.guild, workbook)
 # end reserveNotNeeded
 
@@ -445,7 +445,7 @@ async def reserveAvailable(message, member, payload, client):
         emoji = client.get_emoji(int(divisionEmojis[str(i)]))
         divEmojisToAdd.append(emoji)
 
-  moBotMessage = await message.channel.send(member.mention + ", which division(s) are you available to reserve for? *Click all that apply, then click the " + CHECKMARK_EMOJI + ".*")
+  moBotMessage = await message.channel.send(member.mention + ", which division(s) are you available to reserve for?\n*Click all that apply, then click the " + CHECKMARK_EMOJI + ".*")
   for emoji in divEmojisToAdd:
     await moBotMessage.add_reaction(emoji)
   await moBotMessage.add_reaction(CHECKMARK_EMOJI)
@@ -1169,7 +1169,7 @@ async def updateStartOrders(guild, workbook):
                 break
             if (not hasRole):
               await reserveMember.add_roles(role)
-              await guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " has been added to " + role.name)
+              await guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " is now reserving for " + driver.mention + ".")
             break
         embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverName, reserveMember.display_name, driver.totalPoints, driver.lastWeeksDiv))
       else:
@@ -1272,9 +1272,10 @@ def getReserves(workbook):
   return reserves    
 # end getReserve
 
-async def setReservesNeeded(reservesNeededValue, workbook):
+async def setReservesNeeded(member, reservesNeededValue, workbook):
   reservesSheet = workbook.worksheet("Reserves")
   reservesNeededRange = reservesSheet.range("B4:C" + str(reservesSheet.row_count))
+  reserves = getReserves(workbook)
   reservesNeeded = []
   for line in reservesNeededValue.split("\n"):
     if (spaceChar in line):
@@ -1287,6 +1288,16 @@ async def setReservesNeeded(reservesNeededValue, workbook):
       reservesNeededRange[i].value = reservesNeeded[i]
     except IndexError: # when reserve is not needed
       reservesNeededRange[i].value = ""
+      reservesNeededRange[i+1].value = ""
+      if (member.id in reserves):
+        reserveMember = member.guild.get_member(reserves[member.id].reserveID)
+        driverMember = member.guild.get_member(reserves[member.id].driverID)
+        await member.guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " is no longer reserving for " + driverMember.mention + ".")
+        for role in reserveMember.roles:
+          if (role.name == "Reserve Division " + str(reserves[member.id].division) and "[R]" not in reserveMember.display_name):
+            await reserveMember.remove_roles(role)
+            break
+      break
   reservesSheet.update_cells(reservesNeededRange, value_input_option="USER_ENTERED")
 # end setReservesNeeded
 
@@ -1303,7 +1314,7 @@ async def setReservesAvailable(reservesAvailableValue, workbook):
   for i in range(len(reservesAvailableRange)):
     try:
       reservesAvailableRange[i].value = reservesAvailable[i]
-    except IndexError: # when reserve is not needed
+    except IndexError: # when reserve is not available
       reservesAvailableRange[i].value = ""
   reservesSheet.update_cells(reservesAvailableRange, value_input_option="USER_ENTERED")
 # end setReservesAvailable
