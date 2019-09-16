@@ -434,8 +434,12 @@ async def reserveAvailable(message, member, payload, client):
     await message.remove_reaction(payload.emoji.name, member)
     return -1
   else:
-    if (reserveDiv == 1):
+    if (reserveDiv == 1): # d1 driver
       divEmojisToAdd.append(client.get_emoji(int(divisionEmojis[str(reserveDiv+1)])))
+    elif (reserveDiv == 0): # full time reserve
+      for role in member.roles:
+        if ("Reserve Division" in role.name):
+          divEmojisToAdd.append(client.get_emoji(int(divisionEmojis[str(role.name.split("Division")[1].strip())])))
     else:
       for i in range(reserveDiv-1, reserveDiv+2, 2):
         emoji = client.get_emoji(int(divisionEmojis[str(i)]))
@@ -497,7 +501,7 @@ async def reserveNotAvailable(message, member):
   await updateStartOrders(message.guild, workbook)
 
   for role in member.roles:
-    if ("Reserve" in role.name):
+    if ("Reserve" in role.name and "[R]" not in member.display_name):
       await member.remove_roles(role)
 # end reserveNotAvailable
 
