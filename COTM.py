@@ -198,7 +198,7 @@ async def addPitMarshall(message, payload, member, client):
         if (member.display_name in embed["fields"][i]["value"]):
           continue
         for line in embed["fields"][i]["value"].split("\n"):
-          if ("Pit-Marshall" in line and "@" not in line):
+          if ("Pit-Marshall" in line and "[" not in line):
             value += "Pit-Marshall - " + member.display_name + "\n"
 
             for role in message.guild.roles:
