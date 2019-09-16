@@ -73,6 +73,9 @@ async def main(args, message, client):
             await updateStandings(message.guild, await openSpreadsheet())
           elif (args[2] == "start" and args[3] == "orders"):
             await updateStartOrders(message.guild, await openSpreadsheet())
+          elif (args[2] == "div" and args[3] == "list"):
+            divList = await updateDriverRoles(message, await openSpreadsheet())
+            await updateDivList(message, divList)
       except IndexError:
         pass
   # end main
@@ -1063,13 +1066,11 @@ async def updateDivList(message, divList):
 
     nameRange = [None, None]
     oldDiv = 0
-    div = 1
     for i in range(len(divList)):
       nameRange[1] = divList[i][1]
 
       if (key == "sortedByDivision"):
-        if (i > 0):
-          div = int(divList[i-1][1].display_name[2])
+        div = int(divList[i][1].display_name[2])
         if (div != oldDiv):
           oldDiv = div
           embed = discord.Embed(color=int("0xd1d1d1", 16))
