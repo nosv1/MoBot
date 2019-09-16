@@ -304,7 +304,7 @@ async def addHost(message, payload, member, client):
     await message.channel.send("**TIMED OUT**", delete_after=10.0)
     await moBotMessage.delete()
     await message.remove_reaction(payload.emoji.name, member)
-# end addPitMarshall
+# end addHost
 
 async def removeHost(message, member):
   embed = message.embeds[0].to_dict()
@@ -321,7 +321,7 @@ async def removeHost(message, member):
         value += line + "\n"
     embed["fields"][i]["value"] = value
   await message.edit(embed=discord.Embed.from_dict(embed))
-# end removePitMarshall
+# end addHost
 
 async def addStreamer(message, member, payload):
   streamEmbed = message.embeds[0]
