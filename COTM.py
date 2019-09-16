@@ -22,6 +22,7 @@ QUALIFYING = 607693838642970819
 QUALI_SCREENSHOTS = 607694176133447680
 START_ORDERS = 622484589465829376
 STANDINGS = 622467542497099786
+DIVISION_UPDATES = 527319768911314944
 
 # common emojis
 CHECKMARK_EMOJI = "✅"
@@ -194,7 +195,7 @@ async def addPitMarshall(message, payload, member, client):
     for i in range(len(embed["fields"])):
       if (i+1 in divs):
         value = ""
-        if (str(member.id) in embed["fields"][i]["value"]):
+        if (member.display_name in embed["fields"][i]["value"]):
           continue
         for line in embed["fields"][i]["value"].split("\n"):
           if ("Pit-Marshall" in line and "@" not in line):
@@ -328,7 +329,7 @@ async def addStreamer(message, member, payload):
       value = ""
       for line in streamEmbed["fields"][i]["value"].split("\n"):
         if (line == spaceChar):
-          value += member.mention + "\n"
+          value += member.display_name + "\n"
         else:
           value += line + "\n"
       value += spaceChar
@@ -345,7 +346,7 @@ async def removeStreamer(message, member, payload):
     if (payload.emoji.name.lower() in streamEmbed["fields"][i]["name"].lower()):
       value = ""
       for line in streamEmbed["fields"][i]["value"].split("\n"):
-        if (str(member.id) not in line):
+        if (member.display_name not in line):
           value += line + "\n"
       streamEmbed["fields"][i]["value"] = value
       break
@@ -386,8 +387,12 @@ async def clearReserves(message):
 async def reserveNeeded(message, member):
   embed = message.embeds[0].to_dict()
   reservesNeeded = embed["fields"][0]["value"][:-1].strip()
-  embed["fields"][0]["value"] = reservesNeeded + "\n" + member.mention + "\n" + spaceChar
+  embed["fields"][0]["value"] = reservesNeeded + "\n" + member.display_name + "\n" + spaceChar
   await message.edit(embed=discord.Embed.from_dict(embed))
+
+  workbook = await openSpreadsheet()
+  await setReservesNeeded(embed["fields"][0]["value"], workbook)
+  await updateStartOrders(message.guild, workbook)
 # end reserveNeeded
 
 async def reserveNotNeeded(message, member):
@@ -395,11 +400,15 @@ async def reserveNotNeeded(message, member):
   reservesNeeded = embed["fields"][0]["value"][:-1].strip().split("\n")
   newReservesNeeded = ""
   for reserve in reservesNeeded:
-    if (str(member.id) not in reserve):
+    if (member.display_name not in reserve):
       newReservesNeeded += reserve + "\n"
   newReservesNeeded += spaceChar
   embed["fields"][0]["value"] = newReservesNeeded
   await message.edit(embed=discord.Embed.from_dict(embed))
+
+  workbook = await openSpreadsheet()
+  await setReservesNeeded(embed["fields"][0]["value"], workbook)
+  await updateStartOrders(message.guild, workbook)
 # end reserveNotNeeded
 
 async def reserveAvailable(message, member, payload, client):
@@ -449,10 +458,14 @@ async def reserveAvailable(message, member, payload, client):
         async for user in reaction.users():
           if (user.id == member.id):
             reserveAdded = True
-            reservesNeeded += "\n" + str(reaction.emoji) + " - " + member.mention
+            reservesNeeded += "\n" + str(reaction.emoji) + " - " + member.display_name
     if (reserveAdded):
       embed["fields"][1]["value"] = reservesNeeded + "\n" + spaceChar
       await message.edit(embed=discord.Embed.from_dict(embed))
+
+      workbook = await openSpreadsheet()
+      await setReservesAvailable(embed["fields"][1]["value"], workbook)
+      await updateStartOrders(message.guild, workbook)
     else:
       await message.remove_reaction(payload.emoji.name, member)
     await moBotMessage.delete()
@@ -468,11 +481,20 @@ async def reserveNotAvailable(message, member):
   reservesNeeded = embed["fields"][1]["value"][:-1].strip().split("\n")
   newReservesNeeded = ""
   for reserve in reservesNeeded:
-    if (str(member.id) not in reserve):
+    if (member.display_name not in reserve):
       newReservesNeeded += reserve + "\n"
   newReservesNeeded += spaceChar
   embed["fields"][1]["value"] = newReservesNeeded
   await message.edit(embed=discord.Embed.from_dict(embed))
+  
+  for role in member.roles:
+    if ("Reserve Division" in role.name):
+      await member.remove_roles(role)
+      await message.guild.get_channel(DIVISION_UPDATES).send(member.mention + " has been removed from " + role.name)
+
+  workbook = await openSpreadsheet()
+  await setReservesAvailable(embed["fields"][1]["value"], workbook)
+  await updateStartOrders(message.guild, workbook)
 
   for role in member.roles:
     if ("Reserve" in role.name):
@@ -663,7 +685,7 @@ async def openVotingChannel(message, member):
 
     # udpate current voters
     currentVotersEmbed["fields"][2]["value"] = "" if ("None" in currentVoters) else currentVoters.split(spaceChar)[0].strip() 
-    currentVotersEmbed["fields"][2]["value"] += "\n" + member.mention + " - <#" + str(votingChannel.id) + ">"
+    currentVotersEmbed["fields"][2]["value"] += "\n" + member.display_name + " - <#" + str(votingChannel.id) + ">"
     currentVotersEmbed["fields"][2]["value"] += "\n" + spaceChar
     await currentVotersMsg.edit(embed=discord.Embed.from_dict(currentVotersEmbed))
 
@@ -1075,7 +1097,7 @@ async def updateDivList(message, divList):
 
 async def updateDriverRoles(message, workbook):
   await message.channel.trigger_typing()
-  divUpdateChannel = message.guild.get_channel(527319768911314944)
+  divUpdateChannel = message.guild.get_channel(DIVISION_UPDATES)
   driversSheet = workbook.worksheet("Drivers")
   driversRange = driversSheet.range("B3:D" + str(driversSheet.row_count))
 
@@ -1135,8 +1157,19 @@ async def updateStartOrders(guild, workbook):
       driverMember = guild.get_member(driver.driverID)
       if (driver.reserveID != None):
         driverName = "~~" + driverMember.display_name + "~~"
-        reserveName = guild.get_member(driver.reserveID).display_name
-        embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverName, reserveName, driver.totalPoints, driver.lastWeeksDiv))
+        reserveMember = guild.get_member(driver.reserveID)
+        for role in guild.roles:
+          if (role.name == "Reserve Division " + str(division)):
+            hasRole = False
+            for role2 in reserveMember.roles:
+              if (role2 == role):
+                hasRole = True
+                break
+            if (not hasRole):
+              await reserveMember.add_roles(role)
+              await guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " has been added to " + role.name)
+            break
+        embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverName, reserveMember.display_name, driver.totalPoints, driver.lastWeeksDiv))
       else:
         driverName = driverMember.display_name
         embed["fields"][0]["value"] += ("%d. %s - %d - D%s\n" % (i+1, driverName, driver.totalPoints, driver.lastWeeksDiv))
@@ -1208,27 +1241,70 @@ def getReserves(workbook):
   # end Reserve
 
   reservesSheet = workbook.worksheet("Reserves")
-  reservesRange = reservesSheet.range("F4:S" + str(reservesSheet.row_count))
+  reservesNeeded = reservesSheet.range("B4:C" + str(reservesSheet.row_count))
+  reservesAvailable = reservesSheet.range("D4:E" + str(reservesSheet.row_count))
   driversRange, driverSheet = getDriversRange(workbook)
-  numCols = 14
   reserves = {}
-  for i in range(0, len(reservesRange), numCols):
-    blankRow = True
-    for j in range(i, numCols, 2):
-      if (reservesRange[i+j].value == ""):
-        continue
-      division = int((i+2) / 2)
-      try:
-        driverID = int(driversRange[findDriver(driversRange, reservesRange[i+j].value) - 1].value)
-        reserveID = int(driversRange[findDriver(driversRange, reservesRange[i+j+1].value) - 1].value)
-        reserves[driverID] = Reserve(division, driverID, reserveID)
-        blankRow = False
-      except ValueError: # when there's no reserve for the driver yet
-        continue
-    if (blankRow):
-      break
+  reservesAdded = {
+    "1" : [],
+    "2" : [],
+    "3" : [],
+    "4" : [],
+    "5" : [],
+    "6" : [],
+    "7" : []
+  }
+  for i in range(0, len(reservesNeeded), 2):
+    if (reservesNeeded[i].value != ""):
+      driverID = int(driversRange[findDriver(driversRange, reservesNeeded[i+1].value)-1].value)
+      division = int(reservesNeeded[i].value)
+      for j in range(0, len(reservesAvailable), 2):
+        if (reservesAvailable[j].value == ""):
+          break
+        elif (int(reservesAvailable[j].value) == division):
+          reserveID = int(driversRange[findDriver(driversRange, reservesAvailable[j+1].value)-1].value)
+          if (reserveID not in reservesAdded[str(division)]):
+            reservesAdded[str(division)].append(reserveID)
+            reserves[driverID] = Reserve(division, driverID, reserveID)
+            break
   return reserves    
 # end getReserve
+
+async def setReservesNeeded(reservesNeededValue, workbook):
+  reservesSheet = workbook.worksheet("Reserves")
+  reservesNeededRange = reservesSheet.range("B4:C" + str(reservesSheet.row_count))
+  reservesNeeded = []
+  for line in reservesNeededValue.split("\n"):
+    if (spaceChar in line):
+      break
+    reservesNeeded.append(line.split("]")[0][-1])
+    reservesNeeded.append(line.split("]")[1].strip())
+
+  for i in range(len(reservesNeededRange)):
+    try:
+      reservesNeededRange[i].value = reservesNeeded[i]
+    except IndexError: # when reserve is not needed
+      reservesNeededRange[i].value = ""
+  reservesSheet.update_cells(reservesNeededRange, value_input_option="USER_ENTERED")
+# end setReservesNeeded
+
+async def setReservesAvailable(reservesAvailableValue, workbook):
+  reservesSheet = workbook.worksheet("Reserves")
+  reservesAvailableRange = reservesSheet.range("D4:E" + str(reservesSheet.row_count))
+  reservesAvailable = []
+  for line in reservesAvailableValue.split("\n"):
+    if (spaceChar in line):
+      break
+    reservesAvailable.append(line.split(":")[1][-1])
+    reservesAvailable.append(line.split("]")[1].strip())
+
+  for i in range(len(reservesAvailableRange)):
+    try:
+      reservesAvailableRange[i].value = reservesAvailable[i]
+    except IndexError: # when reserve is not needed
+      reservesAvailableRange[i].value = ""
+  reservesSheet.update_cells(reservesAvailableRange, value_input_option="USER_ENTERED")
+# end setReservesAvailable
 
 def getStartOrders(workbook):
   class Driver:
