@@ -1170,7 +1170,7 @@ async def updateStartOrders(guild, workbook):
                 break
             if (not hasRole):
               await reserveMember.add_roles(role)
-              await guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " is now reserving for " + driver.mention + ".")
+              await guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " is now reserving for " + driverMember.mention + ".")
             break
         embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverName, reserveMember.display_name, driver.totalPoints, driver.lastWeeksDiv))
       else:
