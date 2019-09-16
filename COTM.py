@@ -469,6 +469,8 @@ async def reserveAvailable(message, member, payload, client):
 
       workbook = await openSpreadsheet()
       await setReservesAvailable(embed["fields"][1]["value"], workbook)
+      await moBotMessage.edit(content="**Updating Reserve List**")
+      await moBotMessage.clear_reactions()
       await updateStartOrders(message.guild, workbook)
     else:
       await message.remove_reaction(payload.emoji.name, member)
@@ -492,17 +494,13 @@ async def reserveNotAvailable(message, member):
   await message.edit(embed=discord.Embed.from_dict(embed))
   
   for role in member.roles:
-    if ("Reserve Division" in role.name):
+    if ("Reserve Division" in role.name and "[R]" not in member.display_name):
       await member.remove_roles(role)
       await message.guild.get_channel(DIVISION_UPDATES).send(member.mention + " has been removed from " + role.name)
 
   workbook = await openSpreadsheet()
   await setReservesAvailable(embed["fields"][1]["value"], workbook)
   await updateStartOrders(message.guild, workbook)
-
-  for role in member.roles:
-    if ("Reserve" in role.name and "[R]" not in member.display_name):
-      await member.remove_roles(role)
 # end reserveNotAvailable
 
 async def resetVotes(message):
