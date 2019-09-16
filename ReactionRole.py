@@ -127,11 +127,11 @@ async def addAutoRole(message, autoRoles):
     roleIDs[i] = roleIDs[i].strip()
     if (roleIDs[i] != ""):
       roleIDsString += roleIDs[i] + ","
-      print (roleIDs[i])
+      print(roleIDs[i])
       for role in message.guild.roles:
-        print (role.id)
+        print(role.id)
         if (role.id == int(roleIDs[i])):
-          print (role.name)
+          print(role.name)
           reply += role.name + ", "
           break
     

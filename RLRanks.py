@@ -41,11 +41,11 @@ async def mainReactionRemove(message, payload, client):
 # end mainReactionRemove
 
 async def updateUserRoles(guild, rankMMR, member, platform, profile, highest):
-  print (member)
+  print(member)
   if (member != None):
     if (highest == None):
       ranks, highest = await getRanks(platform, profile)
-    print (highest)
+    print(highest)
     roles = guild.roles
 
     if ("rank" in rankMMR):
@@ -53,7 +53,7 @@ async def updateUserRoles(guild, rankMMR, member, platform, profile, highest):
 
       for role in roles:
         if (role.name == rank):
-          print ("ADDING", role.name, "TO", member)
+          print("ADDING", role.name, "TO", member)
           await member.add_roles(role)
           break
     elif ("mmr" in rankMMR):
@@ -62,15 +62,15 @@ async def updateUserRoles(guild, rankMMR, member, platform, profile, highest):
       for role in roles:
         roleName = role.name.split("-")
         if (len(roleName) == 2):
-          print (roleName)
+          print(roleName)
           if (not math.isnan(int(roleName[0])) and not math.isnan(int(roleName[1]))):
             mmrs = [int(roleName[0]), int(roleName[1])]
             if (mmr >= mmrs[0] and mmr <= mmrs[1]):
-              print ("ADDING", role.name, "TO", member)
+              print("ADDING", role.name, "TO", member)
               await member.add_roles(role)
               break
             elif (mmrs[1] > 2000 and mmr > 2000):
-              print ("ADDING", role.name, "TO", member)
+              print("ADDING", role.name, "TO", member)
               await member.add_roles(role)
               break
 # end updateUserRoles
@@ -113,7 +113,7 @@ async def updateUserRolesLoop(client):
     sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
     if ((now.hour % 6 == 0 and now.minute == 0 and second == 0)):
-      print ("\nUPDATING ROLES", datetime.now())
+      print("\nUPDATING ROLES", datetime.now())
       guildIDs, discordIDs = await getGuildIDsDiscordIDs(client)
 
       for guildID in guildIDs:
@@ -126,7 +126,7 @@ async def updateUserRolesLoop(client):
           profile = discordIDs[discordID][1]
           
           await updateUserRoles(guild, rankMMR, member, platform, profile, None)
-      print ("ROLES UPDATED", datetime.now())
+      print("ROLES UPDATED", datetime.now())
   
 # end updateUserRolesLoop
 

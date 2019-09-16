@@ -65,11 +65,15 @@ async def main(args, message, client):
   if (args[0][-19:-1] == str(moBot)):
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
-      
-  elif(message.author.id == moID):
-    if (args[0] == "cotm" and args[1] == "test"):
-      await updateStandings(message.guild, await openSpreadsheet())
-      print("DONE")
+    if (message.author.id == moID):
+      try:
+        if (args[1] == "update"):
+          if (args[2] == "standings"):
+            await updateStandings(message.guild, await openSpreadsheet())
+          elif (args[2] == "start" and args[3] == "orders"):
+            await updateStartOrders(message.guild, await openSpreadsheet())
+      except IndexError:
+        pass
   # end main
 # end main
 
@@ -112,10 +116,9 @@ async def mainReactionAdd(message, payload, client):
 
     if (message.id == 622831151320662036): # message id for pit marshall signup embed
       if (payload.emoji.name == CROWN):
-        await addHost(message, payload, member)
+        await addHost(message, payload, member, client)
       elif (payload.emoji.name == WRENCH):
-        await addPitMarshall(message, payload, member)
-      await message.remove_reaction(payload.emoji.name, member)
+        await addPitMarshall(message, payload, member, client)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
@@ -132,6 +135,12 @@ async def mainReactionRemove(message, payload, client):
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
         await removeStreamer(message, member, payload)
+
+    if (message.id == 622831151320662036): # message id for pit marshall signup embed
+      if (payload.emoji.name == CROWN):
+        await removeHost(message, member)
+      elif (payload.emoji.name == WRENCH):
+        await removePitMarshall(message, member)
 # end mainReactionRemove
 
 async def mainMemberUpdate(before, after, client):
@@ -146,17 +155,169 @@ async def mainMemberUpdate(before, after, client):
     await memberStartedStreaming(after, client)
 # end mainMemberUpdate
 
-async def addPitMarshall(message, payload, member):
-  for role in message.guild.roles:
-    if (role.name == "Pit Marshall"):
-      await member.add_roles(role)
+async def addPitMarshall(message, payload, member, client):
+  
+  def checkCheckmarkEmoji(payload):
+    return payload.user_id == member.id and message.channel.id == payload.channel_id and payload.emoji.name == CHECKMARK_EMOJI
+  # end checkCheckmarkEmoji
+
+  embed = message.embeds[0].to_dict()
+
+  try:
+    div = int(member.display_name[2])
+  except ValueError: # when user is not racing, but is pit marshalling
+    div = 0
+
+  divEmojisToAdd = []
+  for i in range(1, len(embed["fields"])-2+1):
+    if (i != div or div == 0):
+      emoji = client.get_emoji(int(divisionEmojis[str(i)]))
+      divEmojisToAdd.append(emoji)
+
+  moBotMessage = await message.channel.send(member.mention + ", which division(s) are you available to pit-marshall?\n*Click all that apply, then click the " + CHECKMARK_EMOJI + ".\nDO NOT CLICK DIVISIONS WITH THE SAME START TIME*")
+  for emoji in divEmojisToAdd:
+    await moBotMessage.add_reaction(emoji)
+  await moBotMessage.add_reaction(CHECKMARK_EMOJI)
+
+  try:
+    payload = await client.wait_for("raw_reaction_add", timeout=60.0, check=checkCheckmarkEmoji)
+    moBotMessage = await message.channel.fetch_message(payload.message_id)
+
+    divs = []
+    for reaction in moBotMessage.reactions:
+      if (str(reaction.emoji) != CHECKMARK_EMOJI):
+        async for user in reaction.users():
+          if (user.id == member.id):
+            divs.append(int(str(reaction.emoji).split(":")[1][-1]))
+            
+    
+    for i in range(len(embed["fields"])):
+      if (i+1 in divs):
+        value = ""
+        if (str(member.id) in embed["fields"][i]["value"]):
+          continue
+        for line in embed["fields"][i]["value"].split("\n"):
+          if ("Pit-Marshall" in line and "@" not in line):
+            value += "Pit-Marshall - " + member.display_name + "\n"
+
+            for role in message.guild.roles:
+              if (role.name == "Pit-Marshalls"):
+                await member.add_roles(role)
+                break
+          else:
+            value += line + "\n"
+        embed["fields"][i]["value"] = value
+    await message.edit(embed=discord.Embed.from_dict(embed))
+    await moBotMessage.delete()
+
+  except asyncio.TimeoutError:
+    await message.channel.send("**TIMED OUT**", delete_after=10.0)
+    await moBotMessage.delete()
+    await message.remove_reaction(payload.emoji.name, member)
 # end addPitMarshall
 
-async def addHost(message, payload, member):
-  for role in message.guild.roles:
-    if (role.name == "Pit Marshall"):
-      await member.add_roles(role)
-# end addHost
+async def removePitMarshall(message, member):
+  embed = message.embeds[0].to_dict()
+  for i in range(len(embed["fields"])):
+    value = ""
+    for line in embed["fields"][i]["value"].split("\n"):
+      if ("Pit-Marshall" in line and member.display_name in line):
+        value += "Pit-Marshall - \n"
+        for role in member.roles:
+          if (role.name == "Pit-Marshalls"):
+            await member.remove_roles(role)
+            break
+      else:
+        value += line + "\n"
+    embed["fields"][i]["value"] = value
+  await message.edit(embed=discord.Embed.from_dict(embed))
+# end removePitMarshall
+
+async def addHost(message, payload, member, client):
+  
+  def checkCheckmarkEmoji(payload):
+    return payload.user_id == member.id and message.channel.id == payload.channel_id and payload.emoji.name == CHECKMARK_EMOJI
+  # end checkCheckmarkEmoji
+
+  embed = message.embeds[0].to_dict()
+
+  try:
+    div = int(member.display_name[2])
+  except ValueError: # when user is not racing, but is pit marshalling
+    div = 0
+
+  divHosts = {
+    "1" : [2, 3, 5, 6],
+    "2" : [3, 6],
+    "3" : [1, 4, 7],
+    "4" : [2, 3, 5, 6],
+    "5" : [3, 6],
+    "6" : [1, 4, 7],
+    "7" : [2, 3, 5, 6]
+  }
+  divEmojisToAdd = []
+  for i in range(1, len(embed["fields"])-2+1):
+    if ((i in divHosts[str(div)] or div == 0) and i != div):
+      emoji = client.get_emoji(int(divisionEmojis[str(i)]))
+      divEmojisToAdd.append(emoji)
+
+  moBotMessage = await message.channel.send(member.mention + ", which division(s) are you available to Host?\n*Click all that apply, then click the " + CHECKMARK_EMOJI + ".\nDO NOT CLICK DIVISIONS WITH THE SAME START TIME\nDO NOT CLICK MORE THAN ONE DIVISION*")
+  for emoji in divEmojisToAdd:
+    await moBotMessage.add_reaction(emoji)
+  await moBotMessage.add_reaction(CHECKMARK_EMOJI)
+
+  try:
+    payload = await client.wait_for("raw_reaction_add", timeout=60.0, check=checkCheckmarkEmoji)
+    moBotMessage = await message.channel.fetch_message(payload.message_id)
+
+    divs = []
+    for reaction in moBotMessage.reactions:
+      if (str(reaction.emoji) != CHECKMARK_EMOJI):
+        async for user in reaction.users():
+          if (user.id == member.id):
+            divs.append(int(str(reaction.emoji).split(":")[1][-1]))
+    
+    for i in range(len(embed["fields"])):
+      if (i+1 in divs):
+        value = ""
+        if (member.display_name in embed["fields"][i]["value"]):
+          continue
+        for line in embed["fields"][i]["value"].split("\n"):
+          if ("Host" in line and "@" not in line):
+            value += "Host  - " + member.display_name + "\n"
+
+            for role in message.guild.roles:
+              if (role.name == "Pit-Marshalls"):
+                await member.add_roles(role)
+                break
+          else:
+            value += line + "\n"
+        embed["fields"][i]["value"] = value
+    await message.edit(embed=discord.Embed.from_dict(embed))
+    await moBotMessage.delete()
+
+  except asyncio.TimeoutError:
+    await message.channel.send("**TIMED OUT**", delete_after=10.0)
+    await moBotMessage.delete()
+    await message.remove_reaction(payload.emoji.name, member)
+# end addPitMarshall
+
+async def removeHost(message, member):
+  embed = message.embeds[0].to_dict()
+  for i in range(len(embed["fields"])):
+    value = ""
+    for line in embed["fields"][i]["value"].split("\n"):
+      if ("Host" in line and member.display_name in line):
+        value += "Host - \n"
+        for role in member.roles:
+          if (role.name == "Pit-Marshalls"):
+            await member.remove_roles(role)
+            break
+      else:
+        value += line + "\n"
+    embed["fields"][i]["value"] = value
+  await message.edit(embed=discord.Embed.from_dict(embed))
+# end removePitMarshall
 
 async def addStreamer(message, member, payload):
   streamEmbed = message.embeds[0]

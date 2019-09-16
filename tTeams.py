@@ -335,7 +335,7 @@ async def deleteTeam(message, teams, team):
 async def editTeam(message, teams, team, newTeamName):
   teams[newTeamName] = teams[team]
   del teams[team]
-  print (teams)
+  print(teams)
   await message.channel.send("```Team [ " + team + " ] has a new team name [ " + newTeamName + " ]```")
   await message.channel.send("```To update prefix, !t prefix new_prefix team_name```")
   await writeTeams(message.guild.id, teams)
@@ -491,10 +491,10 @@ async def getCaptainsTeam(message, user):
 # end getCaptainsTeam
 
 async def writeTeams(guildID, teams):
-  print (teams)
+  print(teams)
   guild = await getAllTeams()
   guild[str(guildID)] = teams
-  print (guild[str(guildID)])
+  print(guild[str(guildID)])
   output = ""
   for gID in guild:
     for team in guild[gID]:

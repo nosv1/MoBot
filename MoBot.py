@@ -107,11 +107,11 @@ async def on_ready():
 
   global reactionMessages
   reactionMessages = await ReactionRole.updateReactionMessages(reactionMessages, workbook)
-  print ("Reaction Messages Received")
+  print("Reaction Messages Received")
 
   global autoRoles
   autoRoles = await ReactionRole.updateAutoRoles(autoRoles, workbook)
-  print ("AutoRoles Received")
+  print("AutoRoles Received")
 
   # priming the temp storage
   msg = await client.get_user(nosv1).send(".")
@@ -144,7 +144,7 @@ async def on_raw_message_edit(payload):
     if (not message.author.bot and isConnected):
       await on_message(message)
   except:
-    print ("Error -- " + str(traceback.format_exc()))
+    print("Error -- " + str(traceback.format_exc()))
     pass
 
 @client.event
@@ -834,7 +834,7 @@ def logActionToConsole(message, user, logType):
 
     logMessage += str(user.display_name)
     if (len(message.guild.members) < 1000):
-      print (logMessage)
+      print(logMessage)
   except AttributeError: # None type as message is in DM
     pass
 # end logMessage
@@ -1122,8 +1122,8 @@ async def bugReport(message):
 
 async def test(message, client):
   msg = await message.channel.fetch_message(600812373212921866)
-  print (msg.embeds[0].color)
+  print(msg.embeds[0].color)
 # end test
 
-print ("Connecting...")
+print("Connecting...")
 client.run(SecretStuff.getToken("MoBotToken.txt"))

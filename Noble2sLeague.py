@@ -1110,11 +1110,11 @@ async def testing(message):
           embed = message.embeds[0].to_dict()
           if (embed["author"]["name"] == "Member Left"):
             dates.append(str(message.created_at))
-            print (message.created_at)
+            print(message.created_at)
       except IndexError:
         continue
 
-  print (len(dates))
+  print(len(dates))
   r = registerIDSheet.range("R1:R" + str(len(dates)))
   for i in range(len(r)):
     r[i].value = dates[i]

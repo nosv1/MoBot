@@ -15,10 +15,10 @@ async def main(args, message, client):
 async def DynoBot(message, client):
   # get actual message
   try:
-    print (str(datetime.now()), str(": " + message.embeds[0][ "description" ]))
+    print(str(datetime.now()), str(": " + message.embeds[0][ "description" ]))
     msg = message.embeds[0][ "description" ]
   except IndexError:
-    print (message.content)
+    print(message.content)
     msg = (await client.fetch_message(channel, msgId)).content.lower()    
     
   

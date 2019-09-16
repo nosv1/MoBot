@@ -149,7 +149,7 @@ async def udpateRSSChannel(client):
   feed = feedparser.parse(url)
   '''for c in str(feed.entries):
     try:
-      print (c, end="")
+      print(c, end="")
     except:
       pass
   return'''

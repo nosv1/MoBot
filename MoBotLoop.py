@@ -50,7 +50,7 @@ started = False
 async def on_ready():
   global started
   if (not started):
-    print ("\nMoBotLoop is online - " + str(datetime.now()) + "\n")
+    print("\nMoBotLoop is online - " + str(datetime.now()) + "\n")
     started = True
   else:
     sys.exit()
@@ -71,19 +71,19 @@ async def main(client):
     scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
     remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
     reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
-    print ("Scheduled Events Received")
+    print("Scheduled Events Received")
     
     workbook = await openGuildClocksSpreadsheet()
     clocks = await getGuildClocks(workbook)
-    print ("Clocks Received")
+    print("Clocks Received")
     countdowns = await getGuildCountdowns(workbook)
-    print ("Countdowns Received")
+    print("Countdowns Received")
   except httplib2.ServerNotFoundError:
     pass
   except gspread.exceptions.APIError:
     pass
 
-  print ()
+  print()
   lastSecond = 0
   while (True):
     try:
@@ -114,7 +114,7 @@ async def main(client):
               remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
               reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
             except gspread.exceptions.APIError:
-              print ("\nCould Not Get Scheduled Events\n")
+              print("\nCould Not Get Scheduled Events\n")
             
           for event in scheduledEvents:
             eventTime = await EventScheduler.getEventTime(event)
@@ -130,7 +130,7 @@ async def main(client):
             clocks = await getGuildClocks(workbook)
             countdowns = await getGuildCountdowns(workbook)
           except gspread.exceptions.APIError:
-            print ("\nCould Not Get Clocks or Countdowns\n")
+            print("\nCould Not Get Clocks or Countdowns\n")
 
           if (currentTime < donations["TE Garrett#9569"]["Date"] + relativedelta(months=int(donations["TE Garrett#9569"]["Donation"] / 2))):
             await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
@@ -165,7 +165,7 @@ async def main(client):
       try:
         await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(traceback.format_exc()) + "```")
       except:
-        print ("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
+        print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
       sys.exit()
 
   # end infinte loop
@@ -373,7 +373,7 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
             else:
               await channel.edit(name=countdown["Text"].strip() + ": " + "Skip")
           except AttributeError:
-            print ("Could Not Update Countdown")
+            print("Could Not Update Countdown")
           break
 
       if (not channelFound):
@@ -396,14 +396,14 @@ async def updateGuildClocks(client, currentTime, clocks):
           try:
             await channel.edit(name=convertedTime.strftime(clock["Format"]))
           except AttributeError:
-            print ('Could Not Update Clock')
+            print('Could Not Update Clock')
           break
 
       if (not channelFound):
         continue
         #await ClocksAndCountdowns.delete("clock", clock["Channel ID"])
           
-  #print ()
+  #print()
 # end guildClocks
 
 async def updateTimeZoneList(currentTime):
@@ -465,5 +465,5 @@ async def openRandomLogs():
   return workbook
 # end openRandomLogs
 
-print ("Connecting...")
+print("Connecting...")
 client.run(SecretStuff.getToken("MoBotToken.txt"))

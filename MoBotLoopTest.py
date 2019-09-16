@@ -38,7 +38,7 @@ started = False
 async def on_ready():
   global started
   if (not started):
-    print ("\nMoBotLoop is online - " + str(datetime.now()) + "\n")
+    print("\nMoBotLoop is online - " + str(datetime.now()) + "\n")
     started = True
   else:
     sys.exit()
@@ -48,7 +48,7 @@ async def on_ready():
 
 async def main(client):
 
-  print ()
+  print()
   lastSecond = 0
   while (True):
     try:
@@ -76,7 +76,7 @@ async def main(client):
             scheduledEvents= await EventScheduler.performScheduledEvent(event, client)
 
     except:
-      print ("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
+      print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
       sys.exit()
   # end infinte loop
 # end main
@@ -95,5 +95,5 @@ async def openRandomLogs():
   workbook = clientSS.open_by_key("1x19iRicPBE00oPjTuf6jNURpdpB2nLUASst_JPv9WyU")
   return workbook
 
-print ("Connecting...")
+print("Connecting...")
 client.run(SecretStuff.getToken("MoBotTestToken.txt"))

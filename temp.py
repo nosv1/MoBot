@@ -22,4 +22,4 @@ downloader = MediaIoBaseDownload(fh, request)
 done = False
 while done is False:
     status, done = downloader.next_chunk()
-    print ("Download %d%%." % int(status.progress() * 100))
+    print("Download %d%%." % int(status.progress() * 100))

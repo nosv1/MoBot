@@ -376,7 +376,7 @@ async def createReservation(message, client):
     embed["author"]["url"] += tSubSpecifiers[:-1].strip().replace(" ", "_")
     embed["author"]["url"] = embed["author"]["url"].replace(" ", "")
     embed["author"]["url"] = embed["author"]["url"].replace("\n", "")
-    print (embed["author"]["url"])
+    print(embed["author"]["url"])
 
     embed = discord.Embed.from_dict(embed)
     await msg.edit(embed=embed)

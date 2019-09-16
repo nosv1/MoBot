@@ -169,7 +169,7 @@ async def addUserToTicket(message):
       await message.channel.set_permissions(user, send_messages=True, read_messages=True)
       await message.channel.send("<@" + str(userId) + "> has been added to ticket.")
       
-      print (message.channel.name + " " + str(userId))
+      print(message.channel.name + " " + str(userId))
       await message.channel.edit(name=message.channel.name + " @" + str(userId))
     except ValueError:
       continue

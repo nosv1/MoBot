@@ -147,7 +147,7 @@ async def getJob(message, args):
             try:
               value.replace(catalogueLink, platSheet.cell(jobs[j].row, jobs[j].col, value_render_option='FORMULA').value.split('"')[1])
             except IndexError:
-              print (jobs[j])
+              print(jobs[j])
               value += " - *Link Not Available*"
             break
         

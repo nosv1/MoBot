@@ -59,11 +59,11 @@ async def on_ready():
 
   global reactionMessages
   reactionMessages = await ReactionRole.updateReactionMessages(reactionMessages, workbook)
-  print ("Reaction Messages Received")
+  print("Reaction Messages Received")
 
   global autoRoles
   autoRoles = await ReactionRole.updateAutoRoles(autoRoles, workbook)
-  print ("AutoRoles Received")
+  print("AutoRoles Received")
 
   '''mobotLog = client.get_guild(moBotSupport).get_channel(604099911251787776) # mobot log
   embed = discord.Embed(color=int("0xd1d1d1", 16))
@@ -91,7 +91,7 @@ async def on_message(message):
 
   try:
     if (not message.author.bot):
-      print (message.content)
+      print(message.content)
   except:
     pass
 
@@ -114,8 +114,9 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.endQualifying(message)
-        print ("done")
+        for reaction in message.reactions:
+          print (str(reaction.emoji).split(":"))
+        print("done")
 
       elif (args[1] == "countdown"):
         await ClocksAndCountdowns.main(self, message, client)
@@ -236,10 +237,10 @@ async def on_message(message):
         global autoRoles
         if (args[2] == "add"):
           autoRoles = await ReactionRole.addAutoRole(message, autoRoles)
-          print (autoRoles)
+          print(autoRoles)
         elif (args[2] == "clear"):
           autoRoles = await ReactionRole.clearAutoRole(message, autoRoles)
-          print (autoRoles)
+          print(autoRoles)
       elif (args[1] == "hangman"):
         await Hangman.newGame(message, client)
       elif (args[1] == "reservation"):
@@ -248,7 +249,7 @@ async def on_message(message):
         await rssTest(message)
       elif (args[1] == "avatar"):
         member = message.guild.get_member(int(args[2]))
-        print (member.avatar_url)
+        print(member.avatar_url)
       elif (args[1] == "tz"):
         await MoBotTimeZones.main(args, message, client)
       elif (args[1] == "rlrank"):
@@ -416,7 +417,7 @@ def logMessageToConsole(message, user, logType):
 
     logMessage += str(user.display_name)
     if (len(message.guild.members) < 1000):
-      print (logMessage)
+      print(logMessage)
   except AttributeError: # None type as message is in DM
     pass
 # end logMessage
@@ -970,7 +971,7 @@ async def rssTest(message):
   url = "https://noblecommunity.altervista.org/news/feed/"
 
   d = feedparser.parse(url)
-  print (d)
+  print(d)
 # end rssTest
 
 async def openSpreadsheet():
@@ -982,5 +983,5 @@ async def openSpreadsheet():
   return workbook
 # end openSpreadsheet
 
-print ("Connecting...")
+print("Connecting...")
 client.run(SecretStuff.getToken("MoBotTestToken.txt"))
