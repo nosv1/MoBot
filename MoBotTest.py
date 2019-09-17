@@ -29,6 +29,7 @@ import RLRanks
 import RandomFunctions
 import AdminFunctions
 import EventScheduler
+import DKGetPicks
 
 import COTM
 import AOR
@@ -114,10 +115,9 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        for reaction in message.reactions:
-          print (str(reaction.emoji).split(":"))
         print("done")
-
+      elif (args[1] == "dk"):
+        await DKGetPicks.main()
       elif (args[1] == "countdown"):
         await ClocksAndCountdowns.main(self, message, client)
       elif (args[1] == "help"):
