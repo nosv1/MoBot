@@ -117,7 +117,11 @@ async def on_message(message):
       if (args[1] == "test"):
         print("done")
       elif (args[1] == "dk"):
-        await DKGetPicks.main()
+        try:
+          await DKGetPicks.main(args, message, client)
+        except:
+          print(traceback.format_exc())
+        await message.channel.purge(limit=1)
       elif (args[1] == "countdown"):
         await ClocksAndCountdowns.main(self, message, client)
       elif (args[1] == "help"):
@@ -323,14 +327,14 @@ async def on_raw_reaction_add(payload):
         elif (payload.emoji.name == "🗑"):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
-      if ("Countdown Editor" in message.embeds[0].author.name):
+      '''if ("Countdown Editor" in message.embeds[0].author.name):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
       if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
         await Collections.mainReactionAdd(message, payload, message.embeds[0], client)
         if ("MoBotReservation" in message.embeds[0].author.url):
           await Reservations.mainReactionAdd(message, payload, client)
       if ("EventScheduler" in message.embeds[0].author.url):
-        pass
+        pass'''
     else:
       #if (message.guild.id == 527156310366486529 or "are you ready to vote" in message.content.lower() or "do you need to vote" in message.content.lower()): # cotm
         #await COTM.mainReactionAdd(message, payload, client)

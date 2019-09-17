@@ -10,6 +10,10 @@ import math
 import operator
 import copy
 
+import RandomFunctions
+
+spaceChar = "⠀"
+
 adjustedDate = datetime.now() - relativedelta(months=3)
 lastYear = adjustedDate.year-1
 thisYear = adjustedDate.year
@@ -70,7 +74,7 @@ statsTables = {
 }
 
 class Player:
-  async def __init__(self, name, id, pos, fpos, price, team):
+  def __init__(self, name, id, pos, fpos, price, team):
     self.name = name.strip()
     self.id = id
     self.pos = pos
@@ -82,7 +86,7 @@ class Player:
 # end Player
 
 class DefenseScoringStatsPerGame:
-  async def __init__(self, games, points, pkfgReturnTD, interceptionReturnTD, fumbleReturnTD, blkPntFgReturnTD, safety, twoPtReturn):
+  def __init__(self, games, points, pkfgReturnTD, interceptionReturnTD, fumbleReturnTD, blkPntFgReturnTD, safety, twoPtReturn):
     self.points = (points / games) 
     self.pkfgReturnTD = (pkfgReturnTD / games)
     self.interceptionReturnTD  = (interceptionReturnTD / games)
@@ -93,14 +97,14 @@ class DefenseScoringStatsPerGame:
 # end DefenseScoringStatsPerGame
 
 class DefenseOtherStatsPerGame:
-  async def __init__(self, games, sacks, interceptions, fumbleRecoveries):
+  def __init__(self, games, sacks, interceptions, fumbleRecoveries):
     self.sacks = (sacks / games)
     self.interceptions = (interceptions / games)
     self.fumbleRecoveries = (fumbleRecoveries / games)
 # end otherStats
 
 class OffensePassingStatsPerGame:
-  async def __init__(self, totalYards, passingTDs, passingYards, interceptions):
+  def __init__(self, totalYards, passingTDs, passingYards, interceptions):
     try:
       games = round(totalYards / passingYards)
     except ZeroDivisionError:
@@ -111,7 +115,7 @@ class OffensePassingStatsPerGame:
 # end OffensePassingStatsPerGame
 
 class OffenseRushingStatsPerGame:
-  async def __init__(self, totalYards, rushingTDs, rushingYards, fumbles):
+  def __init__(self, totalYards, rushingTDs, rushingYards, fumbles):
     try:
       games = round(totalYards / rushingYards)
     except ZeroDivisionError:
@@ -122,7 +126,7 @@ class OffenseRushingStatsPerGame:
 # end OffenseRushingStatsPerGame
 
 class OffenseReceivingStatsPerGame:
-  async def __init__(self, totalYards, receivingTDs, receivingYards, receptions):
+  def __init__(self, totalYards, receivingTDs, receivingYards, receptions):
     try:
       games = round(totalYards / receivingYards)
     except ZeroDivisionError:
@@ -133,7 +137,7 @@ class OffenseReceivingStatsPerGame:
 # end OffenseReceivingStatsPerGame
 
 class OffenseScoringStatsPerGame:
-  async def __init__(self, points, totalPoints, pkfgReturnTDs, twoPtConversions, fumbleReturnTDs):
+  def __init__(self, points, totalPoints, pkfgReturnTDs, twoPtConversions, fumbleReturnTDs):
     games = (totalPoints / points)
     self.pkfgReturnTDs = (pkfgReturnTDs / games) * (games // 2)
     self.twoPtConversions = (twoPtConversions / games) * (games // 2)
@@ -143,12 +147,21 @@ class OffenseScoringStatsPerGame:
 async def main(args, message, client):
   global statsTables
 
-  salaries = open(getFile(), "r")
+  embed = discord.Embed(
+    color=int("0xF39343", 16),
+    footer=("Stats After Week %d - Lineups For Week %d" % (weekNumber, weekNumber+1))
+  )
+  embed.set_author(name="DraftKings Lineup Generator", icon_url="https://i.gyazo.com/48378c434886d1fa6bf1af6197ff3f32.png")
+  embed = embed.to_dict()
+  moBotMessage = await message.channel.send(embed=discord.Embed.from_dict(embed))
+
+  salaries = open(await getFile(message.author, moBotMessage, embed, client), "r")
   players = getPlayersFromSalaries(salaries)
 
-  statsTables = getStatsTables(statsTables)
+  statsTables = await getStatsTables(moBotMessage, embed, statsTables)
 
-  print("Gathering Player Values")
+  embed["description"] = "*Gathering Player Values*"
+  await editEmbed(moBotMessage, embed)
   for player in players:
     pos = players[player].pos
 
@@ -161,8 +174,7 @@ async def main(args, message, client):
       players[player].value = getPlayerValueByCombiningStats(lastYearStats, thisYearStats, weekNumber)
       players[player].valuePerDollar = players[player].value / players[player].price
 
-
-  lineupType = getLineupType()
+  lineupType = await getLineupType(message.author, moBotMessage, embed, client)
   playerLimitations = []
   mustHaves = []
   while True:
@@ -178,7 +190,8 @@ async def main(args, message, client):
       valueList = getValueList(players, valueListOption)
       printValueList(valueList, None)
 
-      print("Creating Lineup")
+      embed["description"] = "*Creating Lineups*"
+      await editEmbed(moBotMessage, embed)
       if (lineupType == "Classic"):
         lineup = createClassicLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
       elif (lineupType == "Showdown"):
@@ -188,7 +201,7 @@ async def main(args, message, client):
       printLineup(lineup)
 # end main
 
-async def createShowdownLineup(players, valueList, valueListOption, playerLimitations, mustHaves):
+def createShowdownLineup(players, valueList, valueListOption, playerLimitations, mustHaves):
   positions = {"CPT" : {}, "FLEX" : {}}
   lineup = {"CPT" : [None], "FLEX" : [None, None, None, None, None]}
   for player in players:
@@ -212,7 +225,7 @@ async def createShowdownLineup(players, valueList, valueListOption, playerLimita
   return lineup
 # end createShowdownLineup
 
-async def createClassicLineup(players, valueList, valueListOption, playerLimitations, mustHaves):
+def createClassicLineup(players, valueList, valueListOption, playerLimitations, mustHaves):
   positions = {"QB" : {}, "RB" : {}, "WR" : {}, "TE" : {}, "FLEX" : {}, "DST" : {}}
   lineup = {"QB" : [None], "RB" : [None, None], "WR" : [None, None, None], "TE" : [None], "FLEX" : [None], "DST" : [None]}
   for player in players:
@@ -252,7 +265,7 @@ async def createClassicLineup(players, valueList, valueListOption, playerLimitat
   return lineup
 # end createClassicLineup
 
-async def getLineup(lineup, salary, mustHaves, playerLimitations, valueList):
+def getLineup(lineup, salary, mustHaves, playerLimitations, valueList):
   sameSalaryCount = 0
   while sameSalaryCount < 10:
     oldLineup = lineup
@@ -285,7 +298,7 @@ async def getLineup(lineup, salary, mustHaves, playerLimitations, valueList):
   return lineup, salary
 # end getLineup
 
-async def addMustHaves(lineup, valueList, mustHaves, salary):
+def addMustHaves(lineup, valueList, mustHaves, salary):
   for player in valueList:
     if (player.id in mustHaves):
       for position in lineup:
@@ -299,7 +312,7 @@ async def addMustHaves(lineup, valueList, mustHaves, salary):
   return lineup, salary
 # end getMustHaves
 
-async def getBenchmark(lineup, positions, playerLimitations, salary):
+def getBenchmark(lineup, positions, playerLimitations, salary):
   for position in positions:
     valuePerDollarList = sorted(positions[position].values(), key=operator.attrgetter('valuePerDollar'))
     for i in range(len(lineup[position])):
@@ -319,7 +332,7 @@ async def getBenchmark(lineup, positions, playerLimitations, salary):
   return lineup, salary
 # end getBenchmark
 
-async def getValueList(players, valueListOption):
+def getValueList(players, valueListOption):
   players = copy.deepcopy(players)
   for player in players:
 
@@ -343,7 +356,7 @@ async def getValueList(players, valueListOption):
   return valueList
 # end getValueList
 
-async def isInLineup(lineup, player):
+def isInLineup(lineup, player):
   for position in lineup: # dict item
     for lPlayer in lineup[position]: # list item
       try:
@@ -354,7 +367,7 @@ async def isInLineup(lineup, player):
   return False
 # end isInLineup
 
-async def getOffenseStats(player, pos, year):
+def getOffenseStats(player, pos, year):
   statGroups = []
 
   # --- PASSING STATS --- #
@@ -406,7 +419,7 @@ async def getOffenseStats(player, pos, year):
   return adjustedStats
 # end getQBStats
 
-async def getDefenseStats(team, pos, year): # team = Short Name
+def getDefenseStats(team, pos, year): # team = Short Name
   teamName = ABBRV_TO_LONG[SHORT_TO_ABBRV[team]]
   statGroups = []
 
@@ -439,7 +452,7 @@ async def getDefenseStats(team, pos, year): # team = Short Name
   return adjustedStats
 # end getDefenseStats
 
-async def convertToFppg(stats, adjustedStats, pos):
+def convertToFppg(stats, adjustedStats, pos):
   weights = { # used to determine how good/bad the stat is
     "DEFENSE" : {
       "points" : {
@@ -505,7 +518,7 @@ async def convertToFppg(stats, adjustedStats, pos):
   return adjustedStats
 # end convertToFppg
 
-async def getPlayerValueByCombiningStats(lastYearStats, thisYearStats, weekNumber):
+def getPlayerValueByCombiningStats(lastYearStats, thisYearStats, weekNumber):
   lastYearMultiplier = (16 - (weekNumber * 2)) / 16.1
   thisYearMultiplier = (weekNumber * 2) / 16.1
   playerValue = 0
@@ -519,7 +532,7 @@ async def getPlayerValueByCombiningStats(lastYearStats, thisYearStats, weekNumbe
   return playerValue
 # end combineStats
 
-async def parseStatsTable(name, tableName, year):
+def parseStatsTable(name, tableName, year):
   table = statsTables[tableName][str(year)]
   stats = []
   for i in range(len(table)):
@@ -553,7 +566,11 @@ async def printLineup(lineup):
   print()
 # end printLineup
 
-async def getPlayersFromSalaries(salaries):
+async def editEmbed(moBotMessage, embed):
+  await moBotMessage.edit(embed=discord.Embed.from_dict(embed))
+# end editEmbed
+
+def getPlayersFromSalaries(salaries):
   players = {}
   # players[playerName] = Player object
   lines = salaries.readlines()[1:] # remove header
@@ -573,55 +590,82 @@ async def getPlayersFromSalaries(salaries):
   return players
 # end getPlayersFromSalaries
 
-async def getMustHaves(mustHaves):
+def getMustHaves(mustHaves):
   newMustHaves = input("Input the IDs of the players to include: ").split(" ")
   for newMustHave in newMustHaves:
     mustHaves.append(newMustHave)
   return mustHaves
 # end getMustHaves
 
-async def getPlayerLimitations(playerLimitations):
+def getPlayerLimitations(playerLimitations):
   newPlayerLimitations = input("Input the IDs of the players to not include: ").split(" ")
   for newPlayerLimitation in newPlayerLimitations:
     playerLimitations.append(newPlayerLimitation)
   return playerLimitations
 # end getPlayerLimitations
 
-async def getLineupType():
-  lineupTypes = ["Classic", "Showdown"]
-  print("Choose a Lineup Type: ")
-  for i in range(len(lineupTypes)):
-    print(" " + str(i+1) + ". " + lineupTypes[i])
-  print()
+async def getLineupType(member, moBotMessage, embed, client):
+  
+  def checkEmoji(payload):
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomFunctions.numberEmojis
+  # end checkEmoji
 
+  lineupTypes = ["Classic", "Showdown"]
+  embed["description"] = "Lineup Types:"
+  for i in range(len(lineupTypes)):
+    emojiNumber = await RandomFunctions.numberToEmojiNumbers(i+1)
+    embed["description"] += "\n" + spaceChar + emojiNumber + " - " + lineupTypes[i]
+    await moBotMessage.add_reaction(emojiNumber)
+
+  embed["description"] += "\n*Select a Lineup Type:*"
+  await editEmbed(moBotMessage, embed)
   try:
-    lineupType = str(lineupTypes[int(input("Select a Lineup Number: " ))-1])
-  except ValueError:
+    payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
+    lineupType = lineupTypes[await RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
+  except asyncio.TimeoutError:
+    await moBotMessage.channel.send("**TIMED OUT**")
     lineupType = lineupTypes[0]
-  print()
+
+  embed["description"] = ("Lineup Type: \"%s\"\n" % (lineupType))
+  await editEmbed(moBotMessage, embed)
+  await moBotMessage.clear_reactions()
   return lineupType
 # end getLineupType
 
-async def getFile():
-  print("Choose a csv file: ")
+async def getFile(member, moBotMessage, embed, client):  
+
+  def checkEmoji(payload):
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomFunctions.numberEmojis
+  # end checkEmoji
+
+  embed["description"] = "Salaries Files:"
+  await editEmbed(moBotMessage, embed)
   dkSalariesDir = os.getcwd() + "\\DKSalaries"
   files = []
   for dir in os.walk(dkSalariesDir):
-    print (dir)
     for file in dir[-1]:
       if (file[-3:] == "csv"):
         files.append(file)
-        print(" " + str(len(files)) + ". " + file)
-    
+        emojiNumber = await RandomFunctions.numberToEmojiNumbers(len(files))
+        embed["description"] += "\n" + spaceChar + emojiNumber + " - " + file
+        await moBotMessage.add_reaction(emojiNumber)
+
+  embed["description"] += "\n*Select a File Number:*"
+  await editEmbed(moBotMessage, embed)
   try:
-    file = str(files[int(input("\nSelect a File Number: "))-1])
-  except ValueError:
+    payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
+    file = files[await RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
+  except asyncio.TimeoutError:
+    await moBotMessage.channel.send("**TIMED OUT**")
     file = files[0]
-  print("Opening \"%s\"\n" % (file))
+
+  embed["description"] = ("Opening \"%s\"\n" % (file))
+  await editEmbed(moBotMessage, embed)
+  await moBotMessage.clear_reactions()
   return dkSalariesDir + "\\" + file
 # end getFile
 
-async def getTableFromURL(url):
+def getTableFromURL(url):
   soup = bSoup(requests.get(url).text, "html.parser")
   title = str(soup.title)
   if ("National Football League Stats" not in title):
@@ -638,16 +682,18 @@ async def getTableFromURL(url):
   return table
 # end getTableFromURL 
 
-async def getStatsTables(statsTables):
-  print("Getting Tables (%1d)" % (len(statsTables)))
-  async def combineStatsTables(oldTable, newTable):
+async def getStatsTables(moBotMessage, embed, statsTables):
+  embed["description"] = ("*Getting Stat Tables (%1d)*" % (len(statsTables)))
+  await editEmbed(moBotMessage, embed)
+  def combineStatsTables(oldTable, newTable):
     table = oldTable
     for i in newTable:
       table.append(i)
     return table
 
   for table in statsTables:
-    print(table)
+    embed["description"] += "\n" + spaceChar + table
+    await editEmbed(moBotMessage, embed)
     oldTable = []
     for year in range(lastYear, thisYear+1):
       if (statsTables[table]["PAGES"]):
