@@ -381,7 +381,7 @@ async def on_message(message):
       elif (args[1] == "admin" and isMo):
         await AdminFunctions.main(args, message,client) 
       elif (args[1] == "dk" and isMo):
-        await DKGetPicks.main(ars, message, client)
+        await DKGetPicks.main(args, message, client)
       elif (args[1] == "avatar"):
         member = message.guild.get_member(int(args[2]))
         await message.channel.send(str(member.avatar_url))

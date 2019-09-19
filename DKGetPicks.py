@@ -194,7 +194,7 @@ async def main(args, message, client):
   while True:
     valueListOption = await getLineupStyle(message.author, moBotMessage, embed, client)
     valueList = getValueList(players, valueListOption)
-    #await printValueList(valueList, None, moBotMessage)
+    await printValueList(valueList, None, moBotMessage)
 
     embed["description"] = "*Creating Lineups*"
     await editEmbed(moBotMessage, embed)
@@ -555,7 +555,7 @@ def parseStatsTable(name, tableName, year):
 # end parseStatsTable
 
 async def printValueList(valueList, pos, moBotMessage):
-
+  os.remove("ValueList.txt")
   valueListFile = open("ValueList.txt", "w+")
   valueListFile.write("Value List (%s):" % (pos))
   for player in valueList:
@@ -563,12 +563,11 @@ async def printValueList(valueList, pos, moBotMessage):
       if (pos in player.fpos):
         valueListFile.write("%s %s" % (player.name, player.value))
     else:
-      valueListFile.write("%s %s %s %s %s %s\n" % (player.fpos, player.name, player.value, player.price, player.team, player.game))
+      valueListFile.write("%s %s %s %s %s %s\n" % (player.pos, player.name, player.value, player.price, player.team, player.game))
   valueListFile.close()
-  valueListFile = open("ValueList.txt", "r")
+  '''valueListFile = open("ValueList.txt", "r")
   await moBotMessage.channel.send(file=discord.File(valueListFile))
-  valueListFile.close()
-  os.remove("ValueList.txt")
+  valueListFile.close()'''
 # end printValueList
 
 async def printLineup(lineup, moBotMessage, embed):
