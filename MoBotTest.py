@@ -115,13 +115,15 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
+        f = open("testing.txt", "r")
+        await message.channel.send(file=discord.File(f))
         print("done")
       elif (args[1] == "dk"):
         try:
           await DKGetPicks.main(args, message, client)
         except:
           print(traceback.format_exc())
-        await message.channel.purge(limit=1)
+        #await message.channel.purge(limit=2)
       elif (args[1] == "countdown"):
         await ClocksAndCountdowns.main(self, message, client)
       elif (args[1] == "help"):
@@ -391,8 +393,9 @@ async def on_raw_reaction_remove(payload):
         await COTM.reserveNotAvailable(message, member)
 
     if (len(message.embeds) > 0):
-      if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
-        await Collections.mainReactionRemove(message, payload, message.embeds[0], client)
+      '''if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
+        await Collections.mainReactionRemove(message, payload, message.embeds[0], client)'''
+      pass
 # end on_raw_reaction_remove
 
 @client.event

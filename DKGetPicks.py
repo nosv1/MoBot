@@ -9,10 +9,12 @@ from dateutil.relativedelta import relativedelta
 import math
 import operator
 import copy
+from difflib import get_close_matches
 
 import RandomFunctions
 
 spaceChar = "⠀"
+CHECKMARK_EMOJI = "✅"
 
 adjustedDate = datetime.now() - relativedelta(months=3)
 lastYear = adjustedDate.year-1
@@ -73,8 +75,10 @@ statsTables = {
   },
 }
 
+playerNamesToIDs = {} # used to search when getting player limitations and must haves
+
 class Player:
-  def __init__(self, name, id, pos, fpos, price, team):
+  def __init__(self, name, id, pos, fpos, price, game, team, appg):
     self.name = name.strip()
     self.id = id
     self.pos = pos
@@ -83,6 +87,8 @@ class Player:
     self.team = team
     self.value = 0 # will be updated after player values are gathered
     self.valuePerDollar = 0 # will be updated after player values are gathered
+    self.appg = appg
+    self.game = game
 # end Player
 
 class DefenseScoringStatsPerGame:
@@ -152,53 +158,58 @@ async def main(args, message, client):
     footer=("Stats After Week %d - Lineups For Week %d" % (weekNumber, weekNumber+1))
   )
   embed.set_author(name="DraftKings Lineup Generator", icon_url="https://i.gyazo.com/48378c434886d1fa6bf1af6197ff3f32.png")
+  embed.add_field(name="Slate:", value=spaceChar, inline=True)
+  embed.add_field(name="Lineup Type:", value=spaceChar, inline=True)
+  embed.add_field(name="Lineup Style:", value=spaceChar, inline=True)
+  embed.add_field(name="Player Limitations:", value=spaceChar, inline=True)
+  embed.add_field(name="Must Haves:", value=spaceChar, inline=True)
+  embed.add_field(name="Lineup:", value=spaceChar, inline=False)
   embed = embed.to_dict()
   moBotMessage = await message.channel.send(embed=discord.Embed.from_dict(embed))
-
+  
   salaries = open(await getFile(message.author, moBotMessage, embed, client), "r")
   players = getPlayersFromSalaries(salaries)
 
   statsTables = await getStatsTables(moBotMessage, embed, statsTables)
 
-  embed["description"] = "*Gathering Player Values*"
+  embed["description"] = "*Calculating Player Values*"
   await editEmbed(moBotMessage, embed)
   for player in players:
-    pos = players[player].pos
+    player = players[player]
+    playerNamesToIDs[player.name] = player.id
+    pos = player.pos
 
     if (pos == "DST"):
-      lastYearStats, thisYearStats = getDefenseStats(player, "DEFENSE", lastYear), getDefenseStats(player, "DEFENSE", thisYear)
-      players[player].value = getPlayerValueByCombiningStats(lastYearStats, thisYearStats, weekNumber)
-      players[player].valuePerDollar = players[player].value / players[player].price
+      lastYearStats, thisYearStats = getDefenseStats(player.name, "DEFENSE", lastYear), getDefenseStats(player.name, "DEFENSE", thisYear)
+      player.value = getPlayerValueByCombiningStats(lastYearStats, thisYearStats, weekNumber)
+      player.valuePerDollar = player.value / player.price
     else:
-      lastYearStats, thisYearStats = getOffenseStats(player, "OFFENSE", lastYear), getOffenseStats(player, "OFFENSE", thisYear)
-      players[player].value = getPlayerValueByCombiningStats(lastYearStats, thisYearStats, weekNumber)
-      players[player].valuePerDollar = players[player].value / players[player].price
+      lastYearStats, thisYearStats = getOffenseStats(player.name, "OFFENSE", lastYear), getOffenseStats(player.name, "OFFENSE", thisYear)
+      player.value = getPlayerValueByCombiningStats(lastYearStats, thisYearStats, weekNumber)
+      player.valuePerDollar = player.value / player.price
 
   lineupType = await getLineupType(message.author, moBotMessage, embed, client)
-  playerLimitations = []
-  mustHaves = []
+  playerLimitations = await getRestrictions([], 3, message.author, moBotMessage, embed, client)
+  mustHaves = await getRestrictions([], 4, message.author, moBotMessage, embed, client)
   while True:
-    playerLimitations = getPlayerLimitations(playerLimitations)
-    mustHaves = getMustHaves(mustHaves)
-    valueListOptions = [
-      "No Filter",
-      "QB_WR",
-      "RB_DST",
-      #"QB_FLEX_RB_DST",
-    ]
-    for valueListOption in valueListOptions:
-      valueList = getValueList(players, valueListOption)
-      printValueList(valueList, None)
+    valueListOption = await getLineupStyle(message.author, moBotMessage, embed, client)
+    valueList = getValueList(players, valueListOption)
+    #await printValueList(valueList, None, moBotMessage)
 
-      embed["description"] = "*Creating Lineups*"
-      await editEmbed(moBotMessage, embed)
-      if (lineupType == "Classic"):
-        lineup = createClassicLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
-      elif (lineupType == "Showdown"):
-        lineup = createShowdownLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
+    embed["description"] = "*Creating Lineups*"
+    await editEmbed(moBotMessage, embed)
+    if (lineupType == "Classic"):
+      lineup = createClassicLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
+    elif (lineupType == "Showdown"):
+      lineup = createShowdownLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
         
-      print(valueListOption)
-      printLineup(lineup)
+    await printLineup(lineup, moBotMessage, embed)
+
+    try:
+      playerLimitations = await getNewPlayerLimitations(playerLimitations, message.author, moBotMessage, embed, client)
+    except asyncio.TimeoutError:
+      await moBotMessage.channel.send("**TIMED OUT**")
+      break
 # end main
 
 def createShowdownLineup(players, valueList, valueListOption, playerLimitations, mustHaves):
@@ -237,22 +248,21 @@ def createClassicLineup(players, valueList, valueListOption, playerLimitations, 
   salary = 50000
 
   # get must haves
-  if (valueListOption != "No Filter"):
+  if (valueListOption != "BASIC"):
     pos1 = valueListOption.split("_")[0]
     pos2 = valueListOption.split("_")[1]
-    printValueList(valueList, pos1)
-    printValueList(valueList, pos2)
-    gotPos1 = False
-    gotPos2 = False
+    playerPos1 = None
+    playerPos2 = None
     i = len(valueList) - 1
-    while (not (gotPos1 and gotPos2)):
+    while (not (playerPos1 and playerPos2)):
       player = valueList[i]
       if (player.id not in playerLimitations):
-        if (pos1 in player.fpos and not gotPos1):
-          gotPos1 = True
+        if (pos1 in player.fpos and not playerPos1):
+          playerPos1 = player
           mustHaves.append(player.id)
-        elif (pos2 in player.fpos and not gotPos2):
-          gotPos2 = True
+          i = len(valueList) - 1
+        elif (pos2 in player.fpos and not playerPos2 and playerPos1 is not None and player.team == playerPos1.team):
+          playerPos2 = player
           mustHaves.append(player.id)
       i -= 1
   lineup, salary = addMustHaves(lineup, valueList, mustHaves, salary)
@@ -344,7 +354,7 @@ def getValueList(players, valueListOption):
           if (player.team == qb.team and player.pos == "FLEX"):
             player.value = player.value * qb.value
 
-    elif (valueListOption == "RB_DST"):
+    elif (valueListOption == "DST_RB"):
       team = players[player]
       if (team.pos == "DST"):
         for player in players:
@@ -544,26 +554,38 @@ def parseStatsTable(name, tableName, year):
   return stats
 # end parseStatsTable
 
-async def printValueList(valueList, pos):
-  print("\nValue List (%s):" % (pos))
+async def printValueList(valueList, pos, moBotMessage):
+
+  valueListFile = open("ValueList.txt", "w+")
+  valueListFile.write("Value List (%s):" % (pos))
   for player in valueList:
     if (pos != None):
       if (pos in player.fpos):
-        print(player.name, player.value)
+        valueListFile.write("%s %s" % (player.name, player.value))
     else:
-      print(player.fpos, player.name, player.value, player.price, player.team)
-  print()
+      valueListFile.write("%s %s %s %s %s %s\n" % (player.fpos, player.name, player.value, player.price, player.team, player.game))
+  valueListFile.close()
+  valueListFile = open("ValueList.txt", "r")
+  await moBotMessage.channel.send(file=discord.File(valueListFile))
+  valueListFile.close()
+  os.remove("ValueList.txt")
 # end printValueList
 
-async def printLineup(lineup):
-  print("\nLineup:")
+async def printLineup(lineup, moBotMessage, embed):
+  embed["fields"][5]["value"] = "__Pos. - Player Name - Appg. - Price - Team__"
+  playerCount = 0
   for position in lineup:
     for player in lineup[position]:
       try:
-        print(position, player.name, player.id, player.value, player.price)
-      except AttributeError:
+        playerCount += 1
+        emojiNumber = RandomFunctions.numberToEmojiNumbers(playerCount)
+        game = player.game.replace(player.team, "**" + player.team + "**")
+        embed["fields"][5]["value"] += ("\n%s %s - **%s** - %s - %s - %s" % (emojiNumber, position, player.name, player.appg, player.price, game))
+        await moBotMessage.add_reaction(emojiNumber)
+      except AttributeError: # when not printing full lineup
         print(position, None)
-  print()
+  await moBotMessage.add_reaction(CHECKMARK_EMOJI)
+  await editEmbed(moBotMessage, embed)
 # end printLineup
 
 async def editEmbed(moBotMessage, embed):
@@ -579,30 +601,132 @@ def getPlayersFromSalaries(salaries):
     line = line.split(",")
     name = line[2].strip()
     name = PLAYER_NAME_CORRECTIONS[name] if (name in PLAYER_NAME_CORRECTIONS) else name
-    id = line[3]
-    pos = line[0]
-    fpos = line[4]
-    price = line[5]
-    team = line[7]
+    id = line[3].strip()
+    pos = line[0].strip()
+    fpos = line[4].strip()
+    price = line[5].strip()
+    game = line[6].split(" ")[0]
+    team = line[7].strip()
+    appg = line[8].strip()
     if (fpos != "CPT"):
-      players[name] = Player(name, id, pos, fpos, price, team)
+      players[name] = Player(name, id, pos, fpos, price, game, team, appg)
 
   return players
 # end getPlayersFromSalaries
 
-def getMustHaves(mustHaves):
-  newMustHaves = input("Input the IDs of the players to include: ").split(" ")
-  for newMustHave in newMustHaves:
-    mustHaves.append(newMustHave)
-  return mustHaves
-# end getMustHaves
+async def getRestrictions(restrictions, fieldIndex, member, moBotMessage, embed, client):
+  
+  def checkEmoji(payload):
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name == CHECKMARK_EMOJI
+  # end checkEmoji
 
-def getPlayerLimitations(playerLimitations):
-  newPlayerLimitations = input("Input the IDs of the players to not include: ").split(" ")
-  for newPlayerLimitation in newPlayerLimitations:
-    playerLimitations.append(newPlayerLimitation)
+  def checkMessage(msg):
+    return msg.channel.id == moBotMessage.channel.id and member.id == msg.author.id
+  # end checkMessage
+
+  restrictionName = embed["fields"][fieldIndex]["name"][:-1]
+  embed["description"] = "**Type the names of any '" + restrictionName + "' below (one name per line)... If none, type 'none'.**"
+  await editEmbed(moBotMessage, embed)
+  try:
+    msg = await client.wait_for("message", timeout=300, check=checkMessage)
+    newRestrictions = msg.content.split("\n") if msg.content.lower() != "none" else []
+    await msg.delete()
+  except asyncio.TimeoutError:
+    newRestrictions = []
+
+  if (len(newRestrictions) > 0):
+    embed["fields"][fieldIndex]["value"] = ""
+    content = "**Is this name correct?**"
+    moBotMessage2 = await moBotMessage.channel.send(content)
+    for i in range(len(newRestrictions)):
+      try:
+        playerName = get_close_matches(newRestrictions[i], playerNamesToIDs)[0]
+        await moBotMessage2.edit(content=content + "\n`" + playerName + "`")
+      except IndexError:
+        await moBotMessage2.edit(content="**Entered Name Not Found - CLICK " + CHECKMARK_EMOJI + "**")
+        playerName = spaceChar
+      await moBotMessage2.add_reaction(CHECKMARK_EMOJI)
+      try:
+        payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
+        await moBotMessage2.remove_reaction(CHECKMARK_EMOJI, member)
+        embed["fields"][fieldIndex]["value"] += "\n" + playerName
+        if (playerName != spaceChar):
+          newRestrictions[i] = playerNamesToIDs[playerName]
+        else:
+          embed["fields"][fieldIndex]["value"] = spaceChar
+        await editEmbed(moBotMessage, embed)
+      except asyncio.TimeoutError:
+        await moBotMessage2.edit(content="**TIMED OUT**")
+    await moBotMessage2.delete()
+
+  for newRestriction in newRestrictions:
+    restrictions.append(newRestriction)
+  return restrictions
+# end getRestrictions
+
+async def getNewPlayerLimitations(playerLimitations, member, moBotMessage, embed, client):
+  
+  def checkEmoji(payload):
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name == CHECKMARK_EMOJI
+  # end checkEmoji
+  
+  lineup = embed["fields"][5]["value"].split("\n")
+  embed["description"] = "**Use the numbers below to remove any players, then click the " + CHECKMARK_EMOJI + " to continue.**"
+  await editEmbed(moBotMessage, embed)
+  payload = await client.wait_for("raw_reaction_add", timeout=300, check=checkEmoji)
+  moBotMessage = await moBotMessage.channel.fetch_message(moBotMessage.id)
+  for reaction in moBotMessage.reactions: # get players
+    emoji = str(reaction.emoji)
+    async for user in reaction.users():
+      if (user.id == member.id):
+        for line in lineup:
+          if (emoji in line):
+            player = line.split("**")[1]
+            embed["fields"][3]["value"] += "\n" + player
+            embed["fields"][5]["value"] = embed["fields"][5]["value"].replace(line, "*Removed*")
+            playerLimitations.append(playerNamesToIDs[player])
+            break
+        break
+  await moBotMessage.clear_reactions()
+  if (len(embed["fields"][3]["value"]) > 1):
+    embed["fields"][3]["value"] = embed["fields"][3]["value"].replace(spaceChar, "")
+  await editEmbed(moBotMessage, embed)
+
   return playerLimitations
-# end getPlayerLimitations
+# end getNewPlayerLimitations
+
+async def getLineupStyle(member, moBotMessage, embed, client):
+  
+  def checkEmoji(payload):
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomFunctions.numberEmojis
+  # end checkEmoji
+
+  lineupStyles = [
+    "BASIC",
+    "QB_WR",
+    "DST_RB",
+    #"QB_FLEX_DST_RB",
+  ]
+  embed["description"] = "*Lineup Styles:*"
+  for i in range(len(lineupStyles)):
+    emojiNumber = RandomFunctions.numberToEmojiNumbers(i+1)
+    embed["description"] += "\n" + spaceChar + emojiNumber + " - " + lineupStyles[i]
+    await moBotMessage.add_reaction(emojiNumber)
+
+  embed["description"] += "\n**Select a Lineup Style:**"
+  await editEmbed(moBotMessage, embed)
+  try:
+    payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
+    lineupStyle = lineupStyles[RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
+  except asyncio.TimeoutError:
+    await moBotMessage.channel.send("**TIMED OUT**")
+    lineupStyle = lineupStyles[0]
+
+  embed["fields"][2]["value"] = lineupStyle
+  await editEmbed(moBotMessage, embed)
+  await moBotMessage.clear_reactions()
+  return lineupStyle
+# end getLineupStyle
 
 async def getLineupType(member, moBotMessage, embed, client):
   
@@ -611,22 +735,22 @@ async def getLineupType(member, moBotMessage, embed, client):
   # end checkEmoji
 
   lineupTypes = ["Classic", "Showdown"]
-  embed["description"] = "Lineup Types:"
+  embed["description"] = "*Lineup Types:*"
   for i in range(len(lineupTypes)):
-    emojiNumber = await RandomFunctions.numberToEmojiNumbers(i+1)
+    emojiNumber = RandomFunctions.numberToEmojiNumbers(i+1)
     embed["description"] += "\n" + spaceChar + emojiNumber + " - " + lineupTypes[i]
     await moBotMessage.add_reaction(emojiNumber)
 
-  embed["description"] += "\n*Select a Lineup Type:*"
+  embed["description"] += "\n**Select a Lineup Type:**"
   await editEmbed(moBotMessage, embed)
   try:
     payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
-    lineupType = lineupTypes[await RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
+    lineupType = lineupTypes[RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
   except asyncio.TimeoutError:
     await moBotMessage.channel.send("**TIMED OUT**")
     lineupType = lineupTypes[0]
 
-  embed["description"] = ("Lineup Type: \"%s\"\n" % (lineupType))
+  embed["fields"][1]["value"] = lineupType
   await editEmbed(moBotMessage, embed)
   await moBotMessage.clear_reactions()
   return lineupType
@@ -638,28 +762,28 @@ async def getFile(member, moBotMessage, embed, client):
     return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomFunctions.numberEmojis
   # end checkEmoji
 
-  embed["description"] = "Salaries Files:"
+  embed["description"] = "*Salaries Files:*"
   await editEmbed(moBotMessage, embed)
   dkSalariesDir = os.getcwd() + "\\DKSalaries"
   files = []
   for dir in os.walk(dkSalariesDir):
     for file in dir[-1]:
-      if (file[-3:] == "csv"):
+      if (file[-3:] == "csv" and str(weekNumber+1) in file):
         files.append(file)
-        emojiNumber = await RandomFunctions.numberToEmojiNumbers(len(files))
+        emojiNumber = RandomFunctions.numberToEmojiNumbers(len(files))
         embed["description"] += "\n" + spaceChar + emojiNumber + " - " + file
         await moBotMessage.add_reaction(emojiNumber)
 
-  embed["description"] += "\n*Select a File Number:*"
+  embed["description"] += "\n**Select a File Number:**"
   await editEmbed(moBotMessage, embed)
   try:
     payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
-    file = files[await RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
+    file = files[RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
   except asyncio.TimeoutError:
     await moBotMessage.channel.send("**TIMED OUT**")
     file = files[0]
 
-  embed["description"] = ("Opening \"%s\"\n" % (file))
+  embed["fields"][0]["value"] = file
   await editEmbed(moBotMessage, embed)
   await moBotMessage.clear_reactions()
   return dkSalariesDir + "\\" + file
