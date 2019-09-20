@@ -555,15 +555,15 @@ def parseStatsTable(name, tableName, year):
 # end parseStatsTable
 
 async def printValueList(valueList, pos, moBotMessage):
-  os.remove("ValueList.txt")
-  valueListFile = open("ValueList.txt", "w+")
+  #os.remove("ValueList.txt")
+  valueListFile = open("ValueList.txt", "w")
   valueListFile.write("Value List (%s):" % (pos))
   for player in valueList:
     if (pos != None):
       if (pos in player.fpos):
         valueListFile.write("%s %s" % (player.name, player.value))
     else:
-      valueListFile.write("%s %s %s %s %s %s\n" % (player.pos, player.name, player.value, player.price, player.team, player.game))
+      valueListFile.write("\n%s %s %s %s %s %s %s" % (player.pos, player.name, player.value, player.appg, player.price, player.team, player.game))
   valueListFile.close()
   '''valueListFile = open("ValueList.txt", "r")
   await moBotMessage.channel.send(file=discord.File(valueListFile))
