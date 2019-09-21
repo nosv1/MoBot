@@ -15,6 +15,8 @@ import RandomFunctions
 
 spaceChar = "⠀"
 CHECKMARK_EMOJI = "✅"
+COUNTERCLOCKWISE_ARROWS_EMOJI = "🔄"
+X_EMOJI = "❌"
 
 adjustedDate = datetime.now() - relativedelta(months=3)
 lastYear = adjustedDate.year-1
@@ -151,6 +153,7 @@ class OffenseScoringStatsPerGame:
 # end OffenseScoringStatsPerGame
 
 async def main(args, message, client):
+
   global statsTables
 
   embed = discord.Embed(
@@ -164,6 +167,7 @@ async def main(args, message, client):
   embed.add_field(name="Player Limitations:", value=spaceChar, inline=True)
   embed.add_field(name="Must Haves:", value=spaceChar, inline=True)
   embed.add_field(name="Lineup:", value=spaceChar, inline=False)
+  embed.set_footer(text="REM. SALARY: TBD TOTAL FPPG: TBD")
   embed = embed.to_dict()
   moBotMessage = await message.channel.send(embed=discord.Embed.from_dict(embed))
   
@@ -198,15 +202,26 @@ async def main(args, message, client):
 
     embed["description"] = "*Creating Lineups*"
     await editEmbed(moBotMessage, embed)
-    if (lineupType == "Classic"):
-      lineup = createClassicLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
-    elif (lineupType == "Showdown"):
-      lineup = createShowdownLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
-        
-    await printLineup(lineup, moBotMessage, embed)
+    try:
+      if (lineupType == "Classic"):
+        lineup = createClassicLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
+      elif (lineupType == "Showdown"):
+        lineup = createShowdownLineup(players, valueList, valueListOption, playerLimitations, copy.deepcopy(mustHaves))
+      await printLineup(lineup, moBotMessage, embed)
+    except IndexError:
+      embed["footer"]["text"] = "Could Not Create A Lineup"
+      await moBotMessage.add_reaction(COUNTERCLOCKWISE_ARROWS_EMOJI)
+      await moBotMessage.add_reaction(X_EMOJI)
+      await editEmbed(moBotMessage, embed)        
 
     try:
       playerLimitations = await getNewPlayerLimitations(playerLimitations, message.author, moBotMessage, embed, client)
+      if (playerLimitations is None):
+        lineupType = await getLineupType(message.author, moBotMessage, embed, client)
+        playerLimitations = await getRestrictions([], 3, message.author, moBotMessage, embed, client)
+        mustHaves = await getRestrictions([], 4, message.author, moBotMessage, embed, client)
+      elif (playerLimitations == "exit"):
+        break
     except asyncio.TimeoutError:
       await moBotMessage.channel.send("**TIMED OUT**")
       break
@@ -292,7 +307,7 @@ def getLineup(lineup, salary, mustHaves, playerLimitations, valueList):
 
         for vPlayer in valueList:
           if (vPlayer.pos == position or (position == "FLEX" and "FLEX" in vPlayer.fpos)):
-            if (vPlayer.value > potentialPlayer.value):
+            if (vPlayer.value > potentialPlayer.value and vPlayer.appg > potentialPlayer.appg):
               newPlayer = vPlayer
               if (salary - newPlayer.price >= 0):
                 if (not isInLineup(lineup, newPlayer) and newPlayer.id not in playerLimitations):
@@ -573,6 +588,8 @@ async def printValueList(valueList, pos, moBotMessage):
 async def printLineup(lineup, moBotMessage, embed):
   embed["fields"][5]["value"] = "__Pos. - Player Name - Appg. - Price - Team__"
   playerCount = 0
+  remSalary = 50000
+  totalAppg = 0
   for position in lineup:
     for player in lineup[position]:
       try:
@@ -580,10 +597,15 @@ async def printLineup(lineup, moBotMessage, embed):
         emojiNumber = RandomFunctions.numberToEmojiNumbers(playerCount)
         game = player.game.replace(player.team, "**" + player.team + "**")
         embed["fields"][5]["value"] += ("\n%s %s - **%s** - %s - %s - %s" % (emojiNumber, position, player.name, player.appg, player.price, game))
+        remSalary -= int(player.price)
+        totalAppg += float(player.appg)
         await moBotMessage.add_reaction(emojiNumber)
       except AttributeError: # when not printing full lineup
         print(position, None)
   await moBotMessage.add_reaction(CHECKMARK_EMOJI)
+  await moBotMessage.add_reaction(COUNTERCLOCKWISE_ARROWS_EMOJI)
+  await moBotMessage.add_reaction(X_EMOJI)
+  embed["footer"]["text"] = ("REM. SALARY: $%s TOTAL FPPG: %s" % (remSalary, totalAppg))
   await editEmbed(moBotMessage, embed)
 # end printLineup
 
@@ -666,32 +688,41 @@ async def getRestrictions(restrictions, fieldIndex, member, moBotMessage, embed,
 async def getNewPlayerLimitations(playerLimitations, member, moBotMessage, embed, client):
   
   def checkEmoji(payload):
-    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name == CHECKMARK_EMOJI
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in [CHECKMARK_EMOJI, COUNTERCLOCKWISE_ARROWS_EMOJI, X_EMOJI]
   # end checkEmoji
   
   lineup = embed["fields"][5]["value"].split("\n")
   embed["description"] = "**Use the numbers below to remove any players, then click the " + CHECKMARK_EMOJI + " to continue.**"
   await editEmbed(moBotMessage, embed)
   payload = await client.wait_for("raw_reaction_add", timeout=300, check=checkEmoji)
-  moBotMessage = await moBotMessage.channel.fetch_message(moBotMessage.id)
-  for reaction in moBotMessage.reactions: # get players
-    emoji = str(reaction.emoji)
-    async for user in reaction.users():
-      if (user.id == member.id):
-        for line in lineup:
-          if (emoji in line):
-            player = line.split("**")[1]
-            embed["fields"][3]["value"] += "\n" + player
-            embed["fields"][5]["value"] = embed["fields"][5]["value"].replace(line, "*Removed*")
-            playerLimitations.append(playerNamesToIDs[player])
-            break
-        break
-  await moBotMessage.clear_reactions()
-  if (len(embed["fields"][3]["value"]) > 1):
-    embed["fields"][3]["value"] = embed["fields"][3]["value"].replace(spaceChar, "")
-  await editEmbed(moBotMessage, embed)
-
-  return playerLimitations
+  if (payload.emoji.name == CHECKMARK_EMOJI):
+    moBotMessage = await moBotMessage.channel.fetch_message(moBotMessage.id)
+    for reaction in moBotMessage.reactions: # get players
+      emoji = str(reaction.emoji)
+      async for user in reaction.users():
+        if (user.id == member.id):
+          for line in lineup:
+            if (emoji in line):
+              player = line.split("**")[1]
+              embed["fields"][3]["value"] += "\n" + player
+              embed["fields"][5]["value"] = embed["fields"][5]["value"].replace(line, "*Removed*")
+              playerLimitations.append(playerNamesToIDs[player])
+              break
+          break
+    await moBotMessage.clear_reactions()
+    if (len(embed["fields"][3]["value"]) > 1):
+      embed["fields"][3]["value"] = embed["fields"][3]["value"].replace(spaceChar, "")
+    await editEmbed(moBotMessage, embed)
+    return playerLimitations
+  elif (payload.emoji.name == COUNTERCLOCKWISE_ARROWS_EMOJI):
+    await moBotMessage.clear_reactions()
+    for i in range(1, 6):
+      embed["fields"][i]["value"] = spaceChar
+    embed["footer"]["text"] = spaceChar
+    await editEmbed(moBotMessage, embed)
+    return None
+  elif (payload.emoji.name == X_EMOJI):
+    return "exit"
 # end getNewPlayerLimitations
 
 async def getLineupStyle(member, moBotMessage, embed, client):

@@ -315,6 +315,8 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
   
   for guildID in countdowns:
     guild = client.get_guild(guildID)
+    if (guild is None):
+      continue
     for countdown in countdowns[guildID]:
       tz = countdown["Time Zone"]
       endDatetime = datetime.strptime(countdown["End Datetime"], "%m/%d/%Y %H:%M")
