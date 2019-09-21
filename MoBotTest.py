@@ -115,8 +115,8 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        f = open("testing.txt", "r")
-        await message.channel.send(file=discord.File(f))
+        profile = await message.author.profile()
+        print (profile.connected_accounts)
         print("done")
       elif (args[1] == "dk"):
         try:

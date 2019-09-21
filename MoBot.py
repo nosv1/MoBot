@@ -230,11 +230,11 @@ async def on_message(message):
         else:
           msg = None
           try:
-            msg = await message.channel.fetch_message(int(args[3]))
+            msg = await message.channel.fetch_message(int(args[2]))
           except discord.errors.NotFound:
             for channel in message.guild.channels:
               try:
-                msg = await channel.fetch_message(int(args[3]))
+                msg = await channel.fetch_message(int(args[2]))
                 break
               except discord.errors.NotFound:
                 pass

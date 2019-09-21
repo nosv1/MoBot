@@ -32,6 +32,7 @@ WAVE_EMOJI = "👋"
 FIST_EMOJI = "✊"
 CROWN = "👑"
 WRENCH = "🔧"
+GLOBE_WITH_LINES = "🌐"
 
 spaceChar = "⠀"
 logos = {
@@ -116,7 +117,14 @@ async def mainReactionAdd(message, payload, client):
 
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
-        await addStreamer(message, member, payload)
+        await addStreamer(message, member, payload, client)
+      if (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
+        for reaction in message.reactions:
+          async for user in reaction.users():
+            if (reaction.emoji != ARROWS_COUNTERCLOCKWISE_EMOJI and user.id != int(moBot)):
+              await removeStreamer(message, message.guild.get_member(user.id), reaction)
+        await message.remove_reaction(payload.emoji.name, member)
+
 
     if (message.id == 622831151320662036): # message id for pit marshall signup embed
       if (payload.emoji.name == CROWN):
@@ -324,27 +332,77 @@ async def removeHost(message, member):
   await message.edit(embed=discord.Embed.from_dict(embed))
 # end addHost
 
-async def addStreamer(message, member, payload):
+def updateMultistreams(multistreams):
+  value = ""
+  for j in range(len(multistreams)):
+    link = "https://multistre.am/"
+    if (multistreams[j] != []):
+      print (multistreams[j])
+      if (len(multistreams[j]) > 1):
+        for name in multistreams[j]:
+          link += name + "/"
+      else:
+        link += multistreams[j][0] + "/"
+      value += "__[Division %s](%s)__ (%s)\n" % (j+1, link, len(multistreams[j]))  
+  return value
+# end updateMultistreams
+
+async def addStreamer(message, member, payload, client):
+  def checkMsg(msg):
+    return msg.channel.id == message.channel.id and msg.author.id == payload.user_id
+  # end checkMsg
+
+  if ("twitch" in payload.emoji.name.lower()):
+    try:
+      moBotMessage =await message.channel.send(member.mention + ",what is your Twitch name?\n**NOT THE URL**")
+      msg = await client.wait_for("message", timeout=300, check=checkMsg)
+      twitchName = msg.content if ("ttv" not in msg.content and "twitch.tv" not in msg.content) else msg.content.split("/")[-1]
+      await moBotMessage.delete()
+      await msg.delete()
+
+    except asyncio.TimeoutError:
+      await message.channel.send(content="**TIMED OUT**", delete_after=60)
+      await message.remove_reaction(payload.emoji.name, member)
+      return None
+  else:
+    twitchName = None
+
   streamEmbed = message.embeds[0]
   streamEmbed = streamEmbed.to_dict()
+
+  multistreams = [[], [] , [], [], [], [], []]
 
   for i in range(len(streamEmbed["fields"])):
     if (payload.emoji.name.lower() in streamEmbed["fields"][i]["name"].lower()):
       value = ""
       for line in streamEmbed["fields"][i]["value"].split("\n"):
         if (line == spaceChar):
-          value += member.display_name + "\n"
+          if (twitchName is not None):
+            value += ("__[%s](https://twitch.tv/%s)__\n" % (member.display_name, twitchName))
+          else:
+            value += ("%s\n" % (member.display_name))
         else:
           value += line + "\n"
       value += spaceChar
       streamEmbed["fields"][i]["value"] = value
-      break
+      
+    if ("Twitch Streamers" in streamEmbed["fields"][i]["name"]):
+      for line in streamEmbed["fields"][i]["value"].split("\n"):
+        if ("twitch.tv/" in line):
+          div = int(line.split("]")[0][-1])
+          multistreams[div-1].append(line.split("/")[-1][:-3].strip())
+    
+    if ("Twitch Multistreams" in streamEmbed["fields"][i]["name"]):
+      value = updateMultistreams(multistreams)
+      streamEmbed["fields"][i]["value"] = value if (value != "") else spaceChar
   await message.edit(embed=discord.Embed.from_dict(streamEmbed))
 # end addStreamer
 
 async def removeStreamer(message, member, payload):
   streamEmbed = message.embeds[0]
   streamEmbed = streamEmbed.to_dict()
+
+  multistreams = [[], [] , [], [], [], [], []]
 
   for i in range(len(streamEmbed["fields"])):
     if (payload.emoji.name.lower() in streamEmbed["fields"][i]["name"].lower()):
@@ -353,7 +411,16 @@ async def removeStreamer(message, member, payload):
         if (member.display_name not in line):
           value += line + "\n"
       streamEmbed["fields"][i]["value"] = value
-      break
+      
+    if ("Twitch Streamers" in streamEmbed["fields"][i]["name"]):
+      for line in streamEmbed["fields"][i]["value"].split("\n"):
+        if ("twitch.tv/" in line):
+          div = int(line.split("]")[0][-1])
+          multistreams[div-1].append(line.split("/")[-1][:-3].strip())
+    
+    if ("Twitch Multistreams" in streamEmbed["fields"][i]["name"]):
+      value = updateMultistreams(multistreams)
+      streamEmbed["fields"][i]["value"] = value if (value != "") else spaceChar
   await message.edit(embed=discord.Embed.from_dict(streamEmbed))
 # end removeStreamer
 
