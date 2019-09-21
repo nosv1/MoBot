@@ -16,7 +16,8 @@ moBot = "449247895858970624"
 ssIDs = {
   "2s League [XB1/PC]" : "1qzDGDOzgaqR7Mmsda-tE1tYn71oU52Gt1okEHqScEnU",
   "Noble Leagues Off-Season" : "1M8wij5yJXNplkRdrhIj-sMqfHBC8KmKHlFqyOCMaARw",
-  "Noble Leagues Qualifiers" : "1Ut8QSZ48uB-H1wpE3-NxpPwBKLybkK-uo6Jb5LOSIxY"
+  "Noble Leagues Qualifiers" : "1Ut8QSZ48uB-H1wpE3-NxpPwBKLybkK-uo6Jb5LOSIxY",
+  "Noble Leagues MoBot" : "1w-cme_ZtMIU3nesgGajc-5Y3eJX22Htwl_UIefG3E1Q",
 }
 
 async def main(args, message, client):
@@ -46,10 +47,6 @@ async def main(args, message, client):
         await getTeamInfo(message, args)
       elif (args[1] == "submit"):
         await submitResultConfirm(message, client)
-      elif (args[1].lower() == "registerid" or args[1].lower() == "changeid"):
-        await registerID(message, args)
-      elif (args[1] == "signup"):
-        await signup(message)
     elif (args[0] == "!t"):
       if (args[1] == "register"):
         await tRegister(message, tCommandLog)
@@ -88,6 +85,15 @@ async def main(args, message, client):
         await tLeave(message, tCommandLog)
       elif (args[1] == "help"):
         await tHelp(message)
+        
+  if (args[0].lower() == "!registerid" or args[0].lower() == "!changeid"):
+          await registerID(message, args)
+
+  if (args[0] == "!minor" or args[0] == "!major"):
+    if (args[1].lower() == "checkin"):
+      await tournamentCheckin(message)
+    else:
+      await tournamentSignup(message)
 
   if (args[0] == "!t"):
     await updatePlayerIDs()
@@ -137,7 +143,6 @@ async def mainReactionAdd(message, payload, client):
   elif (message.author.id == 424398041043435520 and str(payload.user_id) != moBot): #Quantum Tracker aka RL STat Tracker
     tCommandLog = message.guild.get_channel(578955177478848523) # team log
     await getMMR(message, payload, tCommandLog)
-
 #end mainReactionAdd
       
 async def mainReactionRemove(message, payload, client):
@@ -1124,23 +1129,18 @@ async def testing(message):
 async def registerID(message, args):
   moBotMessages = [message]
   await message.channel.trigger_typing()
-  workbook = await openSpreadsheet(ssIDs["Noble Leagues Off-Season"])
+  workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
   registerIDSheet = workbook.worksheet("RegisterID")
-  nameIDs = registerIDSheet.range("B3:C" + str(registerIDSheet.row_count))
+  nameIDs = registerIDSheet.range("A2:B" + str(registerIDSheet.row_count))
 
-  userId = message.author.id # in format @mobot register name
-  registerName = ""
-  for i in range(2, len(args)):
-    registerName += args[i].strip() + " "
-  registerName = registerName[:-1]
-
-  if ("<@" in registerName):
-    id = int(registerName["-19:-1"])
-    user = message.guild.get_member(id)
-    if (user.nick != None):
-      registerName = user.nick
-    else:
-      registerName = user.name
+  userId = message.author.id # in format !register name
+  if ("<@" in message.content):
+    registerName = message.author.display_name
+  else:
+    registerName = ""
+    for i in range(1, len(args)):
+      registerName += args[i].strip() + " "
+    registerName = registerName[:-1]
 
   idNotPresent = True
   nameNotPresent = True
@@ -1186,7 +1186,87 @@ async def registerID(message, args):
   #await deleteMoBotMessages(moBotMessages)
 # end register
 
-async def signup(message):
+def checkIfRegistered(member, registeredIDsRange):
+  for i in range(len(registeredIDsRange)):
+    if (str(member.id) in registeredIDsRange[i].value):
+      return True
+  return False
+# end checkIfRegistered
+
+def getRegisteredID(name, registeredIDsRange):
+  for i in range(len(registeredIDsRange)):
+    if (name == registeredIDsRange[i].value):
+      return int(registeredIDsRange[i+1].value.split("@")[1].split(">")[0])
+# end getRegisteredID
+
+def getUserName(memberID, registeredIDsRange):
+  for i in range(len(registeredIDsRange)):
+    if (str(memberID) in registeredIDsRange[i].value):
+      return registeredIDsRange[i-1].value
+# end getUserName
+
+async def tournamentCheckin(message):
+  await message.channel.trigger_typing()
+  workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
+  registeredIDsSheet = workbook.worksheet("RegisterID")
+  signupSheet = workbook.worksheet("Minor") if ("!minor" in message.content) else workbook.worksheet("Major")
+
+  registeredIDsRange = registeredIDsSheet.range("A2:B" + str(registeredIDsSheet.row_count))
+  signupRange = signupSheet.range("B2:D" + str(signupSheet.row_count))
+
+  for i in range(0, len(signupRange), 3):
+    for j in range(i, i+2):
+      if (signupRange[j].value == getUserName(message.author.id, registeredIDsRange)):
+        signupRange[i+2].value = "=TRUE"
+        await message.channel.send("**Checked In**")
+        registerLog = message.guild.get_channel(569196829137305631)
+        await registerLog.send("%s and %s have checked in for the %s tournament." % (message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)).mention, message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange)).mention, message.content.split(" ")[0].split("!")[1].strip()))
+        signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
+        return 0
+  await message.channel.send("**Member Not On Team**\n" + message.author.mention + " is not on a team for this tournament.")
+# end tournamentCheckin
+
+async def tournamentSignup(message):
+  await message.channel.trigger_typing()
+  workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
+  registeredIDsSheet = workbook.worksheet("RegisterID")
+  signupSheet = workbook.worksheet("Minor") if ("!minor" in message.content) else workbook.worksheet("Major")
+
+  registeredIDsRange = registeredIDsSheet.range("A2:B" + str(registeredIDsSheet.row_count))
+  signupRange = signupSheet.range("B2:D" + str(signupSheet.row_count))
+
+  mc = message.content.replace("!", "")
+  userIDs = [int(mc.split(">")[0].split("@")[1]), int(mc.split(">")[-2].split("@")[1])]
+  continueSignup = True
+  if (userIDs[0] == userIDs[1]):
+    await message.channel.send("**Canceling Signup Process**\n" + message.author.mention + ", when signing up a team, include both members of the team.")
+    continueSignup = False
+
+  if (continueSignup):
+    for userID in userIDs:
+      member = message.guild.get_member(userID)
+      if (not checkIfRegistered(member, registeredIDsRange)):
+        await message.channel.send("**Canceling Signup Process**\n" + member.mention + " is not a registered member. Use the command `!registerID username` to register.")
+        continueSignup = False
+
+  if (continueSignup):
+    for i in range(len(signupRange)):
+      userNames = [getUserName(str(userIDs[0]), registeredIDsRange), getUserName(str(userIDs[1]), registeredIDsRange)]
+      if (signupRange[i].value == ""):
+        signupRange[i].value = userNames[0]
+        signupRange[i+1].value = userNames[1]
+        signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
+        await message.channel.send("**Signup Complete**")
+        registerLog = message.guild.get_channel(569196829137305631)
+        await registerLog.send("%s has signed up %s and %s for the %s tournament." % (message.author.mention, message.guild.get_member(userIDs[0]).mention, message.guild.get_member(userIDs[1]).mention, message.content.split(" ")[0].split("!")[1].strip()))
+        break
+      if (signupRange[i].value in userNames): 
+        member = message.guild.get_member(int(getRegisteredID(signupRange[i].value), registeredIDsRange))
+        await message.channel.send("**Canceling Signup Process**\n" + member.mention + " has already signed up. If this is a mistake, contact an Organiser.")
+        break
+# end tournamentSignup
+
+async def signupOLD(message):
   await message.channel.trigger_typing()
   moBotMessages = []
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Off-Season"])
