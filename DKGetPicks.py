@@ -307,7 +307,7 @@ def getLineup(lineup, salary, mustHaves, playerLimitations, valueList):
 
         for vPlayer in valueList:
           if (vPlayer.pos == position or (position == "FLEX" and "FLEX" in vPlayer.fpos)):
-            if (vPlayer.value > potentialPlayer.value and vPlayer.appg > potentialPlayer.appg):
+            if (vPlayer.value > potentialPlayer.value):
               newPlayer = vPlayer
               if (salary - newPlayer.price >= 0):
                 if (not isInLineup(lineup, newPlayer) and newPlayer.id not in playerLimitations):
@@ -345,15 +345,14 @@ def getBenchmark(lineup, positions, playerLimitations, salary):
         continue
 
       player = valuePerDollarList[-(i+1)]
-      inLineupCount = i+1
+      inLineupCount = i
       while True:
+        inLineupCount += 1
         player = valuePerDollarList[-(inLineupCount)]
         if (not isInLineup(lineup, player) and player.id not in playerLimitations and salary - player.price >= 0):
           lineup[position][i] = player
           salary -= player.price
           break
-        else:
-          inLineupCount += 1
   return lineup, salary
 # end getBenchmark
 
@@ -605,7 +604,7 @@ async def printLineup(lineup, moBotMessage, embed):
   await moBotMessage.add_reaction(CHECKMARK_EMOJI)
   await moBotMessage.add_reaction(COUNTERCLOCKWISE_ARROWS_EMOJI)
   await moBotMessage.add_reaction(X_EMOJI)
-  embed["footer"]["text"] = ("REM. SALARY: $%s TOTAL FPPG: %s" % (remSalary, totalAppg))
+  embed["footer"]["text"] = ("REM. SALARY: $%s TOTAL FPPG: %.3f" % (remSalary, totalAppg))
   await editEmbed(moBotMessage, embed)
 # end printLineup
 
@@ -620,6 +619,8 @@ def getPlayersFromSalaries(salaries):
   # line = [pos,name(id),name,id,rosterPos,price,game date time,team,fppg]
   for line in lines:
     line = line.split(",")
+    if (line[0] == ""):
+      continue
     name = line[2].strip()
     name = PLAYER_NAME_CORRECTIONS[name] if (name in PLAYER_NAME_CORRECTIONS) else name
     id = line[3].strip()
@@ -628,7 +629,7 @@ def getPlayersFromSalaries(salaries):
     price = line[5].strip()
     game = line[6].split(" ")[0]
     team = line[7].strip()
-    appg = line[8].strip()
+    appg = float(line[8].strip())
     if (fpos != "CPT"):
       players[name] = Player(name, id, pos, fpos, price, game, team, appg)
 
@@ -668,18 +669,19 @@ async def getRestrictions(restrictions, fieldIndex, member, moBotMessage, embed,
         playerName = spaceChar
       await moBotMessage2.add_reaction(CHECKMARK_EMOJI)
       try:
-        payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
-        await moBotMessage2.remove_reaction(CHECKMARK_EMOJI, member)
+        if (playerName != newRestrictions[i]):
+          payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
+          await moBotMessage2.remove_reaction(CHECKMARK_EMOJI, member)
         embed["fields"][fieldIndex]["value"] += "\n" + playerName
         if (playerName != spaceChar):
           newRestrictions[i] = playerNamesToIDs[playerName]
         else:
           embed["fields"][fieldIndex]["value"] = spaceChar
-        await editEmbed(moBotMessage, embed)
       except asyncio.TimeoutError:
         await moBotMessage2.edit(content="**TIMED OUT**")
     await moBotMessage2.delete()
 
+  await editEmbed(moBotMessage, embed)
   for newRestriction in newRestrictions:
     restrictions.append(newRestriction)
   return restrictions

@@ -354,13 +354,16 @@ async def addStreamer(message, member, payload, client):
 
   if ("twitch" in payload.emoji.name.lower()):
     try:
-      moBotMessage =await message.channel.send(member.mention + ",what is your Twitch name?\n**NOT THE URL**")
+      await message.channel.set_permissions(member, read_messages=True, send_messages=True)
+      moBotMessage = await message.channel.send(member.mention + ", what is your Twitch name?\n**NOT THE URL**")
       msg = await client.wait_for("message", timeout=300, check=checkMsg)
+      await message.channel.set_permissions(member, overwrite=None)
       twitchName = msg.content if ("ttv" not in msg.content and "twitch.tv" not in msg.content) else msg.content.split("/")[-1]
       await moBotMessage.delete()
       await msg.delete()
 
     except asyncio.TimeoutError:
+      await message.channel.set_permissions(member, overwrite=None)
       await message.channel.send(content="**TIMED OUT**", delete_after=60)
       await message.remove_reaction(payload.emoji.name, member)
       return None
