@@ -462,7 +462,7 @@ async def reserveNeeded(message, member):
   await message.edit(embed=discord.Embed.from_dict(embed))
 
   workbook = await openSpreadsheet()
-  await setReservesNeeded(embed["fields"][0]["value"], workbook)
+  await setReservesNeeded(member, embed["fields"][0]["value"], workbook)
   await updateStartOrders(message.guild, workbook)
 # end reserveNeeded
 
