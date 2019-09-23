@@ -466,7 +466,7 @@ async def reserveNeeded(message, member):
   embed["fields"][0]["value"] = reservesNeeded + "\n" + member.display_name + "\n" + spaceChar
   await message.edit(embed=discord.Embed.from_dict(embed))
 
-  workbook = await openSpreadsheet2()
+  workbook = await openSpreadsheet()
   await setReservesNeeded(member, embed["fields"][0]["value"], workbook)
   await updateStartOrders(message.guild, workbook)
 # end reserveNeeded
@@ -482,7 +482,7 @@ async def reserveNotNeeded(message, member):
   embed["fields"][0]["value"] = newReservesNeeded
   await message.edit(embed=discord.Embed.from_dict(embed))
 
-  workbook = await openSpreadsheet2()
+  workbook = await openSpreadsheet()
   await setReservesNeeded(member, embed["fields"][0]["value"], workbook)
   await updateStartOrders(message.guild, workbook)
 # end reserveNotNeeded
@@ -495,7 +495,7 @@ async def reserveAvailable(message, member, payload, client):
   # end checkCheckmarkEmoji
 
   async def getReserveDiv(member):
-    workbook = await openSpreadsheet2()
+    workbook = await openSpreadsheet()
     driversSheet = workbook.worksheet("Drivers")
     driversRange = driversSheet.range("B3:F" + str(driversSheet.row_count))
     for i in range(len(driversRange)):
@@ -543,7 +543,7 @@ async def reserveAvailable(message, member, payload, client):
       embed["fields"][1]["value"] = reservesNeeded + "\n" + spaceChar
       await message.edit(embed=discord.Embed.from_dict(embed))
 
-      workbook = await openSpreadsheet2()
+      workbook = await openSpreadsheet()
       await setReservesAvailable(embed["fields"][1]["value"], workbook)
       await moBotMessage.edit(content="**Updating Reserve List**")
       await moBotMessage.clear_reactions()
@@ -574,7 +574,7 @@ async def reserveNotAvailable(message, member):
       await member.remove_roles(role)
       await message.guild.get_channel(DIVISION_UPDATES).send(member.mention + " has been removed from " + role.name)
 
-  workbook = await openSpreadsheet2()
+  workbook = await openSpreadsheet()
   await setReservesAvailable(embed["fields"][1]["value"], workbook)
   await updateStartOrders(message.guild, workbook)
 # end reserveNotAvailable
@@ -1115,66 +1115,6 @@ async def addUserToQualiScreenshots(message, member, qualiScreenshotsChannel, cl
   await qualiScreenshotsChannel.set_permissions(member, overwrite=None)
 # end addUserToQualiScreenshots
 
-async def updateDivList(message):
-  divListChannel = message.guild.get_channel(527226061100941312)
-
-  divList = getDivList(await openSpreadsheet2())
-  await updateDriverRoles(message.guild, divList)
-  return
-
-  divListEmbeds = {
-    "sortedByGamertag" : [],
-    "sortedByDivision" : [],
-  }
-
-  for key in divListEmbeds:
-    embed = discord.Embed(color=int("0xd1d1d1", 16))
-    if (key == "sortedByGamertag"):
-      divList.sort(key=lambda x:x[2])
-      embed.set_author(name="Children of the Mountain - Season 5\nSorted By Gamertag", icon_url=logos["cotmFaded"], url="https://www.google.com/DivisionList")
-      embed = embed.to_dict()
-      divListEmbeds["sortedByGamertag"].append(embed)
-
-    else:
-      divList.sort(key=lambda x:x[0])
-      embed.set_author(name="Children of the Mountain - Season 5\nSorted By Division", icon_url=logos["cotmFaded"], url="https://www.google.com/DivisionList")
-      embed = embed.to_dict()
-      divListEmbeds["sortedByDivision"].append(embed)
-
-    nameRange = [None, None]
-    oldDiv = 0
-    for i in range(len(divList)):
-      nameRange[1] = divList[i][1]
-
-      if (key == "sortedByDivision"):
-        div = int(divList[i][1].display_name[2])
-        if (div != oldDiv):
-          oldDiv = div
-          embed = discord.Embed(color=int("0xd1d1d1", 16))
-          embed.add_field(name="Division " + str(div), value="", inline=False)
-          embed = embed.to_dict()
-          divListEmbeds[key].append(embed)
-
-      elif (key == "sortedByGamertag"):
-        if (i % 15 == 0):
-          nameRange[0] = divList[i][1]
-          embed = discord.Embed(color=int("0xd1d1d1", 16))
-          embed.add_field(name="", value="", inline=False)
-          embed = embed.to_dict()
-          divListEmbeds[key].append(embed)
-
-
-      if (key == "sortedByGamertag"):
-        divListEmbeds[key][len(divListEmbeds[key])-1]["fields"][0]["name"] = nameRange[0].display_name + " - " + nameRange[1].display_name
-      divListEmbeds[key][len(divListEmbeds[key])-1]["fields"][0]["value"] += divList[i][1].display_name + "\n"
-  
-  await divListChannel.purge()
-  for embed in divListEmbeds["sortedByGamertag"]:
-    await divListChannel.send(embed=discord.Embed.from_dict(embed))
-  for embed in divListEmbeds["sortedByDivision"]:
-    await divListChannel.send(embed=discord.Embed.from_dict(embed))
-# end updateDivList
-
 async def updateDriverRoles(guild, divList):
   divisionUpdateChannel = guild.get_channel(DIVISION_UPDATES)
 
@@ -1186,7 +1126,7 @@ async def updateDriverRoles(guild, divList):
         continue
       else:
         for role in guild.roles:
-          if (role.name == "Division " + str(driver.div)):
+          if (role.name == "Division " + str(driver.div)): # add correct div role
             hasRole = False
             for dRole in driverMember.roles:
               if (dRole == role):
@@ -1198,7 +1138,7 @@ async def updateDriverRoles(guild, divList):
               await divisionUpdateChannel.send(driverMember.mention + " has been added to " + role.name + ".")
             break
         for role in driverMember.roles:
-          if ("Division" in role.name and "Reserve" not in role.name and str(driver.div) not in role.name):
+          if ("Division" in role.name and "Reserve" not in role.name and str(driver.div) not in role.name): # remove other div roles
             await driverMember.remove_roles(role)
             await divisionUpdateChannel.send(driverMember.mention + " has been removed from " + role.name + ".")
 # end updateDriverRoles
@@ -1220,27 +1160,28 @@ async def updateStartOrders(guild, workbook):
     embed = embed.to_dict()
     for i in range(len(startOrders[division])):
       driver = startOrders[division][i]
-      if (driver == None):
-        continue
       driverMember = guild.get_member(driver.driverID)
-      if (driver.reserveID != None):
-        driverName = "~~" + driverMember.display_name + "~~"
-        reserveMember = guild.get_member(driver.reserveID)
-        for role in guild.roles:
-          if (role.name == "Reserve Division " + str(division)):
-            hasRole = False
-            for role2 in reserveMember.roles:
-              if (role2 == role):
-                hasRole = True
-                break
-            if (not hasRole):
-              await reserveMember.add_roles(role)
-              await guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " is now reserving for " + driverMember.mention + ".")
-            break
-        embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverName, reserveMember.display_name, driver.totalPoints, driver.lastWeeksDiv))
-      else:
-        driverName = driverMember.display_name
-        embed["fields"][0]["value"] += ("%d. %s - %d - D%s\n" % (i+1, driverName, driver.totalPoints, driver.lastWeeksDiv))
+      try:
+        if (driver.reserveID != None):
+          driverName = "~~" + driverMember.display_name + "~~"
+          reserveMember = guild.get_member(driver.reserveID)
+          for role in guild.roles:
+            if (role.name == "Reserve Division " + str(division)):
+              hasRole = False
+              for role2 in reserveMember.roles:
+                if (role2 == role):
+                  hasRole = True
+                  break
+              if (not hasRole):
+                await reserveMember.add_roles(role)
+                await guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " is now reserving for " + driverMember.mention + ".")
+              break
+          embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverName, reserveMember.display_name, driver.totalPoints, driver.lastWeeksDiv))
+        else:
+          driverName = driverMember.display_name
+          embed["fields"][0]["value"] += ("%d. %s - %d - D%s\n" % (i+1, driverName, driver.totalPoints, driver.lastWeeksDiv))
+      except AttributeError: # when driverMember or reserveMember is None
+        await guild.get_member(moID).send("**SOMEONE MAY HAVE LEFT COTM**\nDriver:%s\nReserve:%s" % (driver.driverID, driver.reserveID))
     startOrderEmbeds.append(embed)
 
   await startOrdersChannel.purge()
@@ -1286,14 +1227,14 @@ def getStandings(workbook):
   # end Driver
 
   standingsSheet = workbook.worksheet("Standings")
-  standingsRange = standingsSheet.range("B3:E" + str(standingsSheet.row_count))
+  standingsRange = standingsSheet.range("G4:J" + str(standingsSheet.row_count))
   driversRange, driverSheet = getDriversRange(workbook)
 
   standings = []
   for i in range(0, len(standingsRange), 4):
     if (standingsRange[i].value == ""):
       break  
-    if (standingsRange[i+1].value == "D"):
+    if (standingsRange[i+1].value == "OUT"):
       continue
     position = int(standingsRange[i].value)
     driverID = int(driversRange[findDriver(driversRange, standingsRange[i+2].value)-1].value)
@@ -1473,19 +1414,10 @@ def findDriver(table, driver):
       break
   return driverFound
 # end findDriver
-  
+
 async def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
-  clientSS = gspread.authorize(creds)  
-  season5Key = "14L5u8GmPh4udQk85KCOlCTSen78mB8SxgPecdGMUk1E"
-  workbook = clientSS.open_by_key(season5Key)
-  return workbook
-# end openSpreadsheet
-
-async def openSpreadsheet2():
-  scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
+  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('cotmS4_client_secret.json'), scope)
   clientSS = gspread.authorize(creds)  
   season5Key = "11MpOJikj0UyxtlNN502Yq0wavG57AYAjtUlUFgeQUQs"
   workbook = clientSS.open_by_key(season5Key)
