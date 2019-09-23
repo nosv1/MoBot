@@ -71,10 +71,13 @@ async def main(args, message, client):
       try:
         if (args[1] == "update"):
           if (args[2] == "standings"):
+            await message.channel.trigger_typing()
             await updateStandings(message.guild, await openSpreadsheet())
           elif (args[2] == "start" and args[3] == "orders"):
+            await message.channel.trigger_typing()
             await updateStartOrders(message.guild, await openSpreadsheet())
           elif (args[2] == "div" and args[3] == "list"):
+            await message.channel.trigger_typing()
             divList = await updateDriverRoles(message, await openSpreadsheet())
             await updateDivList(message, divList)
       except IndexError:
@@ -1228,6 +1231,8 @@ async def updateStartOrders(guild, workbook):
     embed = embed.to_dict()
     for i in range(len(startOrders[division])):
       driver = startOrders[division][i]
+      if (driver == None):
+        continue
       driverMember = guild.get_member(driver.driverID)
       if (driver.reserveID != None):
         driverName = "~~" + driverMember.display_name + "~~"
@@ -1299,6 +1304,8 @@ def getStandings(workbook):
   for i in range(0, len(standingsRange), 4):
     if (standingsRange[i].value == ""):
       break  
+    if (standingsRange[i+1].value == "D"):
+      continue
     position = int(standingsRange[i].value)
     driverID = int(driversRange[findDriver(driversRange, standingsRange[i+2].value)-1].value)
     points = int(standingsRange[i+3].value.split(".")[0])
@@ -1416,17 +1423,20 @@ def getStartOrders(workbook):
   
   for division in divisionRostersRanges:
     startOrder = []
+    for i in range(0, 28):
+      startOrder.append(None)
     for i in range(0, len(divisionRostersRanges[division]), 5):
       divisionRoster = divisionRostersRanges[division]
       if (divisionRoster[i].value != ""):
         driverID = int(driversRange[findDriver(driversRange, divisionRoster[i+2].value)-1].value)
         totalPoints = int(divisionRoster[i+3].value.split(".")[0])
         lastWeeksDiv = divisionRoster[i+1].value
+        startPosition = int(divisionRoster[i+4].value) 
         if (driverID in reserves):
           reserveID = reserves[driverID].reserveID
         else:
           reserveID = None
-        startOrder.append(Driver(driverID, totalPoints, lastWeeksDiv, reserveID))
+        startOrder[startPosition-1] = Driver(driverID, totalPoints, lastWeeksDiv, reserveID)
       else:
         break
     startOrders[division] = startOrder
