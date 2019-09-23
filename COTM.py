@@ -351,38 +351,36 @@ async def addStreamer(message, member, payload, client):
     return msg.channel.id == message.channel.id and msg.author.id == payload.user_id
   # end checkMsg
 
-  if ("twitch" in payload.emoji.name.lower()):
-    try:
-      await message.channel.set_permissions(member, read_messages=True, send_messages=True)
-      moBotMessage = await message.channel.send(member.mention + ", what is your Twitch name?\n**NOT THE URL**")
-      msg = await client.wait_for("message", timeout=300, check=checkMsg)
-      await message.channel.set_permissions(member, overwrite=None)
-      twitchName = msg.content if ("ttv" not in msg.content and "twitch.tv" not in msg.content) else msg.content.split("/")[-1]
-      await moBotMessage.delete()
-      await msg.delete()
+  try:
+    await message.channel.set_permissions(member, read_messages=True, send_messages=True)
+    moBotMessage = await message.channel.send(member.mention + ", please link your channel.\nEx. <https://twitch.tv/MoShots> *Must include the beginning 'http' bit*")
+    msg = await client.wait_for("message", timeout=300, check=checkMsg)
+    await message.channel.set_permissions(member, overwrite=None)
+    link = msg.content if ("http" not in msg.content) else None
+    await moBotMessage.delete()
+    await msg.delete()
 
-    except asyncio.TimeoutError:
-      await message.channel.set_permissions(member, overwrite=None)
-      await message.channel.send(content="**TIMED OUT**", delete_after=60)
-      await message.remove_reaction(payload.emoji.name, member)
-      return None
-  else:
-    twitchName = None
+  except asyncio.TimeoutError:
+    await message.channel.set_permissions(member, overwrite=None)
+    await message.channel.send(content="**TIMED OUT**", delete_after=60)
+    await message.remove_reaction(payload.emoji.name, member)
+    return None
+
+  if (link is None):
+    await message.channel.send(member.mention + ", you did not provide a proper link. Refer to the above message.", delete_after=10)
+    return None
 
   streamEmbed = message.embeds[0]
   streamEmbed = streamEmbed.to_dict()
 
-  multistreams = [[], [] , [], [], [], [], []]
+  multistreams = [[], [], [], [], [], [], []]
 
   for i in range(len(streamEmbed["fields"])):
     if (payload.emoji.name.lower() in streamEmbed["fields"][i]["name"].lower()):
       value = ""
       for line in streamEmbed["fields"][i]["value"].split("\n"):
         if (line == spaceChar):
-          if (twitchName is not None):
-            value += ("__[%s](https://twitch.tv/%s)__\n" % (member.display_name, twitchName))
-          else:
-            value += ("%s\n" % (member.display_name))
+          value += ("__[%s](%s)__\n" % (member.display_name, link))
         else:
           value += line + "\n"
       value += spaceChar
