@@ -76,9 +76,6 @@ async def main(args, message, client):
           elif (args[2] == "start" and args[3] == "orders"):
             await message.channel.trigger_typing()
             await updateStartOrders(message.guild, await openSpreadsheet())
-          elif (args[2] == "div" and args[3] == "list"):
-            await message.channel.trigger_typing()
-            await updateDivList(message)
       except IndexError:
         pass
   # end main
@@ -1077,8 +1074,6 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   topMsgEmbed["author"]["url"] += "/top=" + str(topMsgID)
   topMsgEmbed["author"]["url"] += "/bottom=" + str(bottomMsgID)
   await topMsg.edit(embed=discord.Embed.from_dict(topMsgEmbed))
-  await moBotMessage.edit(content="**Updating Division List**")
-  await updateDivList(message, divList)
   await moBotMessage.edit(content="**Updating Start Orders**")
   await updateStartOrders(message.guild, workbook)
   await moBotMessage.edit(content="**Updating Standings**")
@@ -1160,6 +1155,8 @@ async def updateStartOrders(guild, workbook):
     embed = embed.to_dict()
     for i in range(len(startOrders[division])):
       driver = startOrders[division][i]
+      if (driver == None): # when there is an empty start position
+        continue
       driverMember = guild.get_member(driver.driverID)
       try:
         if (driver.reserveID != None):
