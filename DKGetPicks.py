@@ -153,7 +153,6 @@ class OffenseScoringStatsPerGame:
 # end OffenseScoringStatsPerGame
 
 async def main(args, message, client):
-
   global statsTables
 
   embed = discord.Embed(
@@ -247,7 +246,7 @@ def createShowdownLineup(players, valueList, valueListOption, playerLimitations,
   # get benchmark
   lineup, salary = getBenchmark(lineup, positions, playerLimitations, salary)
   # get lineup
-  lineup, salary = getLineup(lineup, salary, mustHaves, playerLimitations, valueList)
+  lineup, salary = getLineup(lineup, salary, mustHaves, playerLimitations, valueList, "showdown")
   return lineup
 # end createShowdownLineup
 
@@ -286,11 +285,11 @@ def createClassicLineup(players, valueList, valueListOption, playerLimitations, 
   lineup, salary = getBenchmark(lineup, positions, playerLimitations, salary)
 
   # get lineup
-  lineup, salary = getLineup(lineup, salary, mustHaves, playerLimitations, valueList)
+  lineup, salary = getLineup(lineup, salary, mustHaves, playerLimitations, valueList, "classic")
   return lineup
 # end createClassicLineup
 
-def getLineup(lineup, salary, mustHaves, playerLimitations, valueList):
+def getLineup(lineup, salary, mustHaves, playerLimitations, valueList, lineupType):
   sameSalaryCount = 0
   while sameSalaryCount < 10:
     oldLineup = lineup
@@ -301,20 +300,21 @@ def getLineup(lineup, salary, mustHaves, playerLimitations, valueList):
       for i in range(len(pPlayers)):
         currentPlayer = pPlayers[i]
         potentialPlayer = currentPlayer
-        if (potentialPlayer.id in mustHaves):
+        if (potentialPlayer.id in mustHaves): # player already added 
           continue
         salary += currentPlayer.price # preparing for switch
 
         for vPlayer in valueList:
-          if (vPlayer.pos == position or (position == "FLEX" and "FLEX" in vPlayer.fpos)):
-            if (vPlayer.value > potentialPlayer.value):
-              newPlayer = vPlayer
-              if (salary - newPlayer.price >= 0):
-                if (not isInLineup(lineup, newPlayer) and newPlayer.id not in playerLimitations):
-                  lineup[position][i] = newPlayer # switch
-                  salary -= newPlayer.price
-                  break
-              potentialPlayer = newPlayer
+          if (lineupType == "showdown" or (lineupType == "classic" and not (vPlayer.team == potentialPlayer.team))): # team limitations
+            if (vPlayer.pos == position or (position == "FLEX" and "FLEX" in vPlayer.fpos)): # same position
+              if (vPlayer.value > potentialPlayer.value): # better player
+                newPlayer = vPlayer
+                if (salary - newPlayer.price >= 0): # not sub 0 salary
+                  if (not isInLineup(lineup, newPlayer) and newPlayer.id not in playerLimitations): # is available
+                    lineup[position][i] = newPlayer # switch
+                    salary -= newPlayer.price
+                    break
+                potentialPlayer = newPlayer
 
         if (lineup[position][i] == currentPlayer): # when a switch is not made
           currentPlayer = lineup[position][i]
@@ -589,6 +589,7 @@ async def printLineup(lineup, moBotMessage, embed):
   playerCount = 0
   remSalary = 50000
   totalAppg = 0
+  lineupIDs = ""
   for position in lineup:
     for player in lineup[position]:
       try:
@@ -596,6 +597,7 @@ async def printLineup(lineup, moBotMessage, embed):
         emojiNumber = RandomFunctions.numberToEmojiNumbers(playerCount)
         game = player.game.replace(player.team, "**" + player.team + "**")
         embed["fields"][5]["value"] += ("\n%s %s - **%s** - %s - %s - %s" % (emojiNumber, position, player.name, player.appg, player.price, game))
+        lineupIDs += player.id + ","
         remSalary -= int(player.price)
         totalAppg += float(player.appg)
         await moBotMessage.add_reaction(emojiNumber)
@@ -604,6 +606,7 @@ async def printLineup(lineup, moBotMessage, embed):
   await moBotMessage.add_reaction(CHECKMARK_EMOJI)
   await moBotMessage.add_reaction(COUNTERCLOCKWISE_ARROWS_EMOJI)
   await moBotMessage.add_reaction(X_EMOJI)
+  embed["fields"][5]["value"] += "```%s```" % (lineupIDs)
   embed["footer"]["text"] = ("REM. SALARY: $%s TOTAL FPPG: %.3f" % (remSalary, totalAppg))
   await editEmbed(moBotMessage, embed)
 # end printLineup

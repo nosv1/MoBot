@@ -115,8 +115,11 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        profile = await message.author.profile()
-        print (profile.connected_accounts)
+        msg = await message.channel.fetch_message(622137318513442816)
+        embed = msg.embeds[0].to_dict()
+        for i in range(len(embed["fields"])):
+          for line in embed["fields"][i]["value"].split("\n"):
+            print(line)
         print("done")
       elif (args[1] == "dk"):
         try:
