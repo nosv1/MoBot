@@ -49,13 +49,14 @@ async def main(args, message, client):
 
   if (args[0] == "!t"):
     if (args[1] == "delete"):
+      workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
       if (len(args) == 2):
-        await tDeleteTeam(message, None, tCommandLog)
+        await tDeleteTeam(message, tCommandLog, workbook)
       else:
         authorPerms = message.channel.permissions_for(message.author)
         manageMessagePerms = authorPerms.manage_messages
         if (manageMessagePerms):
-          await tDeleteTeam(message, args[2], tCommandLog)
+          await tDeleteTeam(message, tCommandLog, workbook)
     elif (args[1] == "teams"):
       await tTeams(message, None)
     elif (args[1] == "leave"):
@@ -67,7 +68,7 @@ async def main(args, message, client):
     elif (args[1] == "create"):
       await tCreateTeam(message, tCommandLog, await openSpreadsheet(ssIDs["Noble Leagues MoBot"]))
     elif (args[1] == "prefix"):
-      await tPrefix(message, tCommandLog)
+      await tPrefix(message, tCommandLog, await openSpreadsheet(ssIDs["Noble Leagues MoBot"]))
     elif (args[1] == "active"):
       await tActive(message, tCommandLog)
     elif (args[1] == "edit"):
@@ -339,8 +340,6 @@ async def updatePlayerIDs():
 # end updatePlayerIDs
 
 async def getMMR(message, payload, tCommandLog):
-  moBotMessages = []
-  clearMessages = False
   if (payload == None and len(message.embeds) > 0):
     await message.channel.trigger_typing()
     await message.add_reaction("✅")
@@ -348,7 +347,6 @@ async def getMMR(message, payload, tCommandLog):
     await message.channel.send("**Is this you?**\nIf the above player MMRs are your own, please click the ✅. Note this will lock your MMR for the entire season.\n\nTo cancel click the ❌.")
   elif (payload.emoji.name == "✅"):
     await message.channel.trigger_typing()
-    clearMessages = True
     embed = message.embeds[0].to_dict()
     solo = embed["fields"][0]["value"].split("-")[1].split("\n")[0]
     doubles = embed["fields"][1]["value"].split("-")[1].split("\n")[0]
@@ -358,11 +356,12 @@ async def getMMR(message, payload, tCommandLog):
     
     workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
     teamRange, leagueSheet, teamRangeCols = getLeagueSheet(workbook)
+    registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
 
     for i in range(0, len(teamRange), teamRangeCols):
       if (teamRange[i].value != ""):
         for j in range(i, i+teamRangeCols):
-          if (getUserName(str(userId), workbook) == teamRange[j].value):
+          if (getUserName(str(userId), registeredIDsRange) == teamRange[j].value):
             teamRange[j+1].value = str(max([int(solo), int(doubles), int(soloStandard), int(standard)]))
             await message.channel.send("**MMRs Submitted**")
             leagueSheet.update_cells(teamRange, value_input_option="USER_ENTERED")
@@ -836,46 +835,28 @@ async def tActive(message, tCommandLog):
   await deleteMoBotMessages(moBotMessages)
 # end tActive
 
-async def tPrefix(message, tCommandLog):
+async def tPrefix(message, tCommandLog, workbook):
   await message.channel.trigger_typing()
-  moBotMessages = [message]
+  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
+  teamRange, leagueSheet, teamRangeCols = getLeagueSheet(workbook)
+  headersRange = leagueSheet.range("A1:K1")
 
-  newPrefix = message.content.split("prefix")[1].strip().split(" ")[0]
+  prefix = message.content.split("prefix")[-1].strip()
 
-  workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
-
-  prefixes = referencesSheet.range("E2:E" + str(referencesSheet.row_count))
-  teams = referencesSheet.range("F2:F" + str(referencesSheet.row_count))
-  captains = referencesSheet.range("G2:G" + str(referencesSheet.row_count))
-  registerees = referencesSheet.range("C2:D" + str(referencesSheet.row_count))
-
-  captainExists = False
-  for i in range(len(captains)):
-    authorID = str(message.author.id)
-    if (captains[i].value == authorID):
-      captainExists = True
-      teamName = teams[i].value
-      prefixes[i].value = newPrefix
-      referencesSheet.update_cells(prefixes, value_input_option="USER_ENTERED")
-
-      players = referencesSheet.range(i+2, 7, i+2, 9)  
-      for j in range(len(players)):
-        if (players[j].value != ""):
-          user = message.guild.get_member(int(players[j].value))
-          for k in range(0, len(registerees), 2):
-            if (registerees[k].value == str(user.id)):
-              await updatePrefix(user, registerees, k, newPrefix, False)
-              await tCommandLog.send("<@" + str(authorID) + "> has updated " + teamName + "'s prefix.\nNew Prefix: " + newPrefix)
-              moBotMessages.append(await message.channel.send("```Prefix has been udpated.```"))
-              break
+  for i in range(len(headersRange)):
+    if (headersRange[i].value == "Captain"):
+      for j in range(0, len(teamRange), teamRangeCols):
+        if (teamRange[j].value != ""):
+          if (getRegisteredID(teamRange[j+i].value, registeredIDsRange) == message.author.id): # if captain
+            teamRange[j+1].value = prefix
+            await updatePrefixes(message, prefix, teamRange, teamRangeCols, j, leagueSheet, registeredIDsRange)
+            await message.channel.send("**Prefix Updated**")
+            leagueSheet.update_cells(teamRange, value_input_option="USER_ENTERED")
+            break
+        else:
+          await message.channel.send("**Could Not Update Prefix**\nYou are not a captain of a team, to register a team, use the command `!t register @Captain @Player @Sub_1 @Sub_2` - @Sub_2 is optional.")
+          break
       break
-
-  if (not captainExists):
-    moBotMessages.append(await message.channel.send("```You are not the captain of a team. Only captains can update prefixes.```"))
-
-  await asyncio.sleep(5)
-  await deleteMoBotMessages(moBotMessages)
 # end tPrefix
 
 async def tEdit(message, tCommandLog):
@@ -917,71 +898,49 @@ async def tEdit(message, tCommandLog):
   await deleteMoBotMessages(moBotMessages)
 # end tEdit
 
-async def tDeleteTeam(message, captain, tCommandLog):
+async def tDeleteTeam(message, tCommandLog, workbook):
   await message.channel.trigger_typing()
   moBotMessages = [message]
 
-  workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
+  teamRange, leagueSheet, teamRangeCols = getLeagueSheet(workbook)
+  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
+  headersRange = leagueSheet.range("A1:K1")
 
-  captains = referencesSheet.range("G2:G" + str(referencesSheet.row_count))
-  teams = referencesSheet.range("F2:F" + str(referencesSheet.row_count))
-
-  if (captain != None):
-    try:
-      captain = message.guild.get_member(int(captain.split(">")[0][-18:]))
-    except:
-      captain = message.guild.get_member(int(captain.split(">")[0][-17:]))
+  if ("<@" in message.content):
+    captainID = message.content.split("delete")[-1].replace("!", "").split("@")[1][:-1].strip()
   else:
-    captain = message.author
+    captainID = message.author.id
 
-  captainExists = False
-  for i in range(len(captains)):
-    if (captains[i].value == str(captain.id)):
-      captainExists = True
-      team = referencesSheet.range(i+2, 5, i+2, 9)
-      for j in range(2, len(team)):
-        if (team[j].value != ""):
-          user = message.guild.get_member(int(team[j].value))
-          if (user.nick != None):
-            userNick = user.nick
-            if (" | " in userNick):
-              userNick = userNick.split(" | ")[1]
-              await user.edit(nick=userNick)
-            if ("] " in userNick):
-              userNick = userNick.split("] ")[1]
-            try:
-              moBotMessages.append(await message.channel.send("```" + user.nick + " has been removed.```"))
-            except TypeError:
-              moBotMessages.append(await message.channel.send("```" + user.name + " has been removed.```"))
-          else:
-            moBotMessages.append(await message.channel.send("```" + user.name + " has been removed.```"))
-          await tCommandLog.send("<@" + str(user.id) + "> has been removed from " + teams[i].value + " due to deletion of the team by <@" + str(captain.id) + ">.")
-
-      for j in range(len(team)):
-        team[j].value = ""
-      await tCommandLog.send("<@" + str(captain.id) + "> has deleted " + teams[i].value)
-      referencesSheet.update_cells(team, value_input_option="USER_ENTERED")
-
-      lowerTeams = referencesSheet.range(i+2, 5, referencesSheet.row_count, 9)
-      for j in range(len(lowerTeams)):
-        try:
-          lowerTeams[j].value = lowerTeams[j+5].value
-        except IndexError:
+  for i in range(len(headersRange)):
+    if (headersRange[i].value == "Captain"):
+      for j in range(0, len(teamRange), teamRangeCols):
+        if (teamRange[j].value != ""):
+          tempCaptainID = getRegisteredID(teamRange[j+i].value, registeredIDsRange)
+          if (tempCaptainID == int(captainID)): # if captain
+            await updatePrefixes(message, "", teamRange, teamRangeCols, j, leagueSheet, registeredIDsRange)
+            teamName = teamRange[j].value
+            for k in range(j+teamRangeCols, len(teamRange), teamRangeCols):
+              if (teamRange[k-teamRangeCols].value != ""):
+                for l in range(k, k+teamRangeCols):
+                  teamRange[l-teamRangeCols].value = teamRange[l].value
+              else:
+                await message.channel.send("**Team Deleted**")
+                await tCommandLog.send("%s deleted a team - %s." % (message.author.mention, teamName))
+                leagueSheet.update_cells(teamRange, value_input_option="USER_ENTERED")
+                break
+            break
+        else:
+          await message.channel.send("**Could Not Delete Team**\nYou are either not a captain for the team you're trying to delete, or, if you're an admin, then the provided user is not a captain. ")
           break
-      referencesSheet.update_cells(lowerTeams, value_input_option="USER_ENTERED")
-
-  if (not captainExists):
-    moBotMessages.append(await message.channel.send("```You cannot delete a team that you did not create.```"))
-
-  await asyncio.sleep(5)
-  await deleteMoBotMessages(moBotMessages)
+      break
 # end tDeleteTeam
 
 async def tCreateTeam(message, tCommandLog, workbook):
   await message.channel.trigger_typing()
   teamRange, leagueSheet, teamRangeCols = getLeagueSheet(workbook)
 
+  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
   teamName = message.content.split("create")[1].strip()
 
   i = 0
@@ -990,11 +949,11 @@ async def tCreateTeam(message, tCommandLog, workbook):
     if (teamRange[i].value.lower() == teamName.lower() and teamExists): # team exists?
       await message.channel.send("**Cannot Create Team**\nTeam name already exists.")
       return None
-    elif (teamRange[i+3].value == getUserName(message.author.id, workbook)): # author is captain?
+    elif (teamRange[i+3].value == getUserName(message.author.id, registeredIDsRange)): # author is captain?
       prefix = getPrefixFromTeamName(teamName)
       teamRange[i+0].value = teamName
       teamRange[i+1].value = prefix
-      await updatePrefixes(message, prefix, teamRange, teamRangeCols, i, leagueSheet, workbook)
+      await updatePrefixes(message, prefix, teamRange, teamRangeCols, i, leagueSheet, registeredIDsRange)
       await message.channel.send("**Team Name and Prefix Updated**\nTo change the team's prefix, use the command `!t prefix [new_prefix]`")
       leagueSheet.update_cells(teamRange, value_input_option="USER_ENTERED")
       break
@@ -1007,13 +966,16 @@ async def tCreateTeam(message, tCommandLog, workbook):
   # end while
 #end tCreateTeam
 
-async def updatePrefixes(message, prefix, teamRange, teamRangeCols, index, leagueSheet, workbook):
+async def updatePrefixes(message, prefix, teamRange, teamRangeCols, index, leagueSheet, registeredIDsRange):
   headers = leagueSheet.range("A2:K2")
   for i in range(0, teamRangeCols):
     if (headers[i].value == "ID"):
       if (teamRange[index+i].value != ""):
-        user = message.guild.get_member(getRegisteredID(teamRange[index+i].value, workbook))
-        await user.edit(nick="%s | %s" % (prefix, user.display_name.split(" | ")[-1]))
+        user = message.guild.get_member(getRegisteredID(teamRange[index+i].value, registeredIDsRange))
+        if (prefix != ""):
+          await user.edit(nick="%s | %s" % (prefix, user.display_name.split(" | ")[-1]))
+        else:
+          await user.edit(nick="%s" % (user.display_name.split(" | ")[-1]))
 # end updatePrefixes
     
 def getPrefixFromTeamName(teamName):
@@ -1030,12 +992,13 @@ async def tRegister(message, tCommandLog, workbook):
   await message.channel.trigger_typing()
 
   teamRange, leagueSheet, teamRangeCols = getLeagueSheet(workbook)
+  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
 
   users = message.content.replace("!", "").split("<@")
   for i in range(1, len(users)):
     userId = int(users[i].split(">")[0])
     users[i] = message.guild.get_member(int(userId))
-    if (not checkIfRegistered(users[i], workbook)):
+    if (not checkIfRegistered(users[i], registeredIDsRange)):
       await message.channel.send("Not Registered - " + users[i].mention)
       users[i] = False
   del users[0]
@@ -1051,19 +1014,19 @@ async def tRegister(message, tCommandLog, workbook):
       if (teamRange[i].value != ""):
         for user in users:
           for j in range(i, i+teamRangeCols):
-            if (getUserName(user.id, workbook) == teamRange[j].value):
-              await message.channel.send("**Cannot Complete Registration**\n%s is already on a team.\nTeam Name: %s\nCaptain: %s" % (user.mention, teamRange[i], message.guild.get_member(getRegisteredID(teamRange[j].value, workbook)).mention))
+            if (getUserName(user.id, registeredIDsRange) == teamRange[j].value):
+              await message.channel.send("**Cannot Complete Registration**\n%s is already on a team.\nTeam Name: %s\nCaptain: %s" % (user.mention, teamRange[i], message.guild.get_member(getRegisteredID(teamRange[j].value, registeredIDsRange)).mention))
               return None
       else:
         tbdNumber = i // teamRangeCols + 1
         teamRange[i+0].value = "TBD %s" % (tbdNumber)
         teamRange[i+1].value = "TBD %s" % (tbdNumber)
         teamRange[i+2].value = "BAR"
-        teamRange[i+3].value = getUserName(message.author.id, workbook)
+        teamRange[i+3].value = getUserName(message.author.id, registeredIDsRange)
         playerCount = 0
         for user in users:
           if (user.id != message.author.id):
-            teamRange[i+5+(playerCount*2)].value = getUserName(user.id, workbook)
+            teamRange[i+5+(playerCount*2)].value = getUserName(user.id, registeredIDsRange)
             playerCount += 1
 
         for user in users:
@@ -1154,7 +1117,7 @@ async def registerID(message, args):
     for i in range(0, len(nameIDs), 2):
       if (nameIDs[i].value == ""):
         nameIDs[i].value = registerName.strip()
-        nameIDs[i+1].value = "<@" + str(userId) + ">"
+        nameIDs[i+1].value = str(userId)
         break
     moBotMessages.append(await message.channel.send("```Your ID has been registered. If you want to change your ID use @MoBot#0697 changeID new_name```"))
     await message.guild.get_channel(569196829137305631).send("<@" + str(message.author.id) + "> has registered their ID with " + registerName.strip() + ".")
@@ -1177,23 +1140,20 @@ def getRegisteredIDRange(workbook):
   return registeredIDsRange, registeredIDsSheet
 # end getRegisteredIDRange
 
-def checkIfRegistered(member, workbook):
-  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
+def checkIfRegistered(member, registeredIDsRange):
   for i in range(len(registeredIDsRange)):
     if (str(member.id) in registeredIDsRange[i].value):
       return True
   return False
 # end checkIfRegistered
 
-def getRegisteredID(name, workbook):
-  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
+def getRegisteredID(name, registeredIDsRange):
   for i in range(len(registeredIDsRange)):
     if (name == registeredIDsRange[i].value):
       return int(registeredIDsRange[i+1].value)
 # end getRegisteredID
 
-def getUserName(memberID, workbook):
-  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
+def getUserName(memberID, registeredIDsRange):
   for i in range(len(registeredIDsRange)):
     if (str(memberID) in registeredIDsRange[i].value):
       return registeredIDsRange[i-1].value
@@ -1205,14 +1165,15 @@ async def tournamentCheckin(message):
   signupSheet = workbook.worksheet("Minor") if ("!minor" in message.content) else workbook.worksheet("Major")
 
   signupRange = signupSheet.range("B2:D" + str(signupSheet.row_count))
+  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
 
   for i in range(0, len(signupRange), 3):
     for j in range(i, i+2):
-      if (signupRange[j].value == getUserName(message.author.id, workbook)):
+      if (signupRange[j].value == getUserName(message.author.id, registeredIDsRange)):
         signupRange[i+2].value = "=TRUE"
         await message.channel.send("**Checked In**")
         registerLog = message.guild.get_channel(569196829137305631)
-        await registerLog.send("%s and %s have checked in for the %s tournament." % (message.guild.get_member(getRegisteredID(signupRange[i].value, workbook)).mention, message.guild.get_member(getRegisteredID(signupRange[i+1].value, workbook)).mention, message.content.split(" ")[0].split("!")[1].strip()))
+        await registerLog.send("%s and %s have checked in for the %s tournament." % (message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)).mention, message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange)).mention, message.content.split(" ")[0].split("!")[1].strip()))
         signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
         return 0
   await message.channel.send("**Member Not On Team**\n" + message.author.mention + " is not on a team for this tournament.")
@@ -1224,6 +1185,7 @@ async def tournamentSignup(message):
   registeredIDsSheet = workbook.worksheet("RegisterID")
   signupSheet = workbook.worksheet("Minor") if ("!minor" in message.content) else workbook.worksheet("Major")
 
+  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
   signupRange = signupSheet.range("B2:D" + str(signupSheet.row_count))
 
   mc = message.content.replace("!", "")
@@ -1236,13 +1198,13 @@ async def tournamentSignup(message):
   if (continueSignup):
     for userID in userIDs:
       member = message.guild.get_member(userID)
-      if (not checkIfRegistered(member, workbook)):
+      if (not checkIfRegistered(member, registeredIDsRange)):
         await message.channel.send("**Canceling Signup Process**\n" + member.mention + " is not a registered member. Use the command `!registerID username` to register.")
         continueSignup = False
 
   if (continueSignup):
     for i in range(len(signupRange)):
-      userNames = [getUserName(str(userIDs[0]), workbook), getUserName(str(userIDs[1]), workbook)]
+      userNames = [getUserName(str(userIDs[0]), registeredIDsRange), getUserName(str(userIDs[1]), registeredIDsRange)]
       if (signupRange[i].value == ""):
         signupRange[i].value = userNames[0]
         signupRange[i+1].value = userNames[1]
@@ -1252,7 +1214,7 @@ async def tournamentSignup(message):
         await registerLog.send("%s has signed up %s and %s for the %s tournament." % (message.author.mention, message.guild.get_member(userIDs[0]).mention, message.guild.get_member(userIDs[1]).mention, message.content.split(" ")[0].split("!")[1].strip()))
         break
       if (signupRange[i].value in userNames): 
-        member = message.guild.get_member(int(getRegisteredID(signupRange[i].value), workbook))
+        member = message.guild.get_member(int(getRegisteredID(signupRange[i].value), registeredIDsRange))
         await message.channel.send("**Canceling Signup Process**\n" + member.mention + " has already signed up. If this is a mistake, contact an Organiser.")
         break
 # end tournamentSignup
@@ -1262,14 +1224,15 @@ async def tournamentRetire(message):
   workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
   signupSheet = workbook.worksheet("Minor") if ("!minor" in message.content) else workbook.worksheet("Major")
 
+  registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
   signupRange = signupSheet.range("B2:D" + str(signupSheet.row_count))
 
   for i in range(0, len(signupRange), 3):
     if (signupRange[i].value != ""):
       for j in range(i, i+2):
-        if (getUserName(message.author.id, workbook) == signupRange[j].value):
+        if (getUserName(message.author.id, registeredIDsRange) == signupRange[j].value):
           registerLog = message.guild.get_channel(569196829137305631)
-          await registerLog.send("%s and %s have retired from the %s." % (message.guild.get_member(getRegisteredID(signupRange[i].value, workbook)).mention, message.guild.get_member(getRegisteredID(signupRange[i+1].value, workbook)).mention, message.content.split(" ")[0].replace("!", "").strip()))
+          await registerLog.send("%s and %s have retired from the %s." % (message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)).mention, message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange)).mention, message.content.split(" ")[0].replace("!", "").strip()))
           for k in range(i+3, len(signupRange)):
             if (signupRange[k-3].value != ""):
               signupRange[k-3].value = signupRange[k].value
@@ -1281,6 +1244,7 @@ async def tournamentRetire(message):
       await message.channel.send("**Could Not Retire**\nYou are not on a team for this tournament.")
       break
 # end tournamentRetire
+
 async def signupOLD(message):
   await message.channel.trigger_typing()
   moBotMessages = []
