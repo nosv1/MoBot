@@ -1118,7 +1118,7 @@ async def registerID(message, args):
         nameIDs[i].value = registerName.strip()
         nameIDs[i+1].value = str(userId)
         break
-    moBotMessages.append(await message.channel.send("```Your ID has been registered. If you want to change your ID use @MoBot#0697 changeID new_name```"))
+    moBotMessages.append(await message.channel.send("**ID Registered as %s**\nIf you want to change your ID use `@MoBot#0697 changeID new_name`." % (registerName)))
     await message.guild.get_channel(569196829137305631).send("<@" + str(message.author.id) + "> has registered their ID with " + registerName.strip() + ".")
 
   # changing name
