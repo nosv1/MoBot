@@ -20,6 +20,9 @@ ssIDs = {
   "Noble Leagues MoBot" : "1w-cme_ZtMIU3nesgGajc-5Y3eJX22Htwl_UIefG3E1Q",
 }
 
+## roles
+registeredRole = 569198468472766475
+
 async def main(args, message, client):
   now = datetime.now()
   for i in range(len(args)):
@@ -1208,6 +1211,12 @@ async def tournamentSignup(message):
         signupRange[i].value = userNames[0]
         signupRange[i+1].value = userNames[1]
         signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
+        for role in message.guild.roles:
+          if (role.id == registeredRole):
+            for user in userIDs:
+              member = message.guild.get_member(userID)
+              await member.add_roles(role)
+            break
         await message.channel.send("**Signup Complete**")
         registerLog = message.guild.get_channel(569196829137305631)
         await registerLog.send("%s has signed up %s and %s for the %s tournament." % (message.author.mention, message.guild.get_member(userIDs[0]).mention, message.guild.get_member(userIDs[1]).mention, message.content.split(" ")[0].split("!")[1].strip()))
@@ -1231,7 +1240,16 @@ async def tournamentRetire(message):
       for j in range(i, i+2):
         if (getUserName(message.author.id, registeredIDsRange) == signupRange[j].value):
           registerLog = message.guild.get_channel(569196829137305631)
-          await registerLog.send("%s and %s have retired from the %s." % (message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)).mention, message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange)).mention, message.content.split(" ")[0].replace("!", "").strip()))
+          users = [
+            message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)),
+            message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange))
+          ]
+          await registerLog.send("%s and %s have retired from the %s." % (users[0].mention, users[1].mention, message.content.split(" ")[0].replace("!", "").strip()))
+          for role in message.guild.roles:
+            if (role.id == registeredRole):
+              for user in users:
+                await user.remove_roles(role)
+              break
           for k in range(i+3, len(signupRange)):
             if (signupRange[k-3].value != ""):
               signupRange[k-3].value = signupRange[k].value
