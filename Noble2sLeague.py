@@ -46,6 +46,8 @@ async def main(args, message, client):
       await getTeamInfo(message, args)
     elif (args[1] == "submit"):
       await submitResultConfirm(message, client)
+    elif (args[1].lower() == "!registerid" or args[1].lower() == "!changeid"):
+      await registerID(message, args)
 
   if (args[0] == "!t"):
     if (args[1] == "delete"):
@@ -83,10 +85,6 @@ async def main(args, message, client):
       await tTeam(message)
     elif (args[1] == "captain"):
       await tCaptain(message, tCommandLog)
-        
-  if (args[0].lower() == "!registerid" or args[0].lower() == "!changeid"):
-    if (args[1].lower() != "rl"):
-      await registerID(message, args)
 
   if (args[0] == "!minor" or args[0] == "!major"):
     if (args[1].lower() == "checkin"):
