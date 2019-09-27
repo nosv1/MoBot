@@ -46,7 +46,7 @@ async def main(args, message, client):
       await getTeamInfo(message, args)
     elif (args[1] == "submit"):
       await submitResultConfirm(message, client)
-    elif (args[1].lower() == "!registerid" or args[1].lower() == "!changeid"):
+    elif (args[1].lower() == "registerid" or args[1].lower() == "changeid"):
       await registerID(message, args)
 
   if (args[0] == "!t"):
