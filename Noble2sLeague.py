@@ -1213,7 +1213,7 @@ async def tournamentSignup(message):
         signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
         for role in message.guild.roles:
           if (role.id == registeredRole):
-            for user in userIDs:
+            for userID in userIDs:
               member = message.guild.get_member(userID)
               await member.add_roles(role)
             break
