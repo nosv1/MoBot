@@ -85,7 +85,8 @@ async def main(args, message, client):
       await tCaptain(message, tCommandLog)
         
   if (args[0].lower() == "!registerid" or args[0].lower() == "!changeid"):
-          await registerID(message, args)
+    if (" RL " not in message.content):
+        await registerID(message, args)
 
   if (args[0] == "!minor" or args[0] == "!major"):
     if (args[1].lower() == "checkin"):
