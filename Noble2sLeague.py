@@ -1006,7 +1006,7 @@ async def tRegister(message, tCommandLog, workbook):
     await message.channel.send("**Cannot Complete Registration**\nA team must have at least 2 players and a sub - a 2nd sub is optional. Use the command `!t register @Captain @Player @Sub_1 (@Sub_2)` - the @Sub_2 is optional.")
 
   elif (False in users):
-    await message.channel.send("**Cannot Complete Registration**\nEach player on the team must be registered with @MoBot#0697. A user can register by using the command `!registerID [username]` - replace [username]")
+    await message.channel.send("**Cannot Complete Registration**\nEach player on the team must be registered with @MoBot#0697. A user can register by using the command `@MoBot#0697 registerID [username]` - replace [username]")
 
   else:
     for i in range(0, len(teamRange), teamRangeCols):
@@ -1198,7 +1198,7 @@ async def tournamentSignup(message):
     for userID in userIDs:
       member = message.guild.get_member(userID)
       if (not checkIfRegistered(member, registeredIDsRange)):
-        await message.channel.send("**Canceling Signup Process**\n" + member.mention + " is not a registered member. Use the command `!registerID username` to register.")
+        await message.channel.send("**Canceling Signup Process**\n" + member.mention + " is not a registered member. Use the command `@MoBot#0697 registerID username` to register.")
         continueSignup = False
 
   if (continueSignup):
