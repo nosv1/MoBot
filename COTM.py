@@ -76,6 +76,9 @@ async def main(args, message, client):
           elif (args[2] == "start" and args[3] == "orders"):
             await message.channel.trigger_typing()
             await updateStartOrders(message.guild, await openSpreadsheet())
+          elif (args[2] == "divlist"):
+            await message.channel.trigger_typing()
+            await updateDriverRoles(message.guild, getDivList(await openSpreadsheet()))
       except IndexError:
         pass
   # end main
@@ -427,7 +430,7 @@ async def addStreamer(message, member, payload, client):
     return None
 
   if (link is None):
-    await message.channel.send(member.mention + ", you did not provide a proper link. Link ex. <https://twitch.tv/moshots.", delete_after=20)
+    await message.channel.send(member.mention + ", you did not provide a proper link. Link ex. <https://twitch.tv/moshots>.", delete_after=20)
     await failed()
     return None
   
