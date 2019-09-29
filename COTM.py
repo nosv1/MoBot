@@ -633,7 +633,7 @@ async def votingProcess(message, member, client):
 
   voteOptionsDict = {}
   for i in range(len(voteOptions)):
-    voteOptions[i] = voteOptions[i].split("] ")[0].split("[")[1]
+    voteOptions[i] = voteOptions[i].split("(http")[0].split("_[")[1][:-1]
     voteOptionsDict[voteOptions[i]] = 0
 
   def checkSpent(payload):
