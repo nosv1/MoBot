@@ -118,12 +118,8 @@ async def mainReactionAdd(message, payload, client):
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
         await addStreamer(message, member, payload, client)
       if (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
-        for reaction in message.reactions:
-          async for user in reaction.users():
-            if (reaction.emoji != ARROWS_COUNTERCLOCKWISE_EMOJI and user.id != int(moBot)):
-              await removeStreamer(message, message.guild.get_member(user.id), reaction)
+        await refreshStreamers(message, await openSpreadsheet())
         await message.remove_reaction(payload.emoji.name, member)
-
 
     if (message.id == 622831151320662036): # message id for pit marshall signup embed
       if (payload.emoji.name == CROWN):
@@ -331,97 +327,137 @@ async def removeHost(message, member):
   await message.edit(embed=discord.Embed.from_dict(embed))
 # end addHost
 
-def updateMultistreams(multistreams):
-  value = ""
-  for j in range(len(multistreams)):
-    link = "https://multistre.am/"
-    if (multistreams[j] != []):
-      print (multistreams[j])
-      if (len(multistreams[j]) > 1):
-        for name in multistreams[j]:
-          link += name + "/"
-      else:
-        link += multistreams[j][0] + "/"
-      value += "__[Division %s](%s)__ (%s)\n" % (j+1, link, len(multistreams[j]))  
-  return value
-# end updateMultistreams
+async def refreshStreamers(message, workbook):
+  await message.channel.trigger_typing()
+
+  class Streamer:
+    def __init__(self, driverID, streamLink):
+      self.member = message.guild.get_member(int(driverID))
+      member = self.member
+      self.div = member.display_name.split("]")[0][-1]
+      self.streamLink = streamLink
+  # end Streamer
+
+  driversRange, driverSheet = getDriversRange(workbook)
+  driverIDs = driverSheet.range("B3:B" + str(driverSheet.row_count))
+  streamLinks = driverSheet.range("H3:H" + str(driverSheet.row_count))
+
+  def getStreamers():
+    streamers = []
+    for i in range(len(streamLinks)):
+      if (streamLinks[i].value != ""):
+        streamers.append(Streamer(driverIDs[i].value, streamLinks[i].value))
+    return streamers
+  # end getStreamers
+
+  def getEmoji(streamLink):
+    if ("twitch" in streamLink.lower()):
+      return "<:Twitch:622139375282683914> "
+    elif ("youtube" in streamLink.lower()):
+      return "<:Youtube:622139522502754304>"
+    elif ("mixer" in streamLink.lower()):
+      return "<:Mixer:622139665306353675>"
+  # end getEmoji
+
+  embed = discord.Embed(
+    color=int("0xd1d1d1", 16),
+    description="Below are this season's streamers. If you wish to join this list, simply click the appropiate emoji below representing your streaming platform, then send your channel link."
+  )
+  embed.set_author(
+    name="Children of the Mountain - Season 5",
+    icon_url="https://i.gyazo.com/efe464c59dfdc7abde20b305e896ced8.png"
+  )
+  embed.set_footer(
+    text="To add your channel, simply click a platform, and paste your channel link."
+  )
+
+  multiStreams = {}
+  multiStreamLink = "https://multistre.am/"
+  for i in range(1, 7):
+    embed.add_field(
+      name="Division %s" % (str(i)),
+      value="",
+      inline=False
+    )
+    multiStreams[str(i)] = multiStreamLink
+
+  embed = embed.to_dict()
+  streamers = getStreamers()
+  for i in range(len(embed["fields"])):
+    for streamer in streamers:
+      if (streamer.div in embed["fields"][i]["name"]):
+        emoji = getEmoji(streamer.streamLink)
+        try:
+          embed["fields"][i]["value"] += "%s __[%s](%s)__\n" % (emoji, streamer.member.display_name, streamer.streamLink)
+          if ("twitch" in emoji.lower()):
+            multiStreams[str(i+1)] += streamer.streamLink.split("/")[-1] + "/"
+        except AttributeError: # if a member leaves
+          pass
+    if (multiStreams[str(i+1)] != multiStreamLink):
+      embed["fields"][i]["value"] += multiStreams[str(i+1)] + "\n"
+    if (i != len(embed["fields"]) - 1):
+      embed["fields"][i]["value"] += spaceChar
+  await message.edit(embed=discord.Embed().from_dict(embed))
+# end refreshStreamers
 
 async def addStreamer(message, member, payload, client):
+  await message.channel.trigger_typing()
+
   def checkMsg(msg):
     return msg.channel.id == message.channel.id and msg.author.id == payload.user_id
   # end checkMsg
+
+  async def failed():
+    await message.channel.set_permissions(member, overwrite=None)
+    await message.remove_reaction(payload.emoji.name, member)
+  # end failed
 
   try:
     await message.channel.set_permissions(member, read_messages=True, send_messages=True)
     moBotMessage = await message.channel.send(member.mention + ", please link your channel.\nEx. <https://twitch.tv/MoShots> *Must include the beginning 'http' bit*")
     msg = await client.wait_for("message", timeout=300, check=checkMsg)
     await message.channel.set_permissions(member, overwrite=None)
-    link = msg.content if ("http" not in msg.content) else None
+    link = msg.content if ("http" in msg.content) else None
     await moBotMessage.delete()
     await msg.delete()
 
   except asyncio.TimeoutError:
-    await message.channel.set_permissions(member, overwrite=None)
-    await message.channel.send(content="**TIMED OUT**", delete_after=60)
-    await message.remove_reaction(payload.emoji.name, member)
+    await message.channel.send(content="**TIMED OUT**", delete_after=20)
+    await failed()
     return None
 
   if (link is None):
-    await message.channel.send(member.mention + ", you did not provide a proper link. Refer to the above message.", delete_after=10)
+    await message.channel.send(member.mention + ", you did not provide a proper link. Link ex. <https://twitch.tv/moshots.", delete_after=20)
+    await failed()
     return None
+  
+  workbook = await openSpreadsheet()
+  driversRange, driverSheet = getDriversRange(workbook)
+  driverIDs = driverSheet.range("B3:B" + str(driverSheet.row_count))
+  streamLinks = driverSheet.range("H3:H" + str(driverSheet.row_count))
 
-  streamEmbed = message.embeds[0]
-  streamEmbed = streamEmbed.to_dict()
-
-  multistreams = [[], [], [], [], [], [], []]
-
-  for i in range(len(streamEmbed["fields"])):
-    if (payload.emoji.name.lower() in streamEmbed["fields"][i]["name"].lower()):
-      value = ""
-      for line in streamEmbed["fields"][i]["value"].split("\n"):
-        if (line == spaceChar):
-          value += ("__[%s](%s)__\n" % (member.display_name, link))
-        else:
-          value += line + "\n"
-      value += spaceChar
-      streamEmbed["fields"][i]["value"] = value
-      
-    if ("Twitch Streamers" in streamEmbed["fields"][i]["name"]):
-      for line in streamEmbed["fields"][i]["value"].split("\n"):
-        if ("twitch.tv/" in line):
-          div = int(line.split("]")[0][-1])
-          multistreams[div-1].append(line.split("/")[-1][:-3].strip())
-    
-    if ("Twitch Multistreams" in streamEmbed["fields"][i]["name"]):
-      value = updateMultistreams(multistreams)
-      streamEmbed["fields"][i]["value"] = value if (value != "") else spaceChar
-  await message.edit(embed=discord.Embed.from_dict(streamEmbed))
+  for i in range(len(driverIDs)):
+    if (driverIDs[i].value == str(member.id)):
+      streamLinks[i].value = link
+      driverSheet.update_cells(streamLinks, value_input_option="USER_ENTERED")
+      await refreshStreamers(message, workbook)
+      break
 # end addStreamer
 
 async def removeStreamer(message, member, payload):
-  streamEmbed = message.embeds[0]
-  streamEmbed = streamEmbed.to_dict()
+  await message.channel.trigger_typing()
 
-  multistreams = [[], [] , [], [], [], [], []]
+  workbook = await openSpreadsheet()
+  driversRange, driverSheet = getDriversRange(workbook)
+  driverIDs = driverSheet.range("B3:B" + str(driverSheet.row_count))
+  streamLinks = driverSheet.range("H3:H" + str(driverSheet.row_count))
 
-  for i in range(len(streamEmbed["fields"])):
-    if (payload.emoji.name.lower() in streamEmbed["fields"][i]["name"].lower()):
-      value = ""
-      for line in streamEmbed["fields"][i]["value"].split("\n"):
-        if (member.display_name not in line):
-          value += line + "\n"
-      streamEmbed["fields"][i]["value"] = value
-      
-    if ("Twitch Streamers" in streamEmbed["fields"][i]["name"]):
-      for line in streamEmbed["fields"][i]["value"].split("\n"):
-        if ("twitch.tv/" in line):
-          div = int(line.split("]")[0][-1])
-          multistreams[div-1].append(line.split("/")[-1][:-3].strip())
-    
-    if ("Twitch Multistreams" in streamEmbed["fields"][i]["name"]):
-      value = updateMultistreams(multistreams)
-      streamEmbed["fields"][i]["value"] = value if (value != "") else spaceChar
-  await message.edit(embed=discord.Embed.from_dict(streamEmbed))
+  for i in range(len(driverIDs)):
+    if (driverIDs[i].value == str(member.id)):
+      streamLinks[i].value = ""
+      driverSheet.update_cells(streamLinks, value_input_option="USER_ENTERED")
+      await refreshStreamers(message, workbook)
+      break
 # end removeStreamer
 
 async def memberStartedStreaming(member, client):
@@ -597,7 +633,7 @@ async def votingProcess(message, member, client):
 
   voteOptionsDict = {}
   for i in range(len(voteOptions)):
-    voteOptions[i] = voteOptions[i].split("]")[0].split("[")[1]
+    voteOptions[i] = voteOptions[i].split("] ")[0].split("[")[1]
     voteOptionsDict[voteOptions[i]] = 0
 
   def checkSpent(payload):

@@ -115,11 +115,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        msg = await message.channel.fetch_message(622137318513442816)
-        embed = msg.embeds[0].to_dict()
-        for i in range(len(embed["fields"])):
-          for line in embed["fields"][i]["value"].split("\n"):
-            print(line)
+        await COTM.refreshStreamers(message.guild, await COTM.openSpreadsheet())
         print("done")
       elif (args[1] == "dk"):
         try:

@@ -606,7 +606,7 @@ async def printLineup(lineup, moBotMessage, embed):
   await moBotMessage.add_reaction(CHECKMARK_EMOJI)
   await moBotMessage.add_reaction(COUNTERCLOCKWISE_ARROWS_EMOJI)
   await moBotMessage.add_reaction(X_EMOJI)
-  embed["fields"][5]["value"] += "```%s```" % (lineupIDs)
+  embed["fields"][5]["value"] += "```%s%s,%.3f```" % (lineupIDs, remSalary, totalAppg)
   embed["footer"]["text"] = ("REM. SALARY: $%s TOTAL FPPG: %.3f" % (remSalary, totalAppg))
   await editEmbed(moBotMessage, embed)
 # end printLineup
