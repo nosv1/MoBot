@@ -23,6 +23,7 @@ QUALI_SCREENSHOTS = 607694176133447680
 START_ORDERS = 622484589465829376
 STANDINGS = 622467542497099786
 DIVISION_UPDATES = 527319768911314944
+RESERVE_SEEKING = 620811051335680013
 
 # common emojis
 CHECKMARK_EMOJI = "✅"
@@ -116,6 +117,13 @@ async def mainReactionAdd(message, payload, client):
       elif (payload.emoji.name == FIST_EMOJI):
         await reserveAvailable(message, member, payload, client)
         await message.channel.send(".", delete_after=0)
+      elif (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
+        if (member.id == moID):
+          msg = await message.channel.send("**Clearing Reserves**")
+          await clearReserves(message)
+          await msg.delete()
+        else:
+          await message.remove_reaction(payload.emoji.name, member)
 
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
@@ -164,6 +172,28 @@ async def mainMemberUpdate(before, after, client):
   if (startedStreaming(before, after)):
     await memberStartedStreaming(after, client)
 # end mainMemberUpdate
+
+async def cleraPitMarshalls(message):
+  await message.clear_reactions()
+
+  embed = message.embeds[0].to_dict()
+  for i in range(len(embed["fields"])):
+    if ("Division" in embed["fields"][0]["name"]):
+      embed["fields"][i]["value"] = "Host -\nPit-Marshall -\n" + spaceChar
+
+  for member in message.guild.members:
+    for role in member.roles:
+      if ("Pit-Marshalls" in role.name):
+        await member.remove_roles(role)
+        await message.channel.send("%s has been removed from Pit-Marshalls.")
+        break
+  
+  #await message.channel.purge(after=message)
+
+  await message.add_reaction(CROWN)
+  await message.add_reaction(WRENCH)
+  await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
+# end clearReserves
 
 async def addPitMarshall(message, payload, member, client):
   
@@ -337,7 +367,14 @@ async def refreshStreamers(message, workbook):
     def __init__(self, driverID, streamLink):
       self.member = message.guild.get_member(int(driverID))
       member = self.member
+
+      reserveDivs = []
+      for role in member.roles:
+        if ("Reserve" in role.name):
+          reserveDivs.append(role.name[-1])
+
       self.div = member.display_name.split("]")[0][-1]
+      self.reserveDivs = reserveDivs
       self.streamLink = streamLink
   # end Streamer
 
@@ -378,7 +415,7 @@ async def refreshStreamers(message, workbook):
   multiStreamLink = "https://multistre.am/"
   for i in range(1, 7):
     embed.add_field(
-      name="Division %s" % (str(i)),
+      name="Division %s:" % (str(i)),
       value="",
       inline=False
     )
@@ -388,7 +425,7 @@ async def refreshStreamers(message, workbook):
   streamers = getStreamers()
   for i in range(len(embed["fields"])):
     for streamer in streamers:
-      if (streamer.div in embed["fields"][i]["name"]):
+      if (streamer.div in embed["fields"][i]["name"] or embed["fields"][i]["name"][-2] in streamer.reserveDivs):
         emoji = getEmoji(streamer.streamLink)
         try:
           embed["fields"][i]["value"] += "%s __[%s](%s)__\n" % (emoji, streamer.member.display_name, streamer.streamLink)
@@ -492,6 +529,7 @@ async def clearReserves(message):
   await message.clear_reactions()
   await message.add_reaction(WAVE_EMOJI)
   await message.add_reaction(FIST_EMOJI)
+  await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
 # end clearReserves
 
 async def reserveNeeded(message, member):
