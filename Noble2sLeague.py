@@ -152,7 +152,7 @@ async def memberJoin(member):
   pass
 # end memberJoin
 
-async def memberRemove(member):
+async def memberRemove(member, client):
   # remove id from spreadsheet
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Off-Season"])
   registerIDSheet = workbook.worksheet("RegisterID")

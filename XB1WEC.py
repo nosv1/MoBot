@@ -27,7 +27,7 @@ async def memberJoin(member):
       await member.add_roles(role)
 # end memberJoin
 
-async def memberRemove(member):
+async def memberRemove(member, client):
   pass
 # end memberRemove
 

@@ -20,7 +20,7 @@ async def memberJoin(member):
   await memberLog.send("" + member.mention + " joined.")
 # end memberJoin
 
-async def memberRemove(member):
+async def memberRemove(member, client):
   memberLog = member.guild.get_channel(554885483063279616) # member-log
   await memberLog.send(member.name + " left.\n<@&53015536901029888>")
 # end memberRemove

@@ -12,6 +12,8 @@ import SecretStuff
 
 import RandomFunctions
 
+GUILD_ID = 527156310366486529
+
 # common member ids
 moID = 405944496665133058
 moBot = 449247895858970624
@@ -24,6 +26,7 @@ START_ORDERS = 622484589465829376
 STANDINGS = 622467542497099786
 DIVISION_UPDATES = 527319768911314944
 RESERVE_SEEKING = 620811051335680013
+ACTION_LOG = 527355464216739866
 
 # common emojis
 CHECKMARK_EMOJI = "✅"
@@ -172,6 +175,13 @@ async def mainMemberUpdate(before, after, client):
   if (startedStreaming(before, after)):
     await memberStartedStreaming(after, client)
 # end mainMemberUpdate
+
+async def memberRemove(member, client):
+  guild = client.get_guild(GUILD_ID)
+  channel = guild.get_channel(ACTION_LOG)
+  mo = guild.get_member(moID)
+  await channel.send("%s, %s has left :eyes:" % (mo.mention, member.mention))
+# end memberRemove
 
 async def cleraPitMarshalls(message):
   await message.clear_reactions()

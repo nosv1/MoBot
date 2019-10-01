@@ -37,7 +37,7 @@ async def memberJoin(member):
   pass
 # end memberJoin
 
-async def memberRemove(member):
+async def memberRemove(member, client):
   pass
 # end memberJoin
 

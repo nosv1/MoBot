@@ -540,7 +540,7 @@ async def on_member_remove(member):
     return
   
   if (str(member.guild.id) in servers):
-    await eval(servers[str(member.guild.id)] + ".memberRemove(member)")
+    await eval(servers[str(member.guild.id)] + ".memberRemove(member, client)")
 # end on_member_remove
 
 # when a reactio is added to a message
