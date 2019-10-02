@@ -24,6 +24,10 @@ QUALIFYING = 607693838642970819
 QUALI_SCREENSHOTS = 607694176133447680
 START_ORDERS = 622484589465829376
 STANDINGS = 622467542497099786
+RESERVE_STANDINGS = 628747564480462858
+ROOKIE_STANDINGS = 628758523643166761
+LEAST_IMPROVED = 628758491477180446
+TOT_POS_GAIN_LOST = 628766947709812756
 DIVISION_UPDATES = 527319768911314944
 RESERVE_SEEKING = 620811051335680013
 ACTION_LOG = 527355464216739866
@@ -1275,53 +1279,73 @@ async def updateStartOrders(guild, workbook):
 # end updateStartOrders
 
 async def updateStandings(guild, workbook):
-  standingsChannel = guild.get_channel(STANDINGS)
-
   standings = getStandings(workbook)
-  standingsEmbeds = []
-  embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
-  embed.add_field(name="Standings", value="Pos. Driver - Points", inline=False)
-  embed = embed.to_dict()
-  standingsEmbeds.append(embed)
 
-  for i in range(len(standings)):
-    if (i % 15 == 0):
-      embed = discord.Embed(color=int("0xd1d1d1", 16))
-      embed.add_field(name=("Pos. %d - %d" % (i+1, i+15)), value="", inline=False)
-      embed = embed.to_dict()
-      standingsEmbeds.append(embed)
+  for standing in standings:
+    standingsChannel = guild.get_channel(standing.channelID)
+    standingsEmbeds = []
+    embed = discord.Embed(color=int("0xd1d1d1", 16))
+    embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
+    embed.add_field(name=standing.name, value="Pos. Driver - %s" % (standing.specifier), inline=False)
+    embed = embed.to_dict()
+    standingsEmbeds.append(embed)
 
-    driverMember = guild.get_member(standings[i].driverID)
-    standingsEmbeds[len(standingsEmbeds)-1]["fields"][0]["value"] += ("%d. %s - %d" % (standings[i].position, driverMember.display_name, standings[i].points)) + "\n"
+    for i in range(len(standing.standings)):
+      if (i % 15 == 0):
+        embed = discord.Embed(color=int("0xd1d1d1", 16))
+        embed.add_field(name=("Pos. %d - %d" % (i+1, i+15)), value="", inline=False)
+        embed = embed.to_dict()
+        standingsEmbeds.append(embed)
 
-  await standingsChannel.purge()
-  for embed in standingsEmbeds:
-    await standingsChannel.send(embed=discord.Embed.from_dict(embed))
+      driverMember = guild.get_member(standing.standings[i].driverID)
+      standingsEmbeds[len(standingsEmbeds)-1]["fields"][0]["value"] += ("%d. %s - %d" % (standing.standings[i].position, driverMember.display_name, standing.standings[i].specifierAmt)) + "\n"
+
+    await standingsChannel.purge()
+    for embed in standingsEmbeds:
+      await standingsChannel.send(embed=discord.Embed.from_dict(embed))
 # end updateStandings
 
 def getStandings(workbook):
   class Driver:
-    def __init__(self, position, driverID, points):
+    def __init__(self, position, driverID, specifier, specifierAmt):
       self.position = position
       self.driverID = driverID
-      self.points= points
+      self.specifier = specifier
+      self.specifierAmt = specifierAmt
   # end Driver
 
+  class Standings:
+    def __init__(self, name, leftCol, rightCol, specifier, channelID):
+      self.name = name
+      self.standings = []
+      self.leftCol = leftCol
+      self.rightCol = rightCol
+      self.specifier = specifier
+      self.channelID = channelID
+  # end Standings
+
   standingsSheet = workbook.worksheet("Standings")
-  standingsRange = standingsSheet.range("G4:J" + str(standingsSheet.row_count))
   driversRange, driverSheet = getDriversRange(workbook)
 
-  standings = []
-  for i in range(0, len(standingsRange), 4):
-    if (standingsRange[i].value == ""):
-      break  
-    if (standingsRange[i+1].value == "OUT"):
-      continue
-    position = int(standingsRange[i].value)
-    driverID = int(driversRange[findDriver(driversRange, standingsRange[i+2].value)-1].value)
-    points = int(standingsRange[i+3].value.split(".")[0])
-    standings.append(Driver(position, driverID, points))
+  standings = [
+    Standings("Standings", "G", "J", "Total Points", STANDINGS),
+    Standings("Rookie Standings", "W", "Z", "Total Points", ROOKIE_STANDINGS),
+    Standings("Reserve Standings", "L", "O", "Res. Points", RESERVE_STANDINGS),
+    Standings("Least Improved", "R", "U", "Pos. Diff.", LEAST_IMPROVED),
+    Standings("Total Positions Gained/Lost", "AB", "AE", "Tot. Pos. G/L", TOT_POS_GAIN_LOST),
+  ]
+
+  for standing in standings:
+    standingsRange = standingsSheet.range("%s4:%s%s" % (standing.leftCol, standing.rightCol, standingsSheet.row_count))
+
+    for i in range(0, len(standingsRange), 4):
+      if (standingsRange[i].value == ""):
+        break  
+      position = int(standingsRange[i].value)
+      driverID = int(driversRange[findDriver(driversRange, standingsRange[i+2].value)-1].value)
+      specifier = standing.specifier
+      specifierAmt = int(standingsRange[i+3].value.split(".")[0])
+      standing.standings.append(Driver(position, driverID, specifier, specifierAmt))
   return standings
 # end getStandings
 

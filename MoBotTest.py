@@ -115,7 +115,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.refreshStreamers(message.guild, await COTM.openSpreadsheet())
+        await COTM.updateStandings(message.guild, await COTM.openSpreadsheet())
         print("done")
       elif (args[1] == "dk"):
         try:
