@@ -81,12 +81,24 @@ async def main(args, message, client):
           if (args[2] == "standings"):
             await message.channel.trigger_typing()
             await updateStandings(message.guild, await openSpreadsheet())
+            await message.delete()
           elif (args[2] == "start" and args[3] == "orders"):
             await message.channel.trigger_typing()
             await updateStartOrders(message.guild, await openSpreadsheet())
+            await message.delete()
           elif (args[2] == "divlist"):
             await message.channel.trigger_typing()
             await updateDriverRoles(message.guild, getDivList(await openSpreadsheet()))
+            await message.delete()
+        elif (args[1] == "reset"):
+          if (args[2] == "pitmarshalls"):
+            await message.trigger_typing()
+            await resetPitMarshalls(message)
+            await message.delete()
+          elif (args[2] == "reserves"):
+            await message.trigger_typing()
+            await resetReserves(message)
+            await message.delete()
       except IndexError:
         pass
   # end main
@@ -126,10 +138,10 @@ async def mainReactionAdd(message, payload, client):
         await message.channel.send(".", delete_after=0)
       elif (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
         if (member.id == moID):
-          msg = await message.channel.send("**Clearing Reserves**")
-          await clearReserves(message)
-          await msg.delete()
-        else:
+          workbook = await openSpreadsheet()
+          await getReserves(workbook)
+          await updateStartOrders(message.guild, workbook)
+          await message.channel.send(content="Remember to remove any reserve roles, if necessary.\n*(deleting in 10 sec)*", delete_after=10)
           await message.remove_reaction(payload.emoji.name, member)
 
     if (message.id == 622137318513442816): # message id for streamer embed
@@ -187,7 +199,7 @@ async def memberRemove(member, client):
   await channel.send("%s, %s has left :eyes:" % (mo.mention, member.mention))
 # end memberRemove
 
-async def cleraPitMarshalls(message):
+async def resetPitMarshalls(message):
   await message.clear_reactions()
 
   embed = message.embeds[0].to_dict()
@@ -207,7 +219,7 @@ async def cleraPitMarshalls(message):
   await message.add_reaction(CROWN)
   await message.add_reaction(WRENCH)
   await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
-# end clearReserves
+# end resetPitMarshalls
 
 async def addPitMarshall(message, payload, member, client):
   
@@ -461,9 +473,10 @@ async def addStreamer(message, member, payload, client):
     return msg.channel.id == message.channel.id and msg.author.id == payload.user_id
   # end checkMsg
 
-  async def failed():
+  async def failed(moBotMessage):
     await message.channel.set_permissions(member, overwrite=None)
     await message.remove_reaction(payload.emoji.name, member)
+    await moBotMessage.delete()
   # end failed
 
   try:
@@ -477,12 +490,12 @@ async def addStreamer(message, member, payload, client):
 
   except asyncio.TimeoutError:
     await message.channel.send(content="**TIMED OUT**", delete_after=20)
-    await failed()
+    await failed(moBotMessage)
     return None
 
   if (link is None):
     await message.channel.send(member.mention + ", you did not provide a proper link. Link ex. <https://twitch.tv/moshots>.", delete_after=20)
-    await failed()
+    await failed(moBotMessage)
     return None
   
   workbook = await openSpreadsheet()
@@ -526,7 +539,7 @@ async def memberStartedStreaming(member, client):
     await client.get_member(moID).send(str(traceback.format_exc()))
 # end startedStreaming
 
-async def clearReserves(message):
+async def resetReserves(message):
   embed = message.embeds[0].to_dict()
   embed["fields"][0]["value"] = spaceChar
   embed["fields"][0]["value"] = spaceChar
@@ -544,7 +557,7 @@ async def clearReserves(message):
   await message.add_reaction(WAVE_EMOJI)
   await message.add_reaction(FIST_EMOJI)
   await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
-# end clearReserves
+# end resetReserves
 
 async def reserveNeeded(message, member):
   embed = message.embeds[0].to_dict()
