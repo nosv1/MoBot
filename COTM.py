@@ -31,6 +31,7 @@ TOT_POS_GAIN_LOST = 628766947709812756
 DIVISION_UPDATES = 527319768911314944
 RESERVE_SEEKING = 620811051335680013
 ACTION_LOG = 527355464216739866
+PIT_MARSHALL_SIGNUP = 605985462502555679
 
 # common emojis
 CHECKMARK_EMOJI = "✅"
@@ -92,12 +93,12 @@ async def main(args, message, client):
             await message.delete()
         elif (args[1] == "reset"):
           if (args[2] == "pitmarshalls"):
-            await message.trigger_typing()
-            await resetPitMarshalls(message)
+            await message.channel.trigger_typing()
+            await resetPitMarshalls(message.guild)
             await message.delete()
           elif (args[2] == "reserves"):
-            await message.trigger_typing()
-            await resetReserves(message)
+            await message.channel.trigger_typing()
+            await resetReserves(message.guild)
             await message.delete()
       except IndexError:
         pass
@@ -199,26 +200,26 @@ async def memberRemove(member, client):
   await channel.send("%s, %s has left :eyes:" % (mo.mention, member.mention))
 # end memberRemove
 
-async def resetPitMarshalls(message):
+async def resetPitMarshalls(guild):
+  message = await guild.get_channel(PIT_MARSHALL_SIGNUP).fetch_message(622831151320662036)
   await message.clear_reactions()
 
   embed = message.embeds[0].to_dict()
   for i in range(len(embed["fields"])):
-    if ("Division" in embed["fields"][0]["name"]):
+    if ("Division" in embed["fields"][i]["name"]):
       embed["fields"][i]["value"] = "Host -\nPit-Marshall -\n" + spaceChar
 
   for member in message.guild.members:
     for role in member.roles:
       if ("Pit-Marshalls" in role.name):
         await member.remove_roles(role)
-        await message.channel.send("%s has been removed from Pit-Marshalls.")
+        await message.channel.send("%s has been removed from Pit-Marshalls." % (member.mention))
         break
   
   #await message.channel.purge(after=message)
 
   await message.add_reaction(CROWN)
   await message.add_reaction(WRENCH)
-  await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
 # end resetPitMarshalls
 
 async def addPitMarshall(message, payload, member, client):
@@ -539,7 +540,8 @@ async def memberStartedStreaming(member, client):
     await client.get_member(moID).send(str(traceback.format_exc()))
 # end startedStreaming
 
-async def resetReserves(message):
+async def resetReserves(guild):
+  message = await guild.get_channel(RESERVE_SEEKING).fetch_message(620811567210037253)
   embed = message.embeds[0].to_dict()
   embed["fields"][0]["value"] = spaceChar
   embed["fields"][0]["value"] = spaceChar
@@ -550,13 +552,12 @@ async def resetReserves(message):
         member = message.guild.get_member(user.id)
         roles = member.roles
         for role in roles:
-          if ("Reserve" in role.name):
+          if ("Reserve" in role.name and "[R]" not in member.display_name):
             await member.remove_roles(role)
 
   await message.clear_reactions()
   await message.add_reaction(WAVE_EMOJI)
   await message.add_reaction(FIST_EMOJI)
-  await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
 # end resetReserves
 
 async def reserveNeeded(message, member):

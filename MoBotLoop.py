@@ -383,7 +383,6 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
 # end updateGuildCountdowns
 
 async def updateGuildClocks(client, currentTime, clocks):
-
   for guildID in clocks:
     guild = client.get_guild(guildID)
     for clock in clocks[guildID]:
@@ -401,8 +400,6 @@ async def updateGuildClocks(client, currentTime, clocks):
       except AttributeError:
         await client.get_user(int(mo)).send("**Guild Has No Voice Channels**\nGuild ID: %s" % (guildID))
         break
-          
-  #print()
 # end guildClocks
 
 async def updateTimeZoneList(currentTime):
