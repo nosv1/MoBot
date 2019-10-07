@@ -630,21 +630,26 @@ async def reserveAvailable(message, member, payload, client):
     payload = await client.wait_for("raw_reaction_add", timeout=60.0, check=checkCheckmarkEmoji)
     moBotMessage = await message.channel.fetch_message(payload.message_id)
     embed = message.embeds[0].to_dict()
-    reservesNeeded = embed["fields"][1]["value"][:-1].strip()
 
     reserveAdded = False
+    reserveMember = None  
+    div = 0
     for reaction in moBotMessage.reactions:
       if (str(reaction.emoji) != CHECKMARK_EMOJI):
         async for user in reaction.users():
           if (user.id == member.id):
             reserveAdded = True
-            reservesNeeded += "\n" + str(reaction.emoji) + " - " + member.display_name
+            reserveMember = member
+            div = str(reaction.emoji).split(":")[1][-1]
     if (reserveAdded):
-      embed["fields"][1]["value"] = reservesNeeded + "\n" + spaceChar
-      await message.edit(embed=discord.Embed.from_dict(embed))
+      for i in range(len(embed["fields"])):
+        if ("D" + div in embed["fields"][i]["name"]):
+          embed["fields"][i]["value"] = embed["fields"][i]["value"][:-1] + reserveMember.display_name + "\n" + spaceChar
+          await message.edit(embed=discord.Embed.from_dict(embed))
+          break
 
       workbook = await openSpreadsheet()
-      await setReservesAvailable(embed["fields"][1]["value"], workbook)
+      await setReservesAvailable(embed, workbook)
       await moBotMessage.edit(content="**Updating Reserve List**")
       await moBotMessage.clear_reactions()
       await updateStartOrders(message.guild, workbook)
@@ -660,13 +665,15 @@ async def reserveAvailable(message, member, payload, client):
 
 async def reserveNotAvailable(message, member):
   embed = message.embeds[0].to_dict()
-  reservesNeeded = embed["fields"][1]["value"][:-1].strip().split("\n")
-  newReservesNeeded = ""
-  for reserve in reservesNeeded:
-    if (member.display_name not in reserve):
-      newReservesNeeded += reserve + "\n"
-  newReservesNeeded += spaceChar
-  embed["fields"][1]["value"] = newReservesNeeded
+  for i in range(len(embed["fields"])):
+    if ("Available" in embed["fields"][i]["name"]):
+      newValue = ""
+      value = embed["fields"][i]["value"][:-1].strip()
+      for line in value.split("\n"):
+        if (member.display_name not in line):
+          newValue += line + "\n"
+      newValue += spaceChar
+      embed["fields"][i]["value"] = newValue
   await message.edit(embed=discord.Embed.from_dict(embed))
   
   for role in member.roles:
@@ -675,7 +682,7 @@ async def reserveNotAvailable(message, member):
       await message.guild.get_channel(DIVISION_UPDATES).send(member.mention + " has been removed from " + role.name)
 
   workbook = await openSpreadsheet()
-  await setReservesAvailable(embed["fields"][1]["value"], workbook)
+  await setReservesAvailable(embed, workbook)
   await updateStartOrders(message.guild, workbook)
 # end reserveNotAvailable
 
@@ -1457,15 +1464,17 @@ async def setReservesNeeded(member, reservesNeededValue, workbook):
   reservesSheet.update_cells(reservesNeededRange, value_input_option="USER_ENTERED")
 # end setReservesNeeded
 
-async def setReservesAvailable(reservesAvailableValue, workbook):
+async def setReservesAvailable(embed, workbook):
   reservesSheet = workbook.worksheet("Reserves")
   reservesAvailableRange = reservesSheet.range("D4:E" + str(reservesSheet.row_count))
   reservesAvailable = []
-  for line in reservesAvailableValue.split("\n"):
-    if (spaceChar in line):
-      break
-    reservesAvailable.append(line.split(":")[1][-1])
-    reservesAvailable.append(line.split("]")[1].strip())
+  for i in range(len(embed["fields"])):
+    if ("Available" in embed["fields"][i]["name"]):
+      for line in embed["fields"][i]["value"].split("\n"):
+        if ("]" not in line):
+          break
+        reservesAvailable.append(embed["fields"][i]["name"].split(":")[1][-1])
+        reservesAvailable.append(line.split("]")[1].strip())
 
   for i in range(len(reservesAvailableRange)):
     try:
