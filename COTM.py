@@ -32,6 +32,7 @@ DIVISION_UPDATES = 527319768911314944
 RESERVE_SEEKING = 620811051335680013
 ACTION_LOG = 527355464216739866
 PIT_MARSHALL_SIGNUP = 605985462502555679
+MINI_CHAMPIONSHIPS = 630610458029588480
 
 # common emojis
 CHECKMARK_EMOJI = "✅"
@@ -1302,6 +1303,7 @@ async def updateStartOrders(guild, workbook):
 async def updateStandings(guild, workbook):
   standings = getStandings(workbook)
 
+  purged = None
   for standing in standings:
     standingsChannel = guild.get_channel(standing.channelID)
     standingsEmbeds = []
@@ -1321,7 +1323,9 @@ async def updateStandings(guild, workbook):
       driverMember = guild.get_member(standing.standings[i].driverID)
       standingsEmbeds[len(standingsEmbeds)-1]["fields"][0]["value"] += ("%d. %s - %d" % (standing.standings[i].position, driverMember.display_name, standing.standings[i].specifierAmt)) + "\n"
 
-    await standingsChannel.purge()
+    if (purged != standingsChannel.id): # to avoid purging the channel > 1 time
+      await standingsChannel.purge()
+      purged = standingsChannel.id
     for embed in standingsEmbeds:
       await standingsChannel.send(embed=discord.Embed.from_dict(embed))
 # end updateStandings
@@ -1354,6 +1358,12 @@ def getStandings(workbook):
     Standings("Reserve Standings", "L", "O", "Res. Points", RESERVE_STANDINGS),
     Standings("Least Improved", "R", "U", "Pos. Diff.", LEAST_IMPROVED),
     Standings("Total Positions Gained/Lost", "AB", "AE", "Tot. Pos. G/L", TOT_POS_GAIN_LOST),
+    Standings("Mini-Championship 1", "AG", "AJ", "Total Points", MINI_CHAMPIONSHIPS),
+    Standings("Mini-Championship 2", "AL", "AO", "Total Points", MINI_CHAMPIONSHIPS),
+    Standings("Mini-Championship 3", "AQ", "AT", "Total Points", MINI_CHAMPIONSHIPS),
+    Standings("Mini-Championship 4", "AV", "AY", "Total Points", MINI_CHAMPIONSHIPS),
+    Standings("Mini-Championship 5", "BA", "BD", "Total Points", MINI_CHAMPIONSHIPS),
+    Standings("Mini-Championship 6", "BF", "BI", "Total Points", MINI_CHAMPIONSHIPS),
   ]
 
   for standing in standings:
