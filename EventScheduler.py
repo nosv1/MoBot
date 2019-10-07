@@ -88,7 +88,7 @@ async def memberRemove(member, client):
 async def sendReminder(reminder, client):
   guild = client.get_guild(reminder.guildID)
   channel = guild.get_channel(reminder.channelID)
-  await channel.send("<@" + str(reminder.memberID) + ">, " + reminder.text)
+  await channel.send("Reminder for <@" + str(reminder.memberID) + ">: " + reminder.text)
   reminders = await removeReminder(reminder)
   return reminders
 # end sendReminder
