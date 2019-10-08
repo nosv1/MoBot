@@ -1104,7 +1104,7 @@ async def registerID(message, args):
         idLocation = i+1
         if (args[1].lower() == "registerid"):
           nameNotPresent = False
-          moBotMessages.append(await message.channel.send("**Cannot Register ID**\nYour ID is already registered; if you would like to change your name, use @MoBot#0697 cahngeID new_name"))
+          moBotMessages.append(await message.channel.send("**Cannot Register ID**\nYour ID is already registered; if you would like to change your name, use `@MoBot#0697 cahngeID new_name`"))
           break
 
       if (registerName.lower() == nameIDs[i].value.lower()):
