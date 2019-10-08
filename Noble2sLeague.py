@@ -1109,7 +1109,7 @@ async def registerID(message, args):
 
       if (registerName.lower() == nameIDs[i].value.lower()):
         nameNotPresent = False
-        moBotMessages.append(await message.channel.send("**Cannot Register ID**\%s name is already taken." % (registerName)))
+        moBotMessages.append(await message.channel.send("**Cannot Register ID**\n%s name is already taken." % (registerName)))
         break
     except IndexError: # hits the end of the names and tries to parse a blank value
       pass
