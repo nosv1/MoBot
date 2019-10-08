@@ -1083,8 +1083,8 @@ async def registerID(message, args):
   registerIDSheet = workbook.worksheet("RegisterID")
   nameIDs = registerIDSheet.range("A2:B" + str(registerIDSheet.row_count))
 
-  userId = message.author.id # in format !register name
-  if ("<@" in message.content):
+  userId = message.author.id # in format @MoBot registerid name
+  if (message.content.count("<@") > 1):
     registerName = message.author.display_name
   else:
     registerName = ""
@@ -1099,7 +1099,7 @@ async def registerID(message, args):
   # checking for previous entries
   for i in range(0, len(nameIDs), 2):
     try:
-      if (str(userId) == nameIDs[i+1].value[-19:-1]):
+      if (str(userId) == nameIDs[i+1].value):
         idNotPresent = False
         idLocation = i+1
         if (args[1].lower() == "registerid"):
