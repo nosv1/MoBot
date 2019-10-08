@@ -947,7 +947,7 @@ async def tCreateTeam(message, tCommandLog, workbook):
 
   i = 0
   teamExists = True
-  while (i < len(teamRange)):
+  while (teamExists):
     if (teamRange[i].value.lower() == teamName.lower() and teamExists): # team exists?
       await message.channel.send("**Cannot Create Team**\nTeam name already exists.")
       return None
@@ -962,7 +962,7 @@ async def tCreateTeam(message, tCommandLog, workbook):
 
     if (teamRange[i].value == ""): # reached end, no team found
       teamExists = False
-      i = 0
+      await message.channel.send("**Cannot Create/Edit Team**\nThe team does not exist, or you are not a captain.")
 
     i += teamRangeCols
   # end while
