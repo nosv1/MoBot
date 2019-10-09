@@ -155,13 +155,7 @@ async def main(client):
             await nobleLeaugesDestination.send(embed=embed)'''
           
           await updateTimeZoneList(currentTime)
-
-    except websockets.exceptions.ConnectionClosed:
-      await asyncio.sleep(5)
-    except gspread.exceptions.APIError:
-      pass
     except:
-      await asyncio.sleep(5)
       try:
         await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(traceback.format_exc()) + "```")
       except:
