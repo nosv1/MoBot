@@ -1088,7 +1088,7 @@ async def registerID(message, args):
     registerName = message.author.display_name
   else:
     registerName = ""
-    for i in range(1, len(args)):
+    for i in range(2, len(args)):
       registerName += args[i].strip() + " "
     registerName = registerName[:-1]
 
