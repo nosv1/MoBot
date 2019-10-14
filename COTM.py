@@ -7,6 +7,10 @@ import random
 import asyncio
 import operator
 import traceback
+from matplotlib import pyplot as plt
+import matplotlib as mpl
+import numpy as np
+import os
 
 import SecretStuff
 
@@ -33,6 +37,7 @@ RESERVE_SEEKING = 620811051335680013
 ACTION_LOG = 527355464216739866
 PIT_MARSHALL_SIGNUP = 605985462502555679
 MINI_CHAMPIONSHIPS = 630610458029588480
+DRIVER_HISTORY = 631556653174620160
 
 # common emojis
 CHECKMARK_EMOJI = "✅"
@@ -77,6 +82,15 @@ async def main(args, message, client):
   if (args[0][-19:-1] == str(moBot)):
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
+    elif (args[1] == "history"):
+      await message.channel.trigger_typing()
+      workbook = await openSpreadsheet()
+      drivers = getDriverHistory(workbook)
+      if (message.content.count("<@") > 1):
+        driverID = int(message.content.split("<@")[-1].split(">")[0].replace("!", ""))
+      else:
+        driverID = message.author.id
+      await updateDriverHistory(message, driverID, workbook)
     if (message.author.id == moID):
       try:
         if (args[1] == "update"):
@@ -101,6 +115,8 @@ async def main(args, message, client):
             await message.channel.trigger_typing()
             await resetReserves(message.guild)
             await message.delete()
+        elif (args[1] == "add"):
+          await addDriver(message)
       except IndexError:
         pass
   # end main
@@ -200,6 +216,18 @@ async def memberRemove(member, client):
   mo = guild.get_member(moID)
   await channel.send("%s, %s has left :eyes:" % (mo.mention, member.mention))
 # end memberRemove
+
+async def addDriver(message):
+  workbook = await openSpreadsheet()
+  driversRange, driverSheet = getDriversRange(workbook)
+
+  driverID = message.guild.split("<@")[-1].split(">")[0].replace("!", "")
+  if (findDriver(driversRange, driverID) == -1):
+    for i in range(len(driversRange)):
+      if (driversRange[i].value == ""):
+        driversRange[i].value = str(driverID)
+        driversRange[i+1].value = message.content.split(driverID)[1].split(" ")[-1]
+# end addDriver
 
 async def resetPitMarshalls(guild):
   message = await guild.get_channel(PIT_MARSHALL_SIGNUP).fetch_message(622831151320662036)
@@ -1330,6 +1358,91 @@ async def updateStandings(guild, workbook):
       await standingsChannel.send(embed=discord.Embed.from_dict(embed))
 # end updateStandings
 
+async def createDriverHistoryChart(driver, driverMember, filePath):
+  
+  def autoLabel(values):
+    if (type(values[0]) != mpl.lines.Line2D):
+      for i in range(len(values)):
+        value = values[i]
+        height = value.get_height()
+        ax.text(value.get_x() + value.get_width()/2., 1.05*height, '%d' % int(height), weight="bold", ha="center", va="bottom")
+    else:
+      line = values[0]
+      x = line._x
+      y = line._y
+      for i in range(len(x)):
+        height = y[i]
+        ax.text(i+.05, 1.05*height, "%d" % int(height), weight="bold", ha="center", va="bottom")
+    # end autoLabel
+
+  ndx = np.arange(len(driver.divisions))
+
+  textColor = "#839496"
+  facecolor = "#33363B"
+  gridColor = "#363942"
+  mpl.rcParams["text.color"] = textColor
+  mpl.rcParams["axes.labelcolor"] = textColor
+  mpl.rcParams["xtick.color"] = textColor
+  mpl.rcParams["ytick.color"] = textColor
+  mpl.rcParams["legend.facecolor"] = facecolor
+  mpl.rcParams["grid.color"] = textColor
+  mpl.rcParams["grid.alpha"] = .2
+  fig, ax = plt.subplots(facecolor=facecolor)
+  ax.grid()
+
+  ax.set_title(driverMember.display_name + "\n")
+  ax.set_xlabel("Round")
+  ax.set_xticks(ndx)
+  ax.set_xticklabels(range(1, len(ndx) + 1))
+
+  barWidth = .2
+  startPosBars = ax.bar(ndx - barWidth/2, driver.startPositions, barWidth)
+  finishPosBars = ax.bar(ndx + barWidth/2, driver.finishPositions, barWidth)
+
+  divisionPoints = ax.plot(driver.divisions)
+  pointsPoints = ax.plot(driver.points)
+
+  ax.legend(("Division", "Points", "Start Position", "Finish Position"))
+  autoLabel(startPosBars)
+  autoLabel(finishPosBars)
+  autoLabel(divisionPoints)
+  autoLabel(pointsPoints)
+
+  plt.savefig(filePath, facecolor=fig.get_facecolor(), transparent=True)
+  plt.close()
+# end createDriverHistoryChart
+
+async def updateDriverHistory(message, driverID, workbook):
+  guild = message.guild
+  driverHistoryChannel = guild.get_channel(DRIVER_HISTORY)
+  await driverHistoryChannel.purge()
+
+  driverHistory = getDriverHistory(workbook)
+  driverHistory = sorted(driverHistory, key=lambda driver: driver.totalPoints)
+
+  for driver in driverHistory:
+    if (message.channel.id != driverHistoryChannel.id):
+      if (driver.driverID != driverID):
+        continue
+    if (len(driver.divisions) == 0):
+      continue
+    driverMember = guild.get_member(driver.driverID)
+    if (driverMember == None):
+      continue
+
+    filePath = "%s_Driver_History.png" % (driverMember.display_name)
+    await createDriverHistoryChart(driver, driverMember, filePath)
+
+    driverHistoryGraph = open(filePath, "rb")
+    #plt.show()
+    if (message.channel.id != driverHistoryChannel.id):
+      await message.channel.send(file=discord.File(driverHistoryGraph))
+    else:
+      await driverHistoryChannel.send(file=discord.File(driverHistoryGraph))
+    driverHistoryGraph.close()
+    os.remove(filePath)
+# end updateDriverHistory
+
 def getStandings(workbook):
   class Driver:
     def __init__(self, position, driverID, specifier, specifierAmt):
@@ -1444,6 +1557,78 @@ def getReserves(workbook):
             break
   return reserves    
 # end getReserve
+
+def getDriverHistory(workbook):
+  class Driver:
+    def __init__(self, driverID, totalPoints, divisions, startPositions, finishPositions, points):
+      self.driverID = int(driverID)
+      self.totalPoints = totalPoints
+      self.divisions = divisions
+      self.startPositions = startPositions
+      self.finishPositions = finishPositions
+      self.points = points # per race
+  # end Driver
+
+  driverHistorySheet = workbook.worksheet("Driver History")
+  driverHistoryRange = driverHistorySheet.range("B3:CH%s"  % (driverHistorySheet.row_count))
+  driverHistoryRangeCols = 85
+  driversRange, driversSheet = getDriversRange(workbook)
+  currentWeek = int(driverHistorySheet.range("B1:B1")[0].value)
+
+  drivers = []
+
+  for i in range(driverHistoryRangeCols, len(driverHistoryRange), driverHistoryRangeCols):
+    if (driverHistoryRange[i].value == ""):
+      break
+
+    driverID = None
+    totalPoints = 0
+    divisions = []
+    startPositions = []
+    finishPositions = []
+    points = []
+    for j in range(driverHistoryRangeCols):
+      
+      if (driverHistoryRange[j].value == "Driver"):
+        driverName = driverHistoryRange[i+j].value
+        driverID = driversRange[findDriver(driversRange, driverName)-1].value
+
+      elif (driverHistoryRange[j].value == "Div"):
+        div = driverHistoryRange[i+j].value
+        if (div != "OUT"):
+          div = div.split("D")[-1]
+        else:
+          break
+        try:
+          divisions.append(int(div))
+        except ValueError:
+          divisions.append(0)
+          startPositions.append(0)
+          finishPositions.append(0)
+          points.append(0)
+      try:
+        if (divisions[-1] == 0):
+          continue
+      except IndexError: # still looping to get to the first week
+        continue
+
+      if (driverHistoryRange[j].value == "Total Points"):
+        totalPoints = int(driverHistoryRange[i+j].value.split(".")[0])
+      if (driverHistoryRange[j].value == "Start"):
+        startPositions.append(int(driverHistoryRange[i+j].value))
+      elif (driverHistoryRange[j].value == "Finish"):
+        finishPositions.append(int(driverHistoryRange[i+j].value))
+      elif (driverHistoryRange[j].value == "Points"):
+        points.append(int(driverHistoryRange[i+j].value))
+
+      if (len(points) + 1 == currentWeek):
+        break
+    
+    if (len(divisions) != 0):
+      drivers.append(Driver(driverID, totalPoints, divisions[1:], startPositions, finishPositions, points))
+
+  return drivers
+# end getDriverHistory
 
 async def setReservesNeeded(member, reservesNeededValue, workbook):
   reservesSheet = workbook.worksheet("Reserves")
