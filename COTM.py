@@ -116,6 +116,7 @@ async def main(args, message, client):
             await resetReserves(message.guild)
             await message.delete()
         elif (args[1] == "add" and args[2] == "driver"):
+          await message.channel.trigger_typing()
           await addDriver(message)
       except IndexError:
         pass
