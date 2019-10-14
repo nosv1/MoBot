@@ -80,13 +80,14 @@ statsTables = {
 playerNamesToIDs = {} # used to search when getting player limitations and must haves
 
 class Player:
-  def __init__(self, name, id, pos, fpos, price, game, team, appg):
+  def __init__(self, name, id, pos, fpos, price, game, team, oppTeam, appg):
     self.name = name.strip()
     self.id = id
     self.pos = pos
     self.fpos = fpos
     self.price = int(price)
     self.team = team
+    self.oppTeam = oppTeam
     self.value = 0 # will be updated after player values are gathered
     self.valuePerDollar = 0 # will be updated after player values are gathered
     self.appg = appg
@@ -305,7 +306,7 @@ def getLineup(lineup, salary, mustHaves, playerLimitations, valueList, lineupTyp
         salary += currentPlayer.price # preparing for switch
 
         for vPlayer in valueList:
-          if (lineupType == "showdown" or (lineupType == "classic" and not (vPlayer.team == potentialPlayer.team))): # team limitations
+          if (lineupType == "showdown" or (lineupType == "classic" and not isSameTeam(lineup, vPlayer))): # team limitations
             if (vPlayer.pos == position or (position == "FLEX" and "FLEX" in vPlayer.fpos)): # same position
               if (vPlayer.value > potentialPlayer.value): # better player
                 newPlayer = vPlayer
@@ -379,6 +380,23 @@ def getValueList(players, valueListOption):
   valueList = sorted(players.values(), key=operator.attrgetter("value"))
   return valueList
 # end getValueList
+
+def isSameTeam(lineup, player):
+  for position in lineup: # dict item
+    if (position == "QB"):
+      continue
+    for lPlayer in lineup[position]: # list item
+      try:
+        if (position == "DST"):
+          if (lPlayer.oppTeam == player.team):
+            return True
+        else:
+          if (lPlayer.team == player.team):
+            return True
+      except AttributeError: # error occurs when first setting benchmark lineup when player == None
+        pass
+  return False
+
 
 def isInLineup(lineup, player):
   for position in lineup: # dict item
@@ -632,9 +650,10 @@ def getPlayersFromSalaries(salaries):
     price = line[5].strip()
     game = line[6].split(" ")[0]
     team = line[7].strip()
+    oppTeam = game.replace(team, "").replace("@", "")
     appg = float(line[8].strip())
     if (fpos != "CPT"):
-      players[name] = Player(name, id, pos, fpos, price, game, team, appg)
+      players[name] = Player(name, id, pos, fpos, price, game, team, oppTeam, appg)
 
   return players
 # end getPlayersFromSalaries

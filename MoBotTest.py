@@ -115,8 +115,9 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.updateStandings(message.guild, await COTM.openSpreadsheet())
-        print("done")
+        await message.channel.trigger_typing()
+        await COTM.updateDriverHistory(message, None, await COTM.openSpreadsheet())
+        await message.channel.send(content="done", delete_after=10)
       elif (args[1] == "dk"):
         try:
           await DKGetPicks.main(args, message, client)
