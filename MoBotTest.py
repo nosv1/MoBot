@@ -116,7 +116,7 @@ async def on_message(message):
     if (len(args) > 1):
       if (args[1] == "test"):
         await message.channel.trigger_typing()
-        await COTM.updateDriverHistory(message, None, await COTM.openSpreadsheet())
+        await COTM.addDriver(message)
         await message.channel.send(content="done", delete_after=10)
       elif (args[1] == "dk"):
         try:
