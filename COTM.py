@@ -115,7 +115,7 @@ async def main(args, message, client):
             await message.channel.trigger_typing()
             await resetReserves(message.guild)
             await message.delete()
-        elif (args[1] == "add"):
+        elif (args[1] == "add" and args[2] == "driver"):
           await addDriver(message)
       except IndexError:
         pass
@@ -219,14 +219,33 @@ async def memberRemove(member, client):
 
 async def addDriver(message):
   workbook = await openSpreadsheet()
-  driversRange, driverSheet = getDriversRange(workbook)
+  driversRange, driversSheet = getDriversRange(workbook)
+  standingsSheet = workbook.worksheet("Standings")
 
-  driverID = message.guild.split("<@")[-1].split(">")[0].replace("!", "")
-  if (findDriver(driversRange, driverID) == -1):
+  driverID = message.content.split("<@")[-1].split(">")[0].replace("!", "")
+  driverGT = message.content.split(driverID)[-1].split(">")[-1].strip()
+  driverIndex = findDriver(driversRange, driverID) 
+  if (driverIndex == -1):
     for i in range(len(driversRange)):
       if (driversRange[i].value == ""):
         driversRange[i].value = str(driverID)
-        driversRange[i+1].value = message.content.split(driverID)[1].split(" ")[-1]
+        driversRange[i+1].value = driverGT
+        break
+  else:
+    driversRange[driverIndex+1].value = driverGT
+  driversSheet.update_cells(driversRange, value_input_option="USER_ENTERED")
+  standingsRange = standingsSheet.range("C4:C%s" % standingsSheet.row_count)
+
+  if (findDriver(standingsRange, driverGT) == -1):
+    for i in range(len(standingsRange)-1, 0-1, -1):
+      if (standingsRange[i-1].value != ""):
+        standingsRange[i].value = driverGT
+        await message.channel.send("**Driver Added**\nRemember to update standings and start orders.")
+        break
+  else:
+    await message.channel.send("**Cannot Add Driver**\nDriver is already in a division...")
+
+  standingsSheet.update_cells(standingsRange, value_input_option="USER_ENTERED")
 # end addDriver
 
 async def resetPitMarshalls(guild):
@@ -242,11 +261,11 @@ async def resetPitMarshalls(guild):
     for role in member.roles:
       if ("Pit-Marshalls" in role.name):
         await member.remove_roles(role)
-        await message.channel.send("%s has been removed from Pit-Marshalls." % (member.mention))
+        await message.channel.send("%s has been removed from Pit-Marshalls." % (member.mention), delete_after=3)
         break
   
   #await message.channel.purge(after=message)
-
+  await message.edit(embed=discord.Embed().from_dict(embed))
   await message.add_reaction(CROWN)
   await message.add_reaction(WRENCH)
 # end resetPitMarshalls
@@ -571,18 +590,19 @@ async def memberStartedStreaming(member, client):
 
 async def resetReserves(guild):
   message = await guild.get_channel(RESERVE_SEEKING).fetch_message(620811567210037253)
+  divUpdatesChannel = guild.get_channel(DIVISION_UPDATES)
   embed = message.embeds[0].to_dict()
-  embed["fields"][0]["value"] = spaceChar
-  embed["fields"][0]["value"] = spaceChar
+  for i in range(len(embed["fields"])):
+    if ("Available for" in embed["fields"][i]["name"]):
+      embed["fields"][i]["value"] = spaceChar
+  await message.edit(embed=discord.Embed().from_dict(embed))
 
-  for reaction in message.reactions:
-    async for user in reaction.users():
-      if (reaction.emoji == FIST_EMOJI):
-        member = message.guild.get_member(user.id)
-        roles = member.roles
-        for role in roles:
-          if ("Reserve" in role.name and "[R]" not in member.display_name):
-            await member.remove_roles(role)
+  for member in guild.members:
+    if ("[R]" not in member.display_name):
+      for role in member.roles:
+        if ("Reserve" in role.name):
+          await member.remove_roles(role)
+          await divUpdatesChannel.send("%s has been removed from %s." % (member.mention, role.name))
 
   await message.clear_reactions()
   await message.add_reaction(WAVE_EMOJI)
@@ -660,22 +680,20 @@ async def reserveAvailable(message, member, payload, client):
     moBotMessage = await message.channel.fetch_message(payload.message_id)
     embed = message.embeds[0].to_dict()
 
-    reserveAdded = False
     reserveMember = None  
-    div = 0
+    divs = []
     for reaction in moBotMessage.reactions:
       if (str(reaction.emoji) != CHECKMARK_EMOJI):
         async for user in reaction.users():
           if (user.id == member.id):
-            reserveAdded = True
             reserveMember = member
-            div = str(reaction.emoji).split(":")[1][-1]
-    if (reserveAdded):
+            divs.append(str(reaction.emoji).split(":")[1][-1])
+    if (divs != []):
       for i in range(len(embed["fields"])):
-        if ("D" + div in embed["fields"][i]["name"]):
-          embed["fields"][i]["value"] = embed["fields"][i]["value"][:-1] + reserveMember.display_name + "\n" + spaceChar
-          await message.edit(embed=discord.Embed.from_dict(embed))
-          break
+        for div in divs:
+          if ("D" + div in embed["fields"][i]["name"]):
+            embed["fields"][i]["value"] = embed["fields"][i]["value"][:-1] + reserveMember.display_name + "\n" + spaceChar
+      await message.edit(embed=discord.Embed.from_dict(embed))
 
       workbook = await openSpreadsheet()
       await setReservesAvailable(embed, workbook)
