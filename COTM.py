@@ -84,13 +84,11 @@ async def main(args, message, client):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
     elif (args[1] == "history"):
       await message.channel.trigger_typing()
-      workbook = await openSpreadsheet()
-      drivers = getDriverHistory(workbook)
       if (message.content.count("<@") > 1):
         driverID = int(message.content.split("<@")[-1].split(">")[0].replace("!", ""))
       else:
         driverID = message.author.id
-      await updateDriverHistory(message, driverID, workbook)
+      await updateDriverHistory(message, driverID, await openSpreadsheet())
     if (message.author.id == moID):
       try:
         if (args[1] == "update"):
@@ -106,6 +104,8 @@ async def main(args, message, client):
             await message.channel.trigger_typing()
             await updateDriverRoles(message.guild, getDivList(await openSpreadsheet()))
             await message.delete()
+          elif (args[2] == "driver" and args[3] == "history"):
+            await updateDriverHistory(message, driverID, await openSpreadsheet())
         elif (args[1] == "reset"):
           if (args[2] == "pitmarshalls"):
             await message.channel.trigger_typing()
@@ -1415,7 +1415,8 @@ async def createDriverHistoryChart(driver, driverMember, filePath):
 async def updateDriverHistory(message, driverID, workbook):
   guild = message.guild
   driverHistoryChannel = guild.get_channel(DRIVER_HISTORY)
-  await driverHistoryChannel.purge()
+  if (message.id == driverHistoryChannel.id):
+    await driverHistoryChannel.purge()
 
   driverHistory = getDriverHistory(workbook)
   driverHistory = sorted(driverHistory, key=lambda driver: driver.totalPoints)
