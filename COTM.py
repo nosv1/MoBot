@@ -486,7 +486,10 @@ async def refreshStreamers(message, workbook):
     streamers = []
     for i in range(len(streamLinks)):
       if (streamLinks[i].value != ""):
-        streamers.append(Streamer(driverIDs[i].value, streamLinks[i].value))
+        try:
+          streamers.append(Streamer(driverIDs[i].value, streamLinks[i].value))
+        except AttributeError: # When member == None
+          pass 
     return streamers
   # end getStreamers
 
@@ -513,7 +516,7 @@ async def refreshStreamers(message, workbook):
 
   multiStreams = {}
   multiStreamLink = "https://multistre.am/"
-  for i in range(1, 7):
+  for i in range(1, 6):
     embed.add_field(
       name="Division %s:" % (str(i)),
       value="",
