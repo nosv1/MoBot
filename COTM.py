@@ -219,12 +219,21 @@ async def memberRemove(member, client):
 # end memberRemove
 
 async def addDriver(message):
-  workbook = await openSpreadsheet()
-  driversRange, driversSheet = getDriversRange(workbook)
-  standingsSheet = workbook.worksheet("Standings")
+  divisionUpdatesChannel = message.guild.get_channel(DIVISION_UPDATES)
 
+  workbook = await openSpreadsheet()
+
+  moBotMessage = await message.channel.send("*Getting Number of Divisions*")
+  driverHistorySheet = workbook.worksheet("Driver History")
+  numberOfDivs = driverHistorySheet.range("D1:D1")[0].value
+
+  await moBotMessage.edit(content="*Getting Driver ID and Gamertag*")
   driverID = message.content.split("<@")[-1].split(">")[0].replace("!", "")
   driverGT = message.content.split(driverID)[-1].split(">")[-1].strip()
+  driverMember = message.guild.get_member(int(driverID))
+  
+  await moBotMessage.edit(content="*Saving Driver ID and Gamertag*")
+  driversRange, driversSheet = getDriversRange(workbook)
   driverIndex = findDriver(driversRange, driverID) 
   if (driverIndex == -1):
     for i in range(len(driversRange)):
@@ -235,17 +244,32 @@ async def addDriver(message):
   else:
     driversRange[driverIndex+1].value = driverGT
   driversSheet.update_cells(driversRange, value_input_option="USER_ENTERED")
-  standingsRange = standingsSheet.range("C4:C%s" % standingsSheet.row_count)
 
+  await moBotMessage.edit(content="*Adding Driver Gamertag to Standings*")
+  standingsSheet = workbook.worksheet("Standings")
+  standingsRange = standingsSheet.range("C4:C%s" % standingsSheet.row_count)
   if (findDriver(standingsRange, driverGT) == -1):
     for i in range(len(standingsRange)-1, 0-1, -1):
       if (standingsRange[i-1].value != ""):
         standingsRange[i].value = driverGT
-        await message.channel.send("**Driver Added**\nRemember to update standings and start orders.")
+
+        await driverMember.edit(nick="[D%s] %s" % (numberOfDivs, driverGT))
+
+        for role in message.guild.roles:
+          if (role.name == "Division %s" % numberOfDivs):
+            await driverMember.add_roles(role)
+            await divisionUpdatesChannel.send("%s has been added to %s." % (driverMember.mention, role.name))
+          elif (role.name == "COTM"):
+            await driverMember.add_roles(role)
+          elif (role.name == "Peeker"):
+            await driverMember.remove_roles(role)
+
+        await message.channel.send("**Driver Added**\nRemember to update the standings and the start orders.")
         break
   else:
-    await message.channel.send("**Cannot Add Driver**\nDriver is already in a division...")
+    await message.channel.send("**Cannot Add Driver**\nDriver is already in the standings.")
 
+  await moBotMessage.delete()
   standingsSheet.update_cells(standingsRange, value_input_option="USER_ENTERED")
 # end addDriver
 
