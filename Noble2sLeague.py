@@ -342,7 +342,7 @@ async def updatePlayerIDs():
 # end updatePlayerIDs
 
 async def getMMR(message, payload, tCommandLog):
-  if (payload == None and len(message.embeds) > 0):
+  if (payload is None and len(message.embeds) > 0):
     await message.channel.trigger_typing()
     await message.add_reaction("✅")
     await message.add_reaction("❌")
@@ -364,8 +364,12 @@ async def getMMR(message, payload, tCommandLog):
       if (teamRange[i].value != ""):
         for j in range(i, i+teamRangeCols):
           if (getUserName(str(userId), registeredIDsRange) == teamRange[j].value):
-            teamRange[j+1].value = str(max([int(solo), int(doubles), int(soloStandard), int(standard)]))
-            await message.channel.send("**MMRs Submitted**")
+            try:
+              teamRange[j+1].value = str(max([int(solo), int(doubles), int(soloStandard), int(standard)]))
+            except ValueError:
+              await message.channel.send("**Could Not Submit MMRs**\nMake sure you are using the correct command - `rlrank`.")
+              return None
+            await message.channel.send(content="**MMRs Submitted**", delete_after=5)
             leagueSheet.update_cells(teamRange, value_input_option="USER_ENTERED")
             return None
       else:
