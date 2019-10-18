@@ -24,10 +24,13 @@ async def main(args, message, client):
     await createCollection(message, client)
   elif (args[2] == "display"):
     try:
-      collectionName = message.content.split("display")[1].split("@")[0].strip().lower()
+      collectionName = message.content.split("display")[1].split("<@")[0].strip().lower()
     except IndexError:
       await message.channel.send("Include a 'Collection Name' when using the collection display command. To get a list of this server's collections, use `@MoBot#0697 collections`\n\n`@Mobot#0697 collection display [Collection_Name]`")
-    await displayCollection(message, False, collectionName, message.guild.id, False, client)
+    if ("<@&" in args[-1]):
+      await displayCollection(message, True, collectionName, message.guild.id, False, client)
+    else:
+      await displayCollection(message, False, collectionName, message.guild.id, False, client)
   elif (args[2] == "link"):
     await linkCollectionEmbeds(message, client)
   elif (args[2] == "unlink"):
@@ -99,7 +102,7 @@ async def getCollections(message):
     if (collectionsRange[i].value == "" and collectionsRange[i-1].value == ""):
       break
     elif (collectionsRange[i].value == str(message.guild.id)):
-      collections += collectionsRange[i+2].value + "\n  - "
+      collections += "  - %s\n" % collectionsRange[i+2].value
 
   await message.channel.send(collections)
 # end getCollections
@@ -634,10 +637,12 @@ async def displayCollection(message, toDMs, collectionName, guildID, isReservati
   collectionsRange = collectionsSheet.range("A2:C" + str(collectionsSheet.row_count))
 
   for i in range(len(collectionsRange)):
+    print(collectionsRange[i].value.lower(), collectionName.lower())
     if (collectionsRange[i].value.lower() == collectionName.lower()):
+      print("yes")
       if (collectionsRange[i-2].value == str(guildID)):
+        print("yes")
         nosV1User, nosChannel, msg = await getNosChannel(client)
-
 
         collectionMsgID = int(collectionsRange[i-1].value)
         collectionMsg = await nosChannel.fetch_message(collectionMsgID)
@@ -647,16 +652,18 @@ async def displayCollection(message, toDMs, collectionName, guildID, isReservati
         firstEmbedURL = firstEmbed.author.url
 
         if (toDMs):
-          roleIDs = message.content.split(str(collectionMsg.id))[1].strip().split(">")
+          print("yes")
+          roleIDs = message.content.lower().split(collectionName.lower())[-1].strip().split(">")
           roles = message.guild.roles
           
           for role in roles:
             for roleID in roleIDs:
               if (str(role.id) in roleID):
                 for member in role.members:
+                  print(member.display_name)
                   try:
                     firstEmbed = await correctMoBotHelpMenu(firstEmbedMsg, firstEmbed)
-                    embedMsg = await message.channel.send(embed=firstEmbed)
+                    embedMsg = await member.send(embed=firstEmbed)
                     await message.channel.send("Message sent to " + member.mention + ".")
                     await embedMsg.add_reaction("💾")
                     await embedMsg.add_reaction("⬅")

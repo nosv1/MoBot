@@ -378,6 +378,7 @@ async def getMMR(message, payload, tCommandLog):
 
   elif (payload.emoji.name == "❌"):
     await message.clear_reactions()
+
 # end getMMR
 
 async def updatePrefix(user, registerees, index, prefix, manualChange):
