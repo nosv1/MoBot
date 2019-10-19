@@ -637,11 +637,8 @@ async def displayCollection(message, toDMs, collectionName, guildID, isReservati
   collectionsRange = collectionsSheet.range("A2:C" + str(collectionsSheet.row_count))
 
   for i in range(len(collectionsRange)):
-    print(collectionsRange[i].value.lower(), collectionName.lower())
     if (collectionsRange[i].value.lower() == collectionName.lower()):
-      print("yes")
       if (collectionsRange[i-2].value == str(guildID)):
-        print("yes")
         nosV1User, nosChannel, msg = await getNosChannel(client)
 
         collectionMsgID = int(collectionsRange[i-1].value)
@@ -652,7 +649,6 @@ async def displayCollection(message, toDMs, collectionName, guildID, isReservati
         firstEmbedURL = firstEmbed.author.url
 
         if (toDMs):
-          print("yes")
           roleIDs = message.content.lower().split(collectionName.lower())[-1].strip().split(">")
           roles = message.guild.roles
           
@@ -660,7 +656,6 @@ async def displayCollection(message, toDMs, collectionName, guildID, isReservati
             for roleID in roleIDs:
               if (str(role.id) in roleID):
                 for member in role.members:
-                  print(member.display_name)
                   try:
                     firstEmbed = await correctMoBotHelpMenu(firstEmbedMsg, firstEmbed)
                     embedMsg = await member.send(embed=firstEmbed)
