@@ -620,6 +620,7 @@ async def resetReserves(guild):
   message = await guild.get_channel(RESERVE_SEEKING).fetch_message(620811567210037253)
   divUpdatesChannel = guild.get_channel(DIVISION_UPDATES)
   embed = message.embeds[0].to_dict()
+  embed["fields"][0]["value"] = spaceChar
   for i in range(len(embed["fields"])):
     if ("Available for" in embed["fields"][i]["name"]):
       embed["fields"][i]["value"] = spaceChar
