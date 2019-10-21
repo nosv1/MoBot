@@ -160,7 +160,7 @@ async def main(client):
         await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(traceback.format_exc()) + "```")
       except:
         print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
-      sys.exit()
+      await client.logout()
 
   # end infinte loop
 # end main
@@ -456,5 +456,6 @@ async def openRandomLogs():
   return workbook
 # end openRandomLogs
 
-print("Connecting...")
-client.run(SecretStuff.getToken("MoBotToken.txt"))
+while True:
+  print("Connecting...")
+  client.run(SecretStuff.getToken("MoBotToken.txt"))
