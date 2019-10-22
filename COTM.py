@@ -38,6 +38,7 @@ ACTION_LOG = 527355464216739866
 PIT_MARSHALL_SIGNUP = 605985462502555679
 MINI_CHAMPIONSHIPS = 630610458029588480
 DRIVER_HISTORY = 631556653174620160
+EVENT_CHAT = 527156400908926978
 
 # common emojis
 CHECKMARK_EMOJI = "✅"
@@ -213,9 +214,9 @@ async def mainMemberUpdate(before, after, client):
 
 async def memberRemove(member, client):
   guild = client.get_guild(GUILD_ID)
-  channel = guild.get_channel(ACTION_LOG)
   mo = guild.get_member(moID)
-  await channel.send("%s, %s has left :eyes:" % (mo.mention, member.mention))
+  channel = guild.get_channel(EVENT_CHAT)
+  await channel.send("%s has left :eyes: Was he important?\n||%s||" % (member.mention, mo.mention))
 # end memberRemove
 
 async def addDriver(message):
