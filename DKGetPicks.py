@@ -328,10 +328,10 @@ def addMustHaves(lineup, valueList, mustHaves, salary):
   for player in valueList:
     if (player.id in mustHaves):
       for position in lineup:
-        if (position == player.pos):
+        if (position == player.pos or (position == "FLEX" and player.pos in ["RB", "WR", "TE"])):
           for i in range(len(lineup[position])):
             currentPlayer = lineup[position][i]
-            if (currentPlayer == None):
+            if (currentPlayer == None and not isInLineup(lineup, player)):
               lineup[position][i] = player
               salary -= player.price
               break

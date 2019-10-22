@@ -115,9 +115,10 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        workbook = await COTM.openSpreadsheet()
-        driverSheet = workbook.worksheet("Drivers")
-        driverSheet.resize(rows=driverSheet.row_count + 1)
+        print(message.author.activities)
+        for activity in message.author.activities:
+          print(activity == discord.Game(name="F1 2019"))
+          print(activity.name)
         await message.channel.send(content="done", delete_after=10)
       elif (args[1] == "dk"):
         try:
