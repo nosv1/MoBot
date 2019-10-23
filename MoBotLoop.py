@@ -100,61 +100,61 @@ async def main(client):
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
 
-      if (second % 30 == 0): # check for every 30 seconds
+
+      if (second == 0): # check for every 60 seconds
         await updateGuildCountdowns(client, currentTime, countdowns)
         await updateGuildClocks(client, currentTime, clocks)
         await updateMoBotStatus(client)
 
-        if (second == 0):
-          if (currentTime.minute % 5 == 0): # check for new scheduled messages every 5 minutes
-            try:
-              workbook = await EventScheduler.openSpreadsheet()
-              eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
-              scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
-              remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
-              reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
-            except gspread.exceptions.APIError:
-              print("\nCould Not Get Scheduled Events\n")
-            
-          for event in scheduledEvents:
-            eventTime = await EventScheduler.getEventTime(event)
-            if (eventTime < currentTime):
-              scheduledEvents = await EventScheduler.performScheduledEvent(event, client)
-          for reminder in reminders:
-            reminderTime = reminder.date
-            if (reminderTime < currentUTC):
-              reminders = await EventScheduler.sendReminder(reminder, client)
-
+        if (currentTime.minute % 5 == 0): # check for new scheduled messages every 5 minutes
           try:
-            workbook = await openGuildClocksSpreadsheet()
-            clocks = await getGuildClocks(workbook)
-            countdowns = await getGuildCountdowns(workbook)
+            workbook = await EventScheduler.openSpreadsheet()
+            eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
+            scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
+            remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
+            reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
           except gspread.exceptions.APIError:
-            print("\nCould Not Get Clocks or Countdowns\n")
-
-          if (currentTime < donations["TE Garrett#9569"]["Date"] + relativedelta(months=int(donations["TE Garrett#9569"]["Donation"] / 2))):
-            await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
-          else:
-            await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
-
-          '''
-          if ((await convertTime(currentTime, "Europe/London", "to")).hour % 6 == 0 or currentTime.minute >= 32):
-            nobleLeaguesGuild = client.get_guild(437936224402014208)
-            nobleLeaugesDestination = nobleLeaguesGuild.get_channel(519260837727436810) # bot-setup
-
-            embed = discord.Embed(color=int("0xd1d1d1", 16))
-            embed.set_author(name="Noble Community News")
-
-            check out.txt
-            url = "https://noblecommunity.altervista.org/feed/"
-            feed = feedparser.parse(url)
-            for entry in feed.entries:
-              fieldName = entry.title
-              fieldValue = entry.summary
-              embed.add_field(name=fieldName, value=fieldValue, inline=False)
-            await nobleLeaugesDestination.send(embed=embed)'''
+            print("\nCould Not Get Scheduled Events\n")
           
-          await updateTimeZoneList(currentTime)
+        for event in scheduledEvents:
+          eventTime = await EventScheduler.getEventTime(event)
+          if (eventTime < currentTime):
+            scheduledEvents = await EventScheduler.performScheduledEvent(event, client)
+        for reminder in reminders:
+          reminderTime = reminder.date
+          if (reminderTime < currentUTC):
+            reminders = await EventScheduler.sendReminder(reminder, client)
+
+        try:
+          workbook = await openGuildClocksSpreadsheet()
+          clocks = await getGuildClocks(workbook)
+          countdowns = await getGuildCountdowns(workbook)
+        except gspread.exceptions.APIError:
+          print("\nCould Not Get Clocks or Countdowns\n")
+
+        if (currentTime < donations["TE Garrett#9569"]["Date"] + relativedelta(months=int(donations["TE Garrett#9569"]["Donation"] / 2))):
+          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
+        else:
+          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+
+        '''
+        if ((await convertTime(currentTime, "Europe/London", "to")).hour % 6 == 0 or currentTime.minute >= 32):
+          nobleLeaguesGuild = client.get_guild(437936224402014208)
+          nobleLeaugesDestination = nobleLeaguesGuild.get_channel(519260837727436810) # bot-setup
+
+          embed = discord.Embed(color=int("0xd1d1d1", 16))
+          embed.set_author(name="Noble Community News")
+
+          check out.txt
+          url = "https://noblecommunity.altervista.org/feed/"
+          feed = feedparser.parse(url)
+          for entry in feed.entries:
+            fieldName = entry.title
+            fieldValue = entry.summary
+            embed.add_field(name=fieldName, value=fieldValue, inline=False)
+          await nobleLeaugesDestination.send(embed=embed)'''
+        
+        await updateTimeZoneList(currentTime)
     except:
       try:
         await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(traceback.format_exc()) + "```")
