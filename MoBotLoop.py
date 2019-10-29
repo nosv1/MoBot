@@ -79,7 +79,10 @@ async def main(client):
     countdowns = await getGuildCountdowns(workbook)
     print("Countdowns Received")
   except httplib2.ServerNotFoundError:
-    pass
+    try:
+      await client.get_user(int(mo)).send("Just checking when this happenes\nMoBotLoop Error!```" + str(traceback.format_exc()) + "```")
+    except:
+      pass
   except gspread.exceptions.APIError:
     pass
 
@@ -99,12 +102,13 @@ async def main(client):
       sys.stdout.write("\rCurrent Time: " + str(currentTime))
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
-
-
       if (second == 0): # check for every 60 seconds
-        await updateGuildCountdowns(client, currentTime, countdowns)
-        await updateGuildClocks(client, currentTime, clocks)
-        await updateMoBotStatus(client)
+        try:
+          await updateGuildCountdowns(client, currentTime, countdowns)
+          await updateGuildClocks(client, currentTime, clocks)
+          await updateMoBotStatus(client)
+        except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
+          pass
 
         if (currentTime.minute % 5 == 0): # check for new scheduled messages every 5 minutes
           try:
@@ -114,7 +118,7 @@ async def main(client):
             remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
             reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
           except gspread.exceptions.APIError:
-            print("\nCould Not Get Scheduled Events\n")
+            pass
           
         for event in scheduledEvents:
           eventTime = await EventScheduler.getEventTime(event)
@@ -124,13 +128,6 @@ async def main(client):
           reminderTime = reminder.date
           if (reminderTime < currentUTC):
             reminders = await EventScheduler.sendReminder(reminder, client)
-
-        try:
-          workbook = await openGuildClocksSpreadsheet()
-          clocks = await getGuildClocks(workbook)
-          countdowns = await getGuildCountdowns(workbook)
-        except gspread.exceptions.APIError:
-          print("\nCould Not Get Clocks or Countdowns\n")
 
         if (currentTime < donations["TE Garrett#9569"]["Date"] + relativedelta(months=int(donations["TE Garrett#9569"]["Donation"] / 2))):
           await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
@@ -155,12 +152,21 @@ async def main(client):
           await nobleLeaugesDestination.send(embed=embed)'''
         
         await updateTimeZoneList(currentTime)
+        # --- Everything is sent --- 
+
+        try:
+          workbook = await openGuildClocksSpreadsheet()
+          clocks = await getGuildClocks(workbook)
+          countdowns = await getGuildCountdowns(workbook)
+        except gspread.exceptions.APIError:
+          pass
+        # --- Everything is received ---
     except:
       try:
         await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(traceback.format_exc()) + "```")
       except:
         print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
-      sys.exit()
+        sys.exit()
 
   # end infinte loop
 # end main
@@ -177,10 +183,23 @@ async def checkTEGarrettPointApplications(nowPacificTime, client):
   pointApplicationsWorkbook = await openTEGarrettPointApplicationsSpreadsheet()
 
   formResponsesSheet = pointApplicationsWorkbook.worksheet("Form Responses 1")
-  dateRange = formResponsesSheet.range("A2:A" + str(formResponsesSheet.row_count))
-  checkMarksRange = formResponsesSheet.range("B2:B" + str(formResponsesSheet.row_count))
-  picutresRange = formResponsesSheet.range("C2:C" + str(formResponsesSheet.row_count))
-  nameRange = formResponsesSheet.range("T2:Y" + str(formResponsesSheet.row_count))
+  
+  ranges = formResponsesSheet.range("A2:Y%s" % formResponsesSheet.row_count)
+  dateRange = []
+  checkMarksRange = []
+  picutresRange = []
+  nameRange = []
+  for cell in ranges:
+    if (cell.col == 1): # A
+      dateRange.append(cell)
+    elif (cell.col == 2): # B
+      checkMarksRange.append(cell)
+    elif (cell.col == 3): # C
+      picutresRange.append(cell)
+    elif (cell.col >= 20 and cell.col <= 25): # T:Y
+      nameRange.append(cell)
+    else:
+      continue
 
   randomLogsWorkbook = await openRandomLogs()
   pointApplicationsLogSheet = randomLogsWorkbook.worksheet("TE Garrett Point Applications")
@@ -215,6 +234,7 @@ async def checkTEGarrettPointApplications(nowPacificTime, client):
   if (logUpdated):
     pointApplicationsLogSheet.update_cells(pointApplicationsLogRange, value_input_option="USER_ENTERED")
     pointApplicationsLogSheet.resize(rows=pointApplicationsLogSheet.row_count + 1)
+    print("Log Updated")
 
 async def updateMoBotStatus(client):
   # changing bot status based on rand gen
