@@ -477,4 +477,4 @@ async def openRandomLogs():
 # end openRandomLogs
 
 print("Connecting...")
-client.run(SecretStuff.getToken("MoBotToken.txt"))
+client.run(SecretStuff.getToken("MoBotDiscordToken.txt"))

@@ -12,6 +12,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import random
 import traceback
+import mysql.connector
 
 import SecretStuff
 
@@ -30,12 +31,14 @@ import RandomFunctions
 import AdminFunctions
 import EventScheduler
 import DKGetPicks
+import SimpleCommands
 
 import COTM
 import AOR
 import Noble2sLeague
 
 client = discord.Client()
+moBotDB = None
 moBot = "449247895858970624"
 mo = 405944496665133058
 moBotTestID = 476974462022189056
@@ -65,6 +68,10 @@ async def on_ready():
   global autoRoles
   autoRoles = await ReactionRole.updateAutoRoles(autoRoles, workbook)
   print("AutoRoles Received")
+
+  global moBotDB
+  moBotDB = await connectDatabase()
+  print ("Connected to MoBot Database")
 
   '''mobotLog = client.get_guild(moBotSupport).get_channel(604099911251787776) # mobot log
   embed = discord.Embed(color=int("0xd1d1d1", 16))
@@ -115,11 +122,13 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        print(message.author.activities)
-        for activity in message.author.activities:
-          print(activity == discord.Game(name="F1 2019"))
-          print(activity.name)
+        moBotDB.cursor.execute("SELECT * FROM custom_commands")
+        for res in moBotDB.cursor:
+          await message.channel.send(res[0].decode("utf-8"))
+          print(res)
         await message.channel.send(content="done", delete_after=10)
+      elif ("command" in args or "commands" in args):
+        await SimpleCommands.main(args, message, client, moBotDB)
       elif (args[1] == "dk"):
         try:
           await DKGetPicks.main(args, message, client)
@@ -270,6 +279,18 @@ async def on_message(message):
   elif ("!" in args[0]):
     await GTACCHub.main(args, message, client)
 
+  if (not message.author.bot):
+    moBotDB.connection.commit()
+    moBotDB.cursor.execute("""
+      SELECT custom_commands.response 
+      FROM custom_commands 
+      WHERE 
+        custom_commands.trigger = '%s' AND 
+        custom_commands.guild_id = '%s'""" % (message.content, message.guild.id))
+    for res in moBotDB.cursor:
+      await message.channel.send(res[0].decode('utf-8'))
+      break
+
 @client.event
 async def on_raw_reaction_add(payload):
   channelID = payload.channel_id
@@ -331,6 +352,8 @@ async def on_raw_reaction_add(payload):
         elif (payload.emoji.name == "🗑"):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      if ("SimpleCommands" in message.embeds[0].author.url):
+        await SimpleCommands.mainReactionAdd(message, payload, client, moBotDB)
       '''if ("Countdown Editor" in message.embeds[0].author.name):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
       if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
@@ -992,5 +1015,25 @@ async def openSpreadsheet():
   return workbook
 # end openSpreadsheet
 
+async def connectDatabase():
+  class MoBotDB:
+    def __init__(self, connection, cursor):
+      self.connection = connection
+      self.cursor = cursor
+  # end MoBotDB
+
+  dbConnection = mysql.connector.connect(
+    host="10.0.0.227",
+    user="MoBot",
+    passwd=SecretStuff.getToken("MoBotDatabaseToken.txt"),
+    database="MoBot",
+    charset="utf8mb4",
+    use_unicode=True,
+    buffered=True
+  )
+  dbCursor = dbConnection.cursor()
+  return MoBotDB(dbConnection, dbCursor)
+# end connectDatabase
+
 print("Connecting...")
-client.run(SecretStuff.getToken("MoBotTestToken.txt"))
+client.run(SecretStuff.getToken("MoBotTestDiscordToken.txt"))

@@ -1,3 +1,12 @@
+'''
+NOTES FOR NEXT SEASON
+Issues:
+  Reserves:
+    Manual Reserves - Use dates to order reserves in database
+    Ping the resereve even if they are full time reserve
+
+'''
+
 import discord
 from datetime import datetime, timedelta
 import time
@@ -83,6 +92,8 @@ async def main(args, message, client):
   if (args[0][-19:-1] == str(moBot)):
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
+    if (args[1] == "reserve" and authorPerms.administrator):
+      await setManualReserve(message)
     elif (args[1] == "history"):
       await message.channel.trigger_typing()
       if (message.content.count("<@") > 1):
@@ -617,6 +628,45 @@ async def memberStartedStreaming(member, client):
     await client.get_member(moID).send(str(traceback.format_exc()))
 # end startedStreaming
 
+async def getReserveDiv(member):
+  workbook = await openSpreadsheet()
+  driversSheet = workbook.worksheet("Drivers")
+  driversRange = driversSheet.range("B3:F" + str(driversSheet.row_count))
+  for i in range(len(driversRange)):
+    if (driversRange[i].value == str(member.id)):
+      return int(driversRange[i+4].value)
+  return -1
+# end getReserveDiv
+
+async def setManualReserve(message):
+  reserve = message.mentions[1]
+  driver = message.mentions[2]
+
+  msg = await message.guild.get_channel(RESERVE_SEEKING).fetch_message(620811567210037253)
+  embed = msg.embeds[0]
+  embed = embed.to_dict()
+  embed["fields"][0]["value"] = "%s\n%s" % (driver.display_name, embed["fields"][0]["value"].replace(driver.display_name + "\n", ""))
+
+  
+  reserveDiv = driver.display_name.split("]")[-1]
+  for i in range(len(embed["fields"])):
+    if ("D%s" % reserveDiv in embed["fields"][i]["name"]):
+      embed["fields"][i]["value"] = "%s\n%s" % (reserve.display_name, embed["fields"][i]["name"].replace(reserve.display_name + "\n", ""))
+      break
+
+  workbook = await openSpreadsheet()
+  moBotMessage = await message.channel.send("**Setting Reserves Needed**")
+  await setReservesNeeded(driver, embed["fields"][0]["value"], workbook)
+  await moBotMessage.edit("**Setting Reserves Available**")
+  await setReservesAvailable(embed, workbook)
+  await moBotMessage.edit("**Updating Start Orders**")
+  await updateStartOrders(message.guild, workbook)
+
+  await msg.edit(embed=discord.Embed().from_dict(embed))
+  await message.delete()
+  await moBotMessage.delete()
+# end setManualReserve
+
 async def resetReserves(guild):
   message = await guild.get_channel(RESERVE_SEEKING).fetch_message(620811567210037253)
   divUpdatesChannel = guild.get_channel(DIVISION_UPDATES)
@@ -642,7 +692,8 @@ async def resetReserves(guild):
 async def reserveNeeded(message, member):
   embed = message.embeds[0].to_dict()
   reservesNeeded = embed["fields"][0]["value"][:-1].strip()
-  embed["fields"][0]["value"] = reservesNeeded + "\n" + member.display_name + "\n" + spaceChar
+  if (member.display_name not in reservesNeeded):
+    embed["fields"][0]["value"] = reservesNeeded + "\n" + member.display_name + "\n" + spaceChar
   await message.edit(embed=discord.Embed.from_dict(embed))
 
   workbook = await openSpreadsheet()
@@ -672,16 +723,6 @@ async def reserveAvailable(message, member, payload, client):
   def checkCheckmarkEmoji(payload):
     return payload.user_id == member.id and message.channel.id == payload.channel_id and payload.emoji.name == CHECKMARK_EMOJI
   # end checkCheckmarkEmoji
-
-  async def getReserveDiv(member):
-    workbook = await openSpreadsheet()
-    driversSheet = workbook.worksheet("Drivers")
-    driversRange = driversSheet.range("B3:F" + str(driversSheet.row_count))
-    for i in range(len(driversRange)):
-      if (driversRange[i].value == str(member.id)):
-        return int(driversRange[i+4].value)
-    return -1
-  # end getReserveDiv
 
   reserveDiv = await getReserveDiv(member)
   divEmojisToAdd = []
@@ -722,7 +763,8 @@ async def reserveAvailable(message, member, payload, client):
       for i in range(len(embed["fields"])):
         for div in divs:
           if ("D" + div in embed["fields"][i]["name"]):
-            embed["fields"][i]["value"] = embed["fields"][i]["value"][:-1] + reserveMember.display_name + "\n" + spaceChar
+            if (reserveMember.display_name not in embed["fields"][i]["value"]):
+              embed["fields"][i]["value"] = embed["fields"][i]["value"][:-1] + reserveMember.display_name + "\n" + spaceChar
       await message.edit(embed=discord.Embed.from_dict(embed))
 
       workbook = await openSpreadsheet()

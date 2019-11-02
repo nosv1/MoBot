@@ -55,7 +55,7 @@ async def createTicketChannel(message, ticketLog, ticketCategory, user, fromReac
     name = user.display_name
     channel = await message.guild.create_text_channel("ticket " + name + " " + str(user.id))
     await channel.edit(category=ticketCategory, sync_permissions=True)
-    await channel.set_permissions(user, read_messages=True, send_messages=True)
+    await channel.set_permissions(user, read_messages=True, send_messages=True, attach_files=True)
     return channel
 
   async def sendTicketResponses(ticketResponse, channel):
@@ -166,7 +166,7 @@ async def addUserToTicket(message):
         userId = i[-17:]
         user = message.guild.get_member(int(userId))
       
-      await message.channel.set_permissions(user, send_messages=True, read_messages=True)
+      await message.channel.set_permissions(user, send_messages=True, read_messages=True, attach_files=True)
       await message.channel.send("<@" + str(userId) + "> has been added to ticket.")
       
       print(message.channel.name + " " + str(userId))

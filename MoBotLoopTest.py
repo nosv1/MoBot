@@ -96,4 +96,4 @@ async def openRandomLogs():
   return workbook
 
 print("Connecting...")
-client.run(SecretStuff.getToken("MoBotTestToken.txt"))
+client.run(SecretStuff.getToken("MoBotTestDiscordToken.txt"))
