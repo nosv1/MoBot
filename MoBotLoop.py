@@ -234,7 +234,6 @@ async def checkTEGarrettPointApplications(nowPacificTime, client):
   if (logUpdated):
     pointApplicationsLogSheet.update_cells(pointApplicationsLogRange, value_input_option="USER_ENTERED")
     pointApplicationsLogSheet.resize(rows=pointApplicationsLogSheet.row_count + 1)
-    print("Log Updated")
 
 async def updateMoBotStatus(client):
   # changing bot status based on rand gen
