@@ -7,6 +7,7 @@ import random
 from pytz import timezone
 import traceback
 import gspread
+import mysql.connector
 
 import SecretStuff
 
@@ -42,6 +43,7 @@ import MoBotTimeZones
 import RLRanks
 import AdminFunctions
 import EventScheduler
+import SimpleCommands
 
 import Hangman
 import DKGetPicks
@@ -55,6 +57,7 @@ for line in lines:
   servers[line.split(",")[1]] = line.split(",")[0]
   
 client = discord.Client()
+moBotDB = None # connection on onReady()
 
 moBot = 449247895858970624
 
@@ -113,6 +116,10 @@ async def on_ready():
   global autoRoles
   autoRoles = await ReactionRole.updateAutoRoles(autoRoles, workbook)
   print("AutoRoles Received")
+
+  global moBotDB
+  moBotDB = await connectDatabase()
+  print ("Connected to MoBot Database")
 
   # priming the temp storage
   msg = await client.get_user(nosv1).send(".")
@@ -212,6 +219,8 @@ async def on_message(message):
         await RLRanks.main(args, message, client)
       elif (args[1] == "remindme"):
         await EventScheduler.setReminder(message)
+      elif ("command" in args):
+        await SimpleCommands.main(args, message, client, moBotDB) 
 
       ## general use server commands
       elif (args[1] == "say" and permissions["manageMessagePerms"]):
@@ -517,6 +526,13 @@ async def on_message(message):
         await ReactionRole.addReactionToMessage(message, "🇹")
       except discord.errors.NotFound:
         pass
+      
+  '''if (not message.author.bot):
+    moBotDB.connection.commit()
+    moBotDB.cursor.execute("SELECT response FROM custom_commands WHERE trigger = '%s' AND guild_id = '%s'" % (message.content, message.guild.id))
+    for res in moBotDB.cursor:
+      await message.channel.send(res[0].decode('utf-8'))
+      break'''
 
   if (message.author.id == mo):
     pass
@@ -1128,5 +1144,25 @@ async def test(message, client):
   print(msg.embeds[0].color)
 # end test
 
+async def connectDatabase():
+  class MoBotDB:
+    def __init__(self, connection, cursor):
+      self.connection = connection
+      self.cursor = cursor
+  # end MoBotDB
+
+  dbConnection = mysql.connector.connect(
+    host="10.0.0.227",
+    user="MoBot",
+    passwd=SecretStuff.getToken("MoBotDatabaseToken.txt"),
+    database="MoBot",
+    charset="utf8mb4",
+    use_unicode=True,
+    buffered=True
+  )
+  dbCursor = dbConnection.cursor()
+  return MoBotDB(dbConnection, dbCursor)
+# end connectDatabase
+
 print("Connecting...")
-client.run(SecretStuff.getToken("MoBotToken.txt"))
+client.run(SecretStuff.getToken("MoBotDiscordToken.txt"))
