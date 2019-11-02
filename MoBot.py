@@ -116,11 +116,11 @@ async def on_ready():
   global autoRoles
   autoRoles = await ReactionRole.updateAutoRoles(autoRoles, workbook)
   print("AutoRoles Received")
-
+  '''
   global moBotDB
   moBotDB = await connectDatabase()
   print ("Connected to MoBot Database")
-
+  '''
   # priming the temp storage
   msg = await client.get_user(nosv1).send(".")
   await msg.delete()
@@ -219,8 +219,8 @@ async def on_message(message):
         await RLRanks.main(args, message, client)
       elif (args[1] == "remindme"):
         await EventScheduler.setReminder(message)
-      elif ("command" in args):
-        await SimpleCommands.main(args, message, client, moBotDB) 
+      '''elif ("command" in args):
+        await SimpleCommands.main(args, message, client, moBotDB) '''
 
       ## general use server commands
       elif (args[1] == "say" and permissions["manageMessagePerms"]):
