@@ -1150,7 +1150,7 @@ async def connectDatabase():
       self.connection = connection
       self.cursor = cursor
   # end MoBotDB
-
+  
   dbConnection = mysql.connector.connect(
     host="10.0.0.227",
     user="MoBot",

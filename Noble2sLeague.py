@@ -23,6 +23,9 @@ ssIDs = {
 ## roles
 registeredRole = 569198468472766475
 
+## common channels
+REGISTER_ID = 519317465604554772
+
 async def main(args, message, client):
   now = datetime.now()
   for i in range(len(args)):
@@ -50,7 +53,7 @@ async def main(args, message, client):
     elif (args[1] == "submit"):
       await submitResultConfirm(message, client)
     elif (args[1].lower() == "registerid" or args[1].lower() == "changeid"):
-      await registerID(message, args)
+      await registerID(None, message, args)
 
   if (args[0] == "!t"):
     if (args[1] == "delete"):
@@ -129,6 +132,10 @@ async def mainReactionAdd(message, payload, client):
     elif (message.id == teamsListMessageId):
       await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
       await tTeams(message, payload)
+
+  elif (message.id == 640568528453369856): # Registration Verification
+    if (payload.emoji.name == "✅"):
+      await registerID(payload, message, [])
   
   elif (message.id == 600812373212921866): # Stream Scheduler
     if (payload.emoji.name == "✅" or payload.emoji.name == "❌"):
@@ -378,7 +385,6 @@ async def getMMR(message, payload, tCommandLog):
 
   elif (payload.emoji.name == "❌"):
     await message.clear_reactions()
-
 # end getMMR
 
 async def updatePrefix(user, registerees, index, prefix, manualChange):
@@ -1081,21 +1087,25 @@ async def testing(message):
   registerIDSheet.update_cells(r, value_input_option="USER_ENTERED")
 # end testing
 
-async def registerID(message, args):
-  moBotMessages = [message]
+async def registerID(payload, message, args):
+  moBotMessages = [message] if payload == None else []
   await message.channel.trigger_typing()
   workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
   registerIDSheet = workbook.worksheet("RegisterID")
   nameIDs = registerIDSheet.range("A2:B" + str(registerIDSheet.row_count))
 
-  userId = message.author.id # in format @MoBot registerid name
-  if (message.content.count("<@") > 1):
-    registerName = message.author.display_name
+  if (payload == None):
+    userId = message.author.id # in format @MoBot registerid name
+    if (message.content.count("<@") > 1):
+      registerName = message.author.display_name
+    else:
+      registerName = ""
+      for i in range(2, len(args)):
+        registerName += args[i].strip() + " "
+      registerName = registerName[:-1]
   else:
-    registerName = ""
-    for i in range(2, len(args)):
-      registerName += args[i].strip() + " "
-    registerName = registerName[:-1]
+    userId = payload.user_id
+    registerName = message.guild.get_member(userId).display_name
 
   idNotPresent = True
   nameNotPresent = True
@@ -1109,12 +1119,16 @@ async def registerID(message, args):
         idLocation = i+1
         if (args[1].lower() == "registerid"):
           nameNotPresent = False
-          moBotMessages.append(await message.channel.send("**Cannot Register ID**\nYour ID is already registered; if you would like to change your name, use `@MoBot#0697 changeID new_name`"))
+          if (payload == None):
+            moBotMessages.append(await message.channel.send("**Cannot Register ID**\nYour ID is already registered; if you would like to change your name, use `@MoBot#0697 changeID new_name`"))
           break
 
       if (registerName.lower() == nameIDs[i].value.lower()):
         nameNotPresent = False
-        moBotMessages.append(await message.channel.send("**Cannot Register ID**\n%s name is already taken." % (registerName)))
+        if (payload == None):
+          moBotMessages.append(await message.channel.send("**Cannot Register ID**\n%s name is already taken." % (registerName)))
+        else:
+          moBotMessages.append(await message.channel.send("**Cannot Register ID**\n%s name is already taken. To register your ID, go to <#%s>, and then use `@MoBot#0697 registerID name`."))
         break
     except IndexError: # hits the end of the names and tries to parse a blank value
       pass
@@ -1127,18 +1141,20 @@ async def registerID(message, args):
         nameIDs[i+1].value = str(userId)
         break
     moBotMessages.append(await message.channel.send("**ID Registered as %s**\nIf you want to change your ID use `@MoBot#0697 changeID new_name`." % (registerName)))
-    await message.guild.get_channel(569196829137305631).send("<@" + str(message.author.id) + "> has registered their ID with " + registerName.strip() + ".")
+    await message.guild.get_channel(569196829137305631).send("<@" + str(userId) + "> has registered their ID with " + registerName.strip() + ".")
 
   # changing name
   if (not(idNotPresent) and nameNotPresent):
-    nameIDs[idLocation - 1].value = registerName
-    moBotMessages.append(await message.channel.send("```Your ID has been updated.```"))
-    await message.guild.get_channel(569196829137305631).send("<@" + str(message.author.id) + "> has changed their ID to " + registerName + ".")
+    if (payload is None):
+      nameIDs[idLocation - 1].value = registerName
+      moBotMessages.append(await message.channel.send("**ID Updated**"))
+      await message.guild.get_channel(569196829137305631).send("<@" + str(userId) + "> has changed their ID to " + registerName + ".")
   
   registerIDSheet.update_cells(nameIDs, value_input_option="USER_ENTERED")
 
-  #await asyncio.sleep(7)
-  #await deleteMoBotMessages(moBotMessages)
+  if (payload is not None):
+    await asyncio.sleep(3)
+    await deleteMoBotMessages(moBotMessages)
 # end register
 
 def getRegisteredIDRange(workbook):
