@@ -32,6 +32,7 @@ import AdminFunctions
 import EventScheduler
 import DKGetPicks
 import SimpleCommands
+import MoBotDatabase
 
 import COTM
 import AOR
@@ -70,7 +71,7 @@ async def on_ready():
   print("AutoRoles Received")
 
   global moBotDB
-  moBotDB = await connectDatabase()
+  moBotDB = await MoBotDatabase.connectDatabase()
   print ("Connected to MoBot Database")
 
   '''mobotLog = client.get_guild(moBotSupport).get_channel(604099911251787776) # mobot log
@@ -122,7 +123,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.setManualReserve(message)
+        await ClocksAndCountdowns.prepareEditor(message, "clock", "640788058475855875", 1, 0)
         await message.channel.send(content="done", delete_after=10)
       elif ("command" in args or "commands" in args):
         await SimpleCommands.main(args, message, client, moBotDB)
@@ -312,6 +313,11 @@ async def on_raw_reaction_add(payload):
   message = msg
 
   try:
+    embedAuthor = str(message.embeds[0].author.name)
+  except IndexError:
+    embedAuthor = "None"
+    
+  try:
     pName = payload.emoji.name if (payload.emoji.id == None) else "<:" + payload.emoji.name + ":" + str(payload.emoji.id) + ">"
     msg = reactionMessages[pName][message.id]
     roles = message.guild.roles
@@ -349,6 +355,8 @@ async def on_raw_reaction_add(payload):
         elif (payload.emoji.name == "🗑"):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      if ("Clock Editor" in embedAuthor):
+        await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "clock")
       if ("SimpleCommands" in message.embeds[0].author.url):
         await SimpleCommands.mainReactionAdd(message, payload, client, moBotDB)
       '''if ("Countdown Editor" in message.embeds[0].author.name):
@@ -1011,26 +1019,6 @@ async def openSpreadsheet():
   workbook = clientSS.open_by_url("https://docs.google.com/spreadsheets/d/14YQLkU7C8IuyLJXVZ9IIJZuYhnp5ezsZkeeyI-NUkQQ/pubhtml?hl=en&widget=false&headers=false")
   return workbook
 # end openSpreadsheet
-
-async def connectDatabase():
-  class MoBotDB:
-    def __init__(self, connection, cursor):
-      self.connection = connection
-      self.cursor = cursor
-  # end MoBotDB
-
-  dbConnection = mysql.connector.connect(
-    host="10.0.0.227",
-    user="MoBot",
-    passwd=SecretStuff.getToken("MoBotDatabaseToken.txt"),
-    database="MoBot",
-    charset="utf8mb4",
-    use_unicode=True,
-    buffered=True
-  )
-  dbCursor = dbConnection.cursor()
-  return MoBotDB(dbConnection, dbCursor)
-# end connectDatabase
 
 print("Connecting...")
 client.run(SecretStuff.getToken("MoBotTestDiscordToken.txt"))

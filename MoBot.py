@@ -44,6 +44,7 @@ import RLRanks
 import AdminFunctions
 import EventScheduler
 import SimpleCommands
+import MoBotDatabase
 
 import Hangman
 import DKGetPicks
@@ -116,11 +117,11 @@ async def on_ready():
   global autoRoles
   autoRoles = await ReactionRole.updateAutoRoles(autoRoles, workbook)
   print("AutoRoles Received")
-  '''
+  
   global moBotDB
-  moBotDB = await connectDatabase()
+  moBotDB = await MoBotDatabase.connectDatabase()
   print ("Connected to MoBot Database")
-  '''
+  
   # priming the temp storage
   msg = await client.get_user(nosv1).send(".")
   await msg.delete()
@@ -527,12 +528,15 @@ async def on_message(message):
       except discord.errors.NotFound:
         pass
       
-  '''if (not message.author.bot):
-    moBotDB.connection.commit()
-    moBotDB.cursor.execute("SELECT response FROM custom_commands WHERE trigger = '%s' AND guild_id = '%s'" % (message.content, message.guild.id))
-    for res in moBotDB.cursor:
-      await message.channel.send(res[0].decode('utf-8'))
-      break'''
+  if (not message.author.bot):
+    try:
+      moBotDB.connection.commit()
+      moBotDB.cursor.execute("SELECT response FROM custom_commands WHERE trigger = '%s' AND guild_id = '%s'" % (message.content, message.guild.id))
+      for res in moBotDB.cursor:
+        await message.channel.send(res[0].decode('utf-8'))
+        break
+    except:
+      await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
 
   if (message.author.id == mo):
     pass
@@ -1143,26 +1147,6 @@ async def test(message, client):
   msg = await message.channel.fetch_message(600812373212921866)
   print(msg.embeds[0].color)
 # end test
-
-async def connectDatabase():
-  class MoBotDB:
-    def __init__(self, connection, cursor):
-      self.connection = connection
-      self.cursor = cursor
-  # end MoBotDB
-  
-  dbConnection = mysql.connector.connect(
-    host="10.0.0.227",
-    user="MoBot",
-    passwd=SecretStuff.getToken("MoBotDatabaseToken.txt"),
-    database="MoBot",
-    charset="utf8mb4",
-    use_unicode=True,
-    buffered=True
-  )
-  dbCursor = dbConnection.cursor()
-  return MoBotDB(dbConnection, dbCursor)
-# end connectDatabase
 
 print("Connecting...")
 client.run(SecretStuff.getToken("MoBotDiscordToken.txt"))

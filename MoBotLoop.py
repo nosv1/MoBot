@@ -18,10 +18,12 @@ import SecretStuff
 
 import ClocksAndCountdowns
 import EventScheduler
+import MoBotDatabase
 
 import MoBotTimeZones
   
 client = discord.Client() # discord.Client is like the user form of the bot, it knows the guilds and permissions and stuff of the bot
+moBotDB = None
 
 # these are 'statuses' for the bot, futher down I've got 50/50 random gen, to change status on every message sent
 botsByMo = discord.Activity(type=discord.ActivityType.streaming, name="Bots by Mo#9991")
@@ -31,6 +33,15 @@ moBotHelp = discord.Activity(type=discord.ActivityType.watching, name="@MoBot he
 
 moBotSupport = 467239192007671818
 mo = 405944496665133058
+
+class Clock:
+  def __init__(self, channelID, guildID, guildName, timeFormat, timeZone):
+    self.channelID = int(channelID)
+    self.guildID = int(guildID)
+    self.guildName = guildName
+    self.timeFormat = timeFormat
+    self.timeZone = timeZone
+# end Clock
 
 spaceChar = "⠀"
 
@@ -64,6 +75,10 @@ async def on_ready():
 # end on_ready
 
 async def main(client):
+  global moBotDB
+  moBotDB = await MoBotDatabase.connectDatabase()
+  print ("Connected to MoBot Database")
+
   try:
     global scheduledEvents, reminders
     workbook = await EventScheduler.openSpreadsheet()
@@ -74,7 +89,7 @@ async def main(client):
     print("Scheduled Events Received")
     
     workbook = await openGuildClocksSpreadsheet()
-    clocks = await getGuildClocks(workbook)
+    clocks = await getGuildClocks()
     print("Clocks Received")
     countdowns = await getGuildCountdowns(workbook)
     print("Countdowns Received")
@@ -85,6 +100,7 @@ async def main(client):
       pass
   except gspread.exceptions.APIError:
     pass
+  
 
   print()
   lastSecond = 0
@@ -156,7 +172,7 @@ async def main(client):
 
         try:
           workbook = await openGuildClocksSpreadsheet()
-          clocks = await getGuildClocks(workbook)
+          clocks = await getGuildClocks()
           countdowns = await getGuildCountdowns(workbook)
         except gspread.exceptions.APIError:
           pass
@@ -276,28 +292,38 @@ async def getGuildCountdowns(workbook):
   return countdowns
 # end getGuildCountdowns
 
-async def getGuildClocks(workbook):
-  clocksSheet = workbook.worksheet("Clocks")
+async def getGuildClocks():
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+    SELECT * 
+    FROM MoBot.clocks
+  """)
 
-  clocksTable = clocksSheet.range("A2:E" + str(clocksSheet.row_count))
-  clocks = {}
-
-  for i in range(0, len(clocksTable), 5):
-    if (clocksTable[i].value != ""):
-      if (int(clocksTable[i+1].value) not in clocks):
-        clocks[int(clocksTable[i+1].value)] = []
-
-      clocks[int(clocksTable[i+1].value)].append({
-          "Guild Name" : clocksTable[i].value,
-          "Channel ID" : int(clocksTable[i+2].value),
-          "Format" : clocksTable[i+3].value,
-          "Time Zone" : clocksTable[i+4].value
-        })
-    else:
-      break
+  clocks = []
+  for record in moBotDB.cursor:
+    clocks.append(Clock(record[0], record[1], record[2], record[3], record[4]))
 
   return clocks
 # end getGuildClocks
+
+async def updateGuildClocks(client, currentTime, clocks):
+  for clock in clocks:
+    guild = client.get_guild(clock.guildID)
+    tz = clock.timeZone
+    convertedTime = timezone("US/Central").localize(currentTime).astimezone(timezone(tz))
+
+    try:
+      for channel in guild.voice_channels:
+        if (channel.id == clock.channelID):
+          try:
+            await channel.edit(name=convertedTime.strftime(clock.timeFormat))
+          except AttributeError:
+            await client.get_user(int(mo)).send("**Could Not Update Clock**\nGuild ID: %s\nChannel ID: %s" % (guild.id, clock.channelID))
+          break
+    except AttributeError:
+      await client.get_user(int(mo)).send("**Guild Has No Voice Channels**\nGuild ID: %s" % (guild.id))
+      break
+# end guildClocks
 
 async def updateRepeatingCountdown(guild, endDatetime, countdown):
   repeatingOptions = {
@@ -395,26 +421,6 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
         await client.get_user(int(mo)).send("**Guild Has No Voice Channels**\nGuild ID: %s" % (guildID))
         break
 # end updateGuildCountdowns
-
-async def updateGuildClocks(client, currentTime, clocks):
-  for guildID in clocks:
-    guild = client.get_guild(guildID)
-    for clock in clocks[guildID]:
-      tz = clock["Time Zone"]
-      convertedTime = timezone("US/Central").localize(currentTime).astimezone(timezone(tz))
-
-      try:
-        for channel in guild.voice_channels:
-          if (channel.id == clock["Channel ID"]):
-            try:
-              await channel.edit(name=convertedTime.strftime(clock["Format"]))
-            except AttributeError:
-              await client.get_user(int(mo)).send("**Could Not Update Clock**\nGuild ID: %s\nChannel ID: %s" % (guildID, clock["Channel ID"]))
-            break
-      except AttributeError:
-        await client.get_user(int(mo)).send("**Guild Has No Voice Channels**\nGuild ID: %s" % (guildID))
-        break
-# end guildClocks
 
 async def updateTimeZoneList(currentTime):
   moBotSupportGuild = client.get_guild(moBotSupport)

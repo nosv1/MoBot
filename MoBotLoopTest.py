@@ -21,10 +21,12 @@ import ClocksAndCountdowns
 import MessageScheduler
 import MoBotTimeZones
 import EventScheduler
+import MoBotDatabase
 
 import AOR
   
 client = discord.Client() # discord.Client is like the user form of the bot, it knows the guilds and permissions and stuff of the bot
+moBotDB = None
 
 # these are 'statuses' for the bot, futher down I've got 50/50 random gen, to change status on every message sent
 testingMoBot = discord.Activity(type=discord.ActivityType.streaming, name="Testing MoBot")
@@ -32,10 +34,20 @@ testingMoBot = discord.Activity(type=discord.ActivityType.streaming, name="Testi
 moBotSupport = 467239192007671818
 mo = 405944496665133058
 
+class Clock:
+  def __init__(self, channelID, guildID, guildName, timeFormat, timeZone):
+    self.channelID = int(channelID)
+    self.guildID = int(guildID)
+    self.guildName = guildName
+    self.timeFormat = timeFormat
+    self.timeZone = timeZone
+# end Clock
+
 started = False
 # when bot is first online
 @client.event
 async def on_ready():
+
   global started
   if (not started):
     print("\nMoBotLoop is online - " + str(datetime.now()) + "\n")
@@ -47,6 +59,9 @@ async def on_ready():
 # end on_ready
 
 async def main(client):
+  global moBotDB
+  moBotDB = await MoBotDatabase.connectDatabase()
+  print ("Connected to MoBot Database")
 
   print()
   lastSecond = 0
@@ -64,6 +79,7 @@ async def main(client):
       sys.stdout.flush()
         
       if (second % 30 == 0): # check for every 30 seconds
+        await updateGuildClocks(client, currentTime, await getGuildClocks())
         await updateMoBotStatus(client)
 
         if (second == 0): 
@@ -80,6 +96,40 @@ async def main(client):
       sys.exit()
   # end infinte loop
 # end main
+
+async def getGuildClocks():
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+    SELECT * 
+    FROM MoBot.clocks
+    WHERE clocks.guild_id = '%s'
+  """ % moBotSupport)
+
+  clocks = []
+  for record in moBotDB.cursor:
+    clocks.append(Clock(record[0], record[1], record[2], record[3], record[4]))
+
+  return clocks
+# end getGuildClocks
+
+async def updateGuildClocks(client, currentTime, clocks):
+  for clock in clocks:
+    guild = client.get_guild(clock.guildID)
+    tz = clock.timeZone
+    convertedTime = timezone("US/Central").localize(currentTime).astimezone(timezone(tz))
+
+    try:
+      for channel in guild.voice_channels:
+        if (channel.id == clock.channelID):
+          try:
+            await channel.edit(name=convertedTime.strftime(clock.timeFormat))
+          except AttributeError:
+            await client.get_user(int(mo)).send("**Could Not Update Clock**\nGuild ID: %s\nChannel ID: %s" % (guild.id, clock.channelID))
+          break
+    except AttributeError:
+      await client.get_user(int(mo)).send("**Guild Has No Voice Channels**\nGuild ID: %s" % (guild.id))
+      break
+# end guildClocks
 
 async def updateMoBotStatus(client):
   # changing bot status based on rand gen

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 import SecretStuff
+import MoBotDatabase
 
 moBot = "449247895858970624"
 
@@ -22,6 +23,12 @@ timeZones = [
   "US/Eastern", "UTC", "Europe/London", "Australia/Queensland"
 ]
 
+class Clock:
+  def __init__(self, channelID, timeFormat, timeZone):
+    self.channelID = channelID
+    self.timeFormat = timeFormat
+    self.timeZone = timeZone
+# end Clock
 
 async def main(args, message, client):
   if (len(args) == 3): # args[1] == clock or countdown, # args[2] == channelID
@@ -106,45 +113,37 @@ async def delete(clockType, channelID):
     countdownsSheet.update_cells(countdownsRange, value_input_option="USER_ENTERED")
 
   elif (clockType == "clock"):
-    clocksSheet = workbook.worksheet("Clocks")
-    clocksRange = clocksSheet.range("A2:E" + str(clocksSheet.row_count))
-
-    for i in range(0, len(clocksRange), 5):
-      if (clocksRange[i+2].value == str(channelID)):
-        for j in range(i, len(clocksRange)):
-          try:
-            clocksRange[j].value = clocksRange[j+5].value
-          except IndexError:
-            break
-        break
-
-    clocksSheet.update_cells(clocksRange, value_input_option="USER_ENTERED")
+    moBotDB = await MoBotDatabase.connectDatabase()
+    moBotDB.connection.commit()
+    moBotDB.cursor.execute("""
+      DELETE FROM `MoBot`.`clocks` 
+      WHERE (`channel_id` = '%s')
+    """ % channelID)
+    moBotDB.connection.commit()
+    moBotDB.connection.close()
 # end delete
 
-async def getClock(message, guildID, channelID):
-  workbook = await openSpreadsheet()
-  clocksSheet = workbook.worksheet("Clocks")
-  clocksTable = clocksSheet.range("A2:E" + str(clocksSheet.row_count))
-
-  clock = {}
-
+async def getClock(message, guildID, channelID):  
   clockFormats = {
     "%I:%M%p %Z" : "12-hour",
-    "%I:%M%p %Z - - %b %d" : "12-hour + date",
+    "%I:%M%p %Z - %b %d" : "12-hour + date",
     "%H:%M %Z" : "24-hour",
     "%H:%M %Z - %b %d" : "24-hour + date",
   }
+  
+  moBotDB = await MoBotDatabase.connectDatabase()
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+  SELECT clocks.channel_id, clocks.time_format, clocks.time_zone
+  FROM clocks
+  WHERE 
+    clocks.guild_id = '%s' AND
+    clocks.channel_id = '%s'
+  """ % (guildID, channelID))
+  for record in moBotDB.cursor:
+    return Clock(record[0], clockFormats[record[1]], record[2])
 
-  for i in range(0, len(clocksTable), 5):
-    if (clocksTable[i].value != ""):
-      if (clocksTable[i+1].value == guildID and clocksTable[i+2].value == channelID):
-        clock["Format"] = clockFormats[clocksTable[i+3].value]
-        clock["Time Zone"] = clocksTable[i+4].value
-        break
-    else:
-      break
-
-  return clock
+  return None
 # end getClock
 
 async def getCountdown(message, guildID, channelID):
@@ -171,11 +170,11 @@ async def getCountdown(message, guildID, channelID):
 async def getClockFromOverview(message, clockType):
   mc = message.content
 
-  clock = {}
-  clock["Channel ID"] = mc.split("**Channel ID**: ")[1].split("\n")[0].strip()
-  clock["Format"] = mc.split("**Format**: ")[1].split("\n")[0].strip()
-  clock["Time Zone"] = mc.split("**Time Zone**: ")[1].split("\n")[0].strip()
-
+  clock = Clock(
+    mc.split("**Channel ID**: ")[1].split("\n")[0].strip(),
+    mc.split("**Format**: ")[1].split("\n")[0].strip(),
+    mc.split("**Time Zone**: ")[1].split("\n")[0].strip()
+  )
   return clock
 # end getClockFromOverview
 
@@ -195,8 +194,8 @@ async def getCountdownFromOverview(message, clockType):
 async def getOverviewFromClock(message, clock, channelID):
   overview = "**Overview**\n"
   overview += "  **Channel ID**: " + str(channelID) + "\n"
-  overview += "  **Format**: " + clock["Format"] + "\n"
-  overview += "  **Time Zone**: " + clock["Time Zone"] + "\n"
+  overview += "  **Format**: " + clock.timeFormat + "\n"
+  overview += "  **Time Zone**: " + clock.timeZone + "\n"
 
   return overview
 # end getOverviewFromClock
@@ -213,10 +212,6 @@ async def getOverviewFromCountdown(message, countdown, channelID):
 # end getOverviewFromCountdown
 
 async def updateClockInfo(guild, clock):
-  workbook = await openSpreadsheet()
-  clocksSheet = workbook.worksheet("Clocks")
-  clocksTable = clocksSheet.range("A2:E" + str(clocksSheet.row_count))
-
   clockFormats = {
     "24-hour" : "%H:%M %Z",
     "24-hour + date" : "%H:%M %Z - %b %d",
@@ -224,20 +219,35 @@ async def updateClockInfo(guild, clock):
     "12-hour + date" : "%I:%M%p %Z - %b %d",
   }
 
-  for i in range(0, len(clocksTable), 5):
-    if (clocksTable[i+2].value == str(clock["Channel ID"])):
-      clocksTable[i+3].value = clockFormats[clock["Format"]]
-      clocksTable[i+4].value = clock["Time Zone"]
-      break
-    if (clocksTable[i].value == ""):
-      clocksTable[i].value = guild.name
-      clocksTable[i+1].value = str(guild.id)
-      clocksTable[i+2].value = clock["Channel ID"]
-      clocksTable[i+3].value = clockFormats[clock["Format"]]
-      clocksTable[i+4].value = clock["Time Zone"]
-      break
-  
-  clocksSheet.update_cells(clocksTable, value_input_option="USER_ENTERED")
+  oldClock = None
+  moBotDB = await MoBotDatabase.connectDatabase()
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+    SELECT * 
+    FROM clocks
+    WHERE clocks.channel_id = '%s'
+  """ % clock.channelID)
+  for record in moBotDB.cursor:
+    oldClock = record # just to test if cursor is empty
+
+  if (oldClock is not None):
+    moBotDB.cursor.execute("""
+      UPDATE clocks
+      SET
+        clocks.time_format = '%s',
+        clocks.time_zone = '%s'
+      WHERE
+        clocks.channel_id = '%s'
+    """ % (clockFormats[clock.timeFormat], clock.timeZone, clock.channelID))
+  else:
+    moBotDB.cursor.execute("""
+      INSERT INTO `MoBot`.`clocks` 
+        (`channel_id`, `guild_id`, `guild_name`, `time_format`, `time_zone`)
+      VALUES
+        ('%s', '%s', '%s', '%s', '%s')
+    """ % (clock.channelID, guild.id, guild.name, clockFormats[clock.timeFormat], clock.timeZone))
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
 # end updateClockInfo
 
 async def updateCountdownInfo(guild, countdown):
@@ -382,22 +392,22 @@ async def editEditorValue(message, payload, clockType):
 
     if (payload.emoji.name == "🔼" or payload.emoji.name == "🔽"):
       if (fieldName == "Format"):
-        if (clock["Format"] == "24-hour"):
-          clock["Format"] = "24-hour + date"
-        elif (clock["Format"] == "24-hour + date"):
-          clock["Format"] = "12-hour"
-        elif (clock["Format"] == "12-hour"):
-          clock["Format"] = "12-hour + date"
-        elif (clock["Format"] == "12-hour + date"):
-          clock["Format"] = "24-hour"
+        if (clock.timeFormat == "24-hour"):
+          clock.timeFormat = "24-hour + date"
+        elif (clock.timeFormat == "24-hour + date"):
+          clock.timeFormat = "12-hour"
+        elif (clock.timeFormat == "12-hour"):
+          clock.timeFormat = "12-hour + date"
+        elif (clock.timeFormat == "12-hour + date"):
+          clock.timeFormat = "24-hour"
       
       else:
         if (payload.emoji.name == "🔽"):
-          clock["Time Zone"] = timeZones[timeZones.index(fieldValue) - 1]
+          clock.timeZone = timeZones[timeZones.index(fieldValue) - 1]
         else:
-          clock["Time Zone"] = timeZones[timeZones.index(fieldValue) - (len(timeZones) - 1)]
+          clock.timeZone = timeZones[timeZones.index(fieldValue) - (len(timeZones) - 1)]
 
-    overview = await getOverviewFromClock(message, clock, clock["Channel ID"])
+    overview = await getOverviewFromClock(message, clock, clock.channelID)
     await message.edit(content=overview)
 
   editorPages["Page " + str(pageNumber)] = {
@@ -410,7 +420,7 @@ async def editEditorValue(message, payload, clockType):
   if (clockType == "countdown"):
     await prepareEditor(message, clockType, countdown["Channel ID"], pageNumber, message.id)
   else:
-    await prepareEditor(message, clockType, clock["Channel ID"], pageNumber, message.id)
+    await prepareEditor(message, clockType, clock.channelID, pageNumber, message.id)
 # end editEditorValue
 
 async def closeEditor(message, payload, clockType, channelID, isEditor):
@@ -616,15 +626,15 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     if (editorID == 0):
       clock = await getClock(message, str(message.guild.id), channelID)
 
-      if (len(clock) == 0):
+      if (clock is None):
         channel = message.guild.get_channel(int(channelID))
         await channel.edit(name="New Clock Channel")
         now = datetime.now()
-        clock = {
-          "Channel ID" : str(channel.id),
-          "Format" : "24-hour",
-          "Time Zone" : "Europe/London",
-        }
+        clock = Clock(
+          str(channel.id),
+          "24-hour",
+          "Europe/London"
+        )
         await updateClockInfo(message.guild, clock)
     else:
       clock = await getClockFromOverview(message, clockType)
@@ -644,7 +654,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 2"] = {
       "Header" : "Format",
       "Fields" : [
-        ["Format", clock["Format"]],
+        ["Format", clock.timeFormat],
       ]
     }
     editorPages["Number of Pages"] += 1
@@ -653,7 +663,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 3"] = {
       "Header" : "Time Zone",
       "Fields" : [
-        ["Time Zone", clock["Time Zone"]]
+        ["Time Zone", clock.timeZone]
       ]
     }
     editorPages["Number of Pages"] += 1
