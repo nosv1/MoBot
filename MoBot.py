@@ -527,7 +527,7 @@ async def on_message(message):
         await ReactionRole.addReactionToMessage(message, "🇹")
       except discord.errors.NotFound:
         pass
-      
+      '''
   if (not message.author.bot):
     try:
       moBotDB.connection.commit()
@@ -543,7 +543,7 @@ async def on_message(message):
         break
     except:
       await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
-
+'''
   if (message.author.id == mo):
     pass
 # end on_message

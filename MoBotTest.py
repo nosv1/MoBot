@@ -121,10 +121,10 @@ async def on_message(message):
       "manageRolePerms" : isMo or authorPerms.manage_roles or isBotSpam,
     }
       
+    print(args)
     if (len(args) > 1):
       if (args[1] == "test"):
         await ClocksAndCountdowns.prepareEditor(message, "clock", "640788058475855875", 1, 0)
-        await message.channel.send(content="done", delete_after=10)
       elif ("command" in args or "commands" in args):
         await SimpleCommands.main(args, message, client, moBotDB)
       elif (args[1] == "dk"):
@@ -134,7 +134,8 @@ async def on_message(message):
           print(traceback.format_exc())
         #await message.channel.purge(limit=2)
       elif (args[1] == "countdown"):
-        await ClocksAndCountdowns.main(self, message, client)
+        print("yes")
+        await ClocksAndCountdowns.main(args, message, client)
       elif (args[1] == "help"):
         await Collections.displayCollection(message, False, "Help Menu", message.guild.id, client)
       elif (args[1] == "add" and args[2] == "reaction"):
@@ -289,6 +290,8 @@ async def on_message(message):
       await message.channel.send(res[0].decode('utf-8'))
       break
 
+# end on_message
+
 @client.event
 async def on_raw_reaction_add(payload):
   channelID = payload.channel_id
@@ -357,6 +360,8 @@ async def on_raw_reaction_add(payload):
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
       if ("Clock Editor" in embedAuthor):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "clock")
+      if ("Countdown Editor" in embedAuthor):
+        await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
       if ("SimpleCommands" in message.embeds[0].author.url):
         await SimpleCommands.mainReactionAdd(message, payload, client, moBotDB)
       '''if ("Countdown Editor" in message.embeds[0].author.name):

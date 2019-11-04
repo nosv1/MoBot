@@ -30,11 +30,21 @@ class Clock:
     self.timeZone = timeZone
 # end Clock
 
+class Countdown:
+  def __init__(self, channelID, endDatetime, timeZone, text, repeating):
+    self.channelID = channelID
+    self.endDatetime = endDatetime
+    self.timeZone = timeZone
+    self.text = text
+    self.repeating = repeating
+# end Countdown 
+
 async def main(args, message, client):
   if (len(args) == 3): # args[1] == clock or countdown, # args[2] == channelID
     await message.channel.trigger_typing()
     await prepareEditor(message, args[1], args[2], 1, 0)
   elif (len(args) == 2):
+    print('yes')
     await message.channel.trigger_typing()
     msg = await message.channel.send("A channel has been created for you. It should be found near the top on the left side.")
     await prepareEditor(message, args[1], await createChannel(message, args[1]), 1, 0)
@@ -76,10 +86,10 @@ async def mainReactionAdd(message, payload, client, clockType):
     elif (payload.emoji.name == "✅"):
       if (isEditor):
         if (clockType == "countdown"):
-          await updateCountdownInfo(message.guild, await getCountdownFromOverview(message, clockType))
+          await updateCountdownInfo(message.guild, await getCountdownFromOverview(message))
           msg = await message.channel.send("Countdown Saved - Expect update within 1 minute")
         else:
-          await updateClockInfo(message.guild, await getClockFromOverview(message, clockType))
+          await updateClockInfo(message.guild, await getClockFromOverview(message))
           msg = await message.channel.send("Clock Saved - Expect update within 1 minute")
         await asyncio.sleep(3)
         await msg.delete()
@@ -96,29 +106,12 @@ async def mainReactionRemove(message, payload, client):
 # end mainReactionRemove
 
 async def delete(clockType, channelID):
-  workbook = await openSpreadsheet()
-  if (clockType == "countdown"):
-    countdownsSheet = workbook.worksheet("Countdowns")
-    countdownsRange = countdownsSheet.range("A2:G" + str(countdownsSheet.row_count))
-
-    for i in range(0, len(countdownsRange), 7):
-      if (countdownsRange[i+2].value == str(channelID)):
-        for j in range(i, len(countdownsRange)):
-          try:
-            countdownsRange[j].value = countdownsRange[j+7].value
-          except IndexError:
-            break
-        break
-
-    countdownsSheet.update_cells(countdownsRange, value_input_option="USER_ENTERED")
-
-  elif (clockType == "clock"):
     moBotDB = await MoBotDatabase.connectDatabase()
     moBotDB.connection.commit()
     moBotDB.cursor.execute("""
-      DELETE FROM `MoBot`.`clocks` 
-      WHERE (`channel_id` = '%s')
-    """ % channelID)
+      DELETE FROM %ss
+      WHERE %ss.channel_id = '%s'
+    """ % (clockType.lower(), clockType.lower(), channelID))
     moBotDB.connection.commit()
     moBotDB.connection.close()
 # end delete
@@ -146,28 +139,23 @@ async def getClock(message, guildID, channelID):
   return None
 # end getClock
 
-async def getCountdown(message, guildID, channelID):
-  workbook = await openSpreadsheet()
-  countdownsSheet = workbook.worksheet("Countdowns")
-  countdownsTable = countdownsSheet.range("A2:G" + str(countdownsSheet.row_count))
+async def getCountdown(message, guildID, channelID):  
+  moBotDB = await MoBotDatabase.connectDatabase()
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+  SELECT countdowns.channel_id, countdowns.end_datetime, countdowns.time_zone, countdowns.text, countdowns.repeating
+  FROM countdowns
+  WHERE 
+    countdowns.guild_id = '%s' AND
+    countdowns.channel_id = '%s'
+  """ % (guildID, channelID))
+  for record in moBotDB.cursor:
+    return Countdown(record[0], record[1], record[2], record[3], record[4])
 
-  countdown = {}
-
-  for i in range(0, len(countdownsTable), 7):
-    if (countdownsTable[i].value != ""):
-      if (countdownsTable[i+1].value == guildID and countdownsTable[i+2].value == channelID):
-        countdown["End Datetime"] = countdownsTable[i+3].value
-        countdown["Time Zone"] = countdownsTable[i+4].value
-        countdown["Text"] = countdownsTable[i+5].value
-        countdown["Repeating"] = countdownsTable[i+6].value
-        break
-    else:
-      break
-
-  return countdown
+  return None
 # end getCountdown
 
-async def getClockFromOverview(message, clockType):
+async def getClockFromOverview(message):
   mc = message.content
 
   clock = Clock(
@@ -178,15 +166,16 @@ async def getClockFromOverview(message, clockType):
   return clock
 # end getClockFromOverview
 
-async def getCountdownFromOverview(message, clockType):
+async def getCountdownFromOverview(message):
   mc = message.content
 
-  countdown = {}
-  countdown["Channel ID"] = mc.split("**Channel ID**: ")[1].split("\n")[0].strip()
-  countdown["End Datetime"] = mc.split("**End Datetime**: ")[1].split("\n")[0].strip()
-  countdown["Time Zone"] = mc.split("**Time Zone**: ")[1].split("\n")[0].strip()
-  countdown["Text"] = mc.split("**Text**: ")[1].split("\n")[0].strip()
-  countdown["Repeating"] = mc.split("**Repeating**: ")[1].split("\n")[0].strip()
+  countdown = Countdown(
+    mc.split("**Channel ID**: ")[1].split("\n")[0].strip(),
+    mc.split("**End Datetime**: ")[1].split("\n")[0].strip(),
+    mc.split("**Time Zone**: ")[1].split("\n")[0].strip(),
+    mc.split("**Text**: ")[1].split("\n")[0].strip(),
+    mc.split("**Repeating**: ")[1].split("\n")[0].strip()
+  )
 
   return countdown
 # end getCountdownFromOverview
@@ -203,10 +192,10 @@ async def getOverviewFromClock(message, clock, channelID):
 async def getOverviewFromCountdown(message, countdown, channelID):
   overview = "**Overview**\n"
   overview += "  **Channel ID**: " + str(channelID) + "\n"
-  overview += "  **End Datetime**: " + countdown["End Datetime"] + "\n"
-  overview += "  **Time Zone**: " + countdown["Time Zone"] + "\n"
-  overview += "  **Text**: " + countdown["Text"] + "\n"
-  overview += "  **Repeating**: " + countdown["Repeating"] + "\n"
+  overview += "  **End Datetime**: " + countdown.endDatetime + "\n"
+  overview += "  **Time Zone**: " + countdown.timeZone + "\n"
+  overview += "  **Text**: " + countdown.text + "\n"
+  overview += "  **Repeating**: " + countdown.repeating + "\n"
 
   return overview
 # end getOverviewFromCountdown
@@ -251,28 +240,37 @@ async def updateClockInfo(guild, clock):
 # end updateClockInfo
 
 async def updateCountdownInfo(guild, countdown):
-  workbook = await openSpreadsheet()
-  countdownsSheet = workbook.worksheet("Countdowns")
-  countdownsTable = countdownsSheet.range("A2:G" + str(countdownsSheet.row_count))
+  oldCountdown = None
+  moBotDB = await MoBotDatabase.connectDatabase()
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+    SELECT *
+    FROM countdowns
+    WHERE countdowns.channel_id = '%s'
+  """ % countdown.channelID)
+  for record in moBotDB.cursor:
+    oldCountdown = record
 
-  for i in range(0, len(countdownsTable), 7):
-    if (countdownsTable[i+2].value == str(countdown["Channel ID"])):
-      countdownsTable[i+3].value = countdown["End Datetime"]
-      countdownsTable[i+4].value = countdown["Time Zone"]
-      countdownsTable[i+5].value = countdown["Text"]
-      countdownsTable[i+6].value = countdown["Repeating"]
-      break
-    if (countdownsTable[i].value == ""):
-      countdownsTable[i].value = guild.name
-      countdownsTable[i+1].value = str(guild.id)
-      countdownsTable[i+2].value = countdown["Channel ID"]
-      countdownsTable[i+3].value = countdown["End Datetime"]
-      countdownsTable[i+4].value = countdown["Time Zone"]
-      countdownsTable[i+5].value = countdown["Text"]
-      countdownsTable[i+6].value = countdown["Repeating"]
-      break
-  
-  countdownsSheet.update_cells(countdownsTable, value_input_option="USER_ENTERED")
+  if (oldCountdown is not None):
+    moBotDB.cursor.execute("""
+      UPDATE countdowns
+      SET
+        countdowns.end_datetime = '%s',
+        countdowns.time_zone = '%s',
+        countdowns.text = '%s',
+        countdowns.repeating = '%s'
+      WHERE
+        countdowns.channel_id = '%s'
+    """ % (countdown.endDatetime, countdown.timeZone, countdown.text, countdown.repeating, countdown.channelID))
+  else:
+    moBotDB.cursor.execute("""
+      INSERT INTO MoBot.countdowns
+        (channel_id, guild_id, guild_name, end_datetime, time_zone, text, repeating)
+      VALUES
+        ('%s', '%s', '%s', '%s', '%s', '%s', '%s')
+    """ % (countdown.channelID, guild.id, guild.name, countdown.endDatetime, countdown.timeZone, countdown.text, countdown.repeating))
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
 # end updateCountdownInfo
 
 async def editEditorValue(message, payload, clockType):
@@ -283,9 +281,9 @@ async def editEditorValue(message, payload, clockType):
   pageNumber = int(embed["footer"]["text"].split("/")[0].split(" ")[1].strip())
 
   if (clockType == "countdown"):
-    countdown = await getCountdownFromOverview(message, clockType)
+    countdown = await getCountdownFromOverview(message)
 
-    endDatetime = datetime.strptime(countdown["End Datetime"], "%m/%d/%Y %H:%M")
+    endDatetime = datetime.strptime(countdown.endDatetime, "%m/%d/%Y %H:%M")
     year = endDatetime.year
     month = endDatetime.month
     day = endDatetime.day
@@ -333,10 +331,10 @@ async def editEditorValue(message, payload, clockType):
           minute = 0
 
       elif (fieldName == "Time Zone"):
-        countdown["Time Zone"] = timeZones[timeZones.index(fieldValue) - (len(timeZones) - 1)]
+        countdown.timeZone = timeZones[timeZones.index(fieldValue) - (len(timeZones) - 1)]
         
       elif (fieldName == "Repeating"):
-        countdown["Repeating"] = repeatingOptions[repeatingOptions.index(fieldValue) - (len(repeatingOptions) - 1)]
+        countdown.repeating = repeatingOptions[repeatingOptions.index(fieldValue) - (len(repeatingOptions) - 1)]
 
     elif (payload.emoji.name == "🔽" or payload.emoji.name == "⏬"):
       if (fieldName == "Year"):
@@ -377,18 +375,18 @@ async def editEditorValue(message, payload, clockType):
           minute = 59
 
       elif (fieldName == "Time Zone"):
-        countdown["Time Zone"] = timeZones[timeZones.index(fieldValue) - 1]
+        countdown.timeZone = timeZones[timeZones.index(fieldValue) - 1]
           
       elif (fieldName == "Repeating"):
-        countdown["Repeating"] = repeatingOptions[repeatingOptions.index(fieldValue) - 1]
+        countdown.repeating = repeatingOptions[repeatingOptions.index(fieldValue) - 1]
 
-    countdown["End Datetime"] = datetime(year, month, day, hour, minute).strftime("%m/%d/%Y %H:%M")
+    countdown.endDatetime = datetime(year, month, day, hour, minute).strftime("%m/%d/%Y %H:%M")
 
-    overview = await getOverviewFromCountdown(message, countdown, countdown["Channel ID"])
+    overview = await getOverviewFromCountdown(message, countdown, countdown.channelID)
     await message.edit(content=overview)
 
   elif (clockType == "clock"):
-    clock = await getClockFromOverview(message, clockType)
+    clock = await getClockFromOverview(message)
 
     if (payload.emoji.name == "🔼" or payload.emoji.name == "🔽"):
       if (fieldName == "Format"):
@@ -418,7 +416,7 @@ async def editEditorValue(message, payload, clockType):
   }
 
   if (clockType == "countdown"):
-    await prepareEditor(message, clockType, countdown["Channel ID"], pageNumber, message.id)
+    await prepareEditor(message, clockType, countdown.channelID, pageNumber, message.id)
   else:
     await prepareEditor(message, clockType, clock.channelID, pageNumber, message.id)
 # end editEditorValue
@@ -532,20 +530,20 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     if (editorID == 0):
       countdown = await getCountdown(message, str(message.guild.id), channelID)
 
-      if (len(countdown) == 0):  
+      if (countdown is None):  
         channel = message.guild.get_channel(int(channelID))
         await channel.edit(name="Edit This Text:")
         now = datetime.now()
-        countdown = {
-          "Channel ID" : str(channel.id),
-          "End Datetime" : now.strftime("%m/%d/%Y %H:%M"),
-          "Time Zone" : "Europe/London",
-          "Text" : "Edit This Text:",
-          "Repeating" : "None"
-        }
+        countdown = Countdown(
+          str(channel.id),
+          now.strftime("%m/%d/%Y %H:%M"),
+          "Europe/London",
+          "Edit This Text:",
+          "None"
+        )
         await updateCountdownInfo(message.guild, countdown)
     else:
-      countdown = await getCountdownFromOverview(message, clockType)
+      countdown = await getCountdownFromOverview(message)
 
     editorPages["Author"] = "Countdown Editor"
 
@@ -562,7 +560,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 2"] = {
       "Header" : "Year",
       "Fields" : [
-        ["Year", countdown["End Datetime"].split("/")[2].split(" ")[0].strip()]
+        ["Year", countdown.endDatetime.split("/")[2].split(" ")[0].strip()]
       ]
     }
     editorPages["Number of Pages"] += 1
@@ -571,7 +569,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 3"] = {
       "Header" : "Month",
       "Fields" : [
-        ["Month", countdown["End Datetime"].split("/")[0].strip()]
+        ["Month", countdown.endDatetime.split("/")[0].strip()]
       ]
     }
     editorPages["Number of Pages"] += 1
@@ -580,7 +578,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 4"] = {
       "Header" : "Day",
       "Fields" : [
-        ["Day", countdown["End Datetime"].split("/")[1].strip()]
+        ["Day", countdown.endDatetime.split("/")[1].strip()]
       ]
     }
     editorPages["Number of Pages"] += 1
@@ -589,7 +587,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 5"] = {
       "Header" : "Hour (24-Hour)",
       "Fields" : [
-        ["Hour (24-Hour)", countdown["End Datetime"].split(" ")[1].split(":")[0].strip()]
+        ["Hour (24-Hour)", countdown.endDatetime.split(" ")[1].split(":")[0].strip()]
       ]
     }
     editorPages["Number of Pages"] += 1
@@ -598,7 +596,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 6"] = {
       "Header" : "Minute",
       "Fields" : [
-        ["Minute", countdown["End Datetime"].split(":")[1].split("\n")[0].strip()]
+        ["Minute", countdown.endDatetime.split(":")[1].split("\n")[0].strip()]
       ]
     }
     editorPages["Number of Pages"] += 1
@@ -607,7 +605,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 7"] = {
       "Header" : "Time Zone",
       "Fields" : [
-        ["Time Zone", countdown["Time Zone"]]
+        ["Time Zone", countdown.timeZone]
       ]
     }
     editorPages["Number of Pages"] += 1
@@ -616,7 +614,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
     editorPages["Page 8"] = {
       "Header" : "Repeating",
       "Fields" : [
-        ["Repeating", countdown["Repeating"]]
+        ["Repeating", countdown.repeating]
       ]
     }
     editorPages["Number of Pages"] += 1
@@ -637,7 +635,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
         )
         await updateClockInfo(message.guild, clock)
     else:
-      clock = await getClockFromOverview(message, clockType)
+      clock = await getClockFromOverview(message)
 
     editorPages["Author"] = "Clock Editor"
 
@@ -677,11 +675,3 @@ async def createChannel(message, clockType):
   channel = await guild.create_voice_channel(channelName)
   return channel.id
 # end createChannel
-
-async def openSpreadsheet():
-  scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
-  clientSS = gspread.authorize(creds)  
-  workbook = clientSS.open_by_key("1Cz-NGa_mqSIw-Ae4tU1DX1AOsS-zC_5l1HLiIbVjr4M")
-  return workbook
-# end openSpreadsheet
