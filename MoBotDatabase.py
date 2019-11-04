@@ -1,7 +1,6 @@
 import mysql.connector
 import SecretStuff
 
-
 async def connectDatabase():
   class MoBotDB:
     def __init__(self, connection, cursor):
