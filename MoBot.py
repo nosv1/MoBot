@@ -531,13 +531,19 @@ async def on_message(message):
   if (not message.author.bot):
     try:
       moBotDB.connection.commit()
-      moBotDB.cursor.execute("SELECT response FROM custom_commands WHERE trigger = '%s' AND guild_id = '%s'" % (message.content, message.guild.id))
+      moBotDB.cursor.execute("""
+        SELECT custom_commands.response 
+        FROM custom_commands 
+        WHERE 
+          custom_commands.trigger = '%s' AND 
+          guild_id = '%s'
+        """ % (message.content, message.guild.id))
       for res in moBotDB.cursor:
         await message.channel.send(res[0].decode('utf-8'))
         break
     except:
       await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
-
+      
   if (message.author.id == mo):
     pass
 # end on_message
