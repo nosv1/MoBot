@@ -122,10 +122,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        moBotDB.cursor.execute("SELECT * FROM custom_commands")
-        for res in moBotDB.cursor:
-          await message.channel.send(res[0].decode("utf-8"))
-          print(res)
+        await COTM.setManualReserve(message)
         await message.channel.send(content="done", delete_after=10)
       elif ("command" in args or "commands" in args):
         await SimpleCommands.main(args, message, client, moBotDB)

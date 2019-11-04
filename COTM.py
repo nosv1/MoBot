@@ -639,8 +639,11 @@ async def getReserveDiv(member):
 # end getReserveDiv
 
 async def setManualReserve(message):
-  reserve = message.mentions[1]
-  driver = message.mentions[2]
+  reserve = message.content.split("for")[0].split("<@")[-1].split(">")[0].replace("!", "")
+  driver = message.content.split("for")[-1].split("<@")[-1].split(">")[0].replace("!", "")
+
+  reserve = message.guild.get_member(int(reserve))
+  driver = message.guild.get_member(int(driver))
 
   msg = await message.guild.get_channel(RESERVE_SEEKING).fetch_message(620811567210037253)
   embed = msg.embeds[0]
@@ -648,18 +651,18 @@ async def setManualReserve(message):
   embed["fields"][0]["value"] = "%s\n%s" % (driver.display_name, embed["fields"][0]["value"].replace(driver.display_name + "\n", ""))
 
   
-  reserveDiv = driver.display_name.split("]")[-1]
+  reserveDiv = driver.display_name.split("]")[0][-1]
   for i in range(len(embed["fields"])):
     if ("D%s" % reserveDiv in embed["fields"][i]["name"]):
-      embed["fields"][i]["value"] = "%s\n%s" % (reserve.display_name, embed["fields"][i]["name"].replace(reserve.display_name + "\n", ""))
+      embed["fields"][i]["value"] = "%s\n%s" % (reserve.display_name, embed["fields"][i]["value"].replace(reserve.display_name + "\n", ""))
       break
 
   workbook = await openSpreadsheet()
-  moBotMessage = await message.channel.send("**Setting Reserves Needed**")
+  moBotMessage = await message.channel.send(content="**Setting Reserves Needed**")
   await setReservesNeeded(driver, embed["fields"][0]["value"], workbook)
-  await moBotMessage.edit("**Setting Reserves Available**")
+  await moBotMessage.edit(content="**Setting Reserves Available**")
   await setReservesAvailable(embed, workbook)
-  await moBotMessage.edit("**Updating Start Orders**")
+  await moBotMessage.edit(content="**Updating Start Orders**")
   await updateStartOrders(message.guild, workbook)
 
   await msg.edit(embed=discord.Embed().from_dict(embed))
