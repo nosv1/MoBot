@@ -536,14 +536,14 @@ async def on_message(message):
         FROM custom_commands 
         WHERE 
           custom_commands.trigger = '%s' AND 
-          guild_id = '%s'
+          custom_commands.guild_id = '%s'
         """ % (message.content, message.guild.id))
       for res in moBotDB.cursor:
         await message.channel.send(res[0].decode('utf-8'))
         break
     except:
       await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
-      
+
   if (message.author.id == mo):
     pass
 # end on_message
