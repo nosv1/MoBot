@@ -539,7 +539,7 @@ async def on_message(message):
           custom_commands.guild_id = '%s'
         """ % (message.content.replace("'", "''"), message.guild.id))
       for record in moBotDB.cursor:
-        await SimpleCommands.send(message, record)
+        await SimpleCommands.sendCommand(message, record)
         break
     except:
       await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
