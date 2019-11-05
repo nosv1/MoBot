@@ -23,7 +23,6 @@ import MoBotDatabase
 import MoBotTimeZones
   
 client = discord.Client() # discord.Client is like the user form of the bot, it knows the guilds and permissions and stuff of the bot
-moBotDB = None
 
 # these are 'statuses' for the bot, futher down I've got 50/50 random gen, to change status on every message sent
 botsByMo = discord.Activity(type=discord.ActivityType.streaming, name="Bots by Mo#9991")
@@ -86,10 +85,6 @@ async def on_ready():
 # end on_ready
 
 async def main(client):
-  global moBotDB
-  moBotDB = await MoBotDatabase.connectDatabase()
-  print ("Connected to MoBot Database")
-
   try:
     global scheduledEvents, reminders
     workbook = await EventScheduler.openSpreadsheet()
@@ -99,7 +94,6 @@ async def main(client):
     reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
     print("Scheduled Events Received")
     
-    workbook = await openGuildClocksSpreadsheet()
     clocks = await getGuildClocks()
     print("Clocks Received")
     countdowns = await getGuildCountdowns()
@@ -275,6 +269,7 @@ async def updateMoBotStatus(client):
       await client.change_presence(activity=donate)
 
 async def getGuildCountdowns():
+  moBotDB = MoBotDatabase.connectDatabase()
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
     SELECT * 
@@ -285,10 +280,12 @@ async def getGuildCountdowns():
   for record in moBotDB.cursor:
     countdowns.append(Countdown(record[0], record[1], record[2], record[3], record[4], record[5], record[6]))
 
+  moBotDB.connection.close()
   return countdowns
 # end getGuildCountdowns
 
 async def getGuildClocks():
+  moBotDB = MoBotDatabase.connectDatabase()
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
     SELECT * 
@@ -299,6 +296,7 @@ async def getGuildClocks():
   for record in moBotDB.cursor:
     clocks.append(Clock(record[0], record[1], record[2], record[3], record[4]))
 
+  moBotDB.connection.close()
   return clocks
 # end getGuildClocks
 
