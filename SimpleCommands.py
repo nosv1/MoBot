@@ -200,7 +200,7 @@ async def createCommandSession(message, client):
   embed = discord.Embed(color=int("0xd1d1d1", 16))
   embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s" % (message.guild.id, message.author.id))
 
-  embed.description = "---\n**Follow the instructions below.**\n\nTo set your command, you will need to set a trigger and a response.\n\n__To update the trigger:__\n1. Type the new trigger\n2. Click the %s\n\n__To update the response:__\n1. Type the new response\n2. Click the %s\n3. Click the %s\n\n__To reference a message:__\n1. Paste message ID\n2. Click the %s\n3. Click the %s\n*If you are referencing a message, then if the message is deleted or changed, the response will be affected.*\n---" % (ONE_EMOJI, TWO_EMOJI, NUMBER_SIGN_EMOJI, TWO_EMOJI)
+  embed.description = "---\n**Follow the instructions below.**\n\nTo set your command, you will need to set a trigger and a response.\n\n__To update the trigger:__\n1. Type the new trigger\n2. Click the %s\n\n__To update the response:__\n1. Type the new response\n2. Click the %s\n\n__To reference a message:__\n1. Paste message ID\n2. Click the %s\n3. Click the %s\n*If you are referencing a message, then if the message is deleted or changed, the response will be affected.*\n---" % (ONE_EMOJI, TWO_EMOJI, NUMBER_SIGN_EMOJI, TWO_EMOJI)
 
   embed.add_field(name="__**Trigger**__", value=spaceChar)
   embed.add_field(name="__**Response**__", value=spaceChar)
