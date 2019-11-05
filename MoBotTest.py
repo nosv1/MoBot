@@ -71,7 +71,7 @@ async def on_ready():
   print("AutoRoles Received")
 
   global moBotDB
-  moBotDB = await MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase()
   print ("Connected to MoBot Database")
 
   '''mobotLog = client.get_guild(moBotSupport).get_channel(604099911251787776) # mobot log
@@ -121,12 +121,11 @@ async def on_message(message):
       "manageRolePerms" : isMo or authorPerms.manage_roles or isBotSpam,
     }
       
-    print(args)
     if (len(args) > 1):
       if (args[1] == "test"):
         await ClocksAndCountdowns.prepareEditor(message, "clock", "640788058475855875", 1, 0)
       elif ("command" in args or "commands" in args):
-        await SimpleCommands.main(args, message, client, moBotDB)
+        await SimpleCommands.main(args, message, client)
       elif (args[1] == "dk"):
         try:
           await DKGetPicks.main(args, message, client)
@@ -279,16 +278,20 @@ async def on_message(message):
     await GTACCHub.main(args, message, client)
 
   if (not message.author.bot):
-    moBotDB.connection.commit()
-    moBotDB.cursor.execute("""
-      SELECT custom_commands.response 
-      FROM custom_commands 
-      WHERE 
-        custom_commands.trigger = '%s' AND 
-        custom_commands.guild_id = '%s'""" % (message.content, message.guild.id))
-    for res in moBotDB.cursor:
-      await message.channel.send(res[0].decode('utf-8'))
-      break
+    try:
+      moBotDB.connection.commit()
+      moBotDB.cursor.execute("""
+        SELECT *
+        FROM custom_commands 
+        WHERE 
+          custom_commands.trigger = '%s' AND 
+          custom_commands.guild_id = '%s'
+        """ % (message.content.replace("'", "''"), message.guild.id))
+      for record in moBotDB.cursor:
+        await SimpleCommands.sendCommand(message, record)
+        break
+    except:
+      await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
 
 # end on_message
 
@@ -363,7 +366,7 @@ async def on_raw_reaction_add(payload):
       if ("Countdown Editor" in embedAuthor):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
       if ("SimpleCommands" in message.embeds[0].author.url):
-        await SimpleCommands.mainReactionAdd(message, payload, client, moBotDB)
+        await SimpleCommands.mainReactionAdd(message, payload, client)
       '''if ("Countdown Editor" in message.embeds[0].author.name):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
       if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):

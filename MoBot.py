@@ -119,8 +119,8 @@ async def on_ready():
   print("AutoRoles Received")
   
   global moBotDB
-  moBotDB = await MoBotDatabase.connectDatabase()
-  print ("Connected to MoBot Database")
+  moBotDB = MoBotDatabase.connectDatabase()
+  print("Connected to MoBot Database")
   
   # priming the temp storage
   msg = await client.get_user(nosv1).send(".")
@@ -527,7 +527,7 @@ async def on_message(message):
         await ReactionRole.addReactionToMessage(message, "🇹")
       except discord.errors.NotFound:
         pass
-      '''
+
   if (not message.author.bot):
     try:
       moBotDB.connection.commit()
@@ -537,13 +537,13 @@ async def on_message(message):
         WHERE 
           custom_commands.trigger = '%s' AND 
           custom_commands.guild_id = '%s'
-        """ % (message.content, message.guild.id))
-      for res in moBotDB.cursor:
-        await message.channel.send(res[0].decode('utf-8'))
+        """ % (message.content.replace("'", "''"), message.guild.id))
+      for record in moBotDB.cursor:
+        await SimpleCommands.send(message, record)
         break
     except:
       await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
-'''
+
   if (message.author.id == mo):
     pass
 # end on_message
