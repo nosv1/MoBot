@@ -532,7 +532,7 @@ async def on_message(message):
     try:
       moBotDB.connection.commit()
       moBotDB.cursor.execute("""
-        SELECT custom_commands.response 
+        SELECT *
         FROM custom_commands 
         WHERE 
           custom_commands.trigger = '%s' AND 
