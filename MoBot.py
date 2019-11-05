@@ -220,8 +220,8 @@ async def on_message(message):
         await RLRanks.main(args, message, client)
       elif (args[1] == "remindme"):
         await EventScheduler.setReminder(message)
-      #elif ("command" in args):
-        #await SimpleCommands.main(args, message, client, moBotDB)
+      elif ("command" in args or "commands" in args):
+        await SimpleCommands.main(args, message, client)
 
       ## general use server commands
       elif (args[1] == "say" and permissions["manageMessagePerms"]):
