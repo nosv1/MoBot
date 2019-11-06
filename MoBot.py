@@ -223,7 +223,10 @@ async def on_message(message):
       elif ("commands" in args[1]):
         await SimpleCommands.main(args, message, client)
       elif (len(args) >= 3 and "command" in args[2]):
-        await SimpleCommands.main(args, message, client)
+        if (permissions["manageMessagePerms"]):
+          await SimpleCommands.main(args, message, client)
+        else:
+          await message.channel.send("**Not Enough Permissions**\nMust have Manage Message permisisons to create/edit/delete MoBot Custom Commands.")
 
       ## general use server commands
       elif (args[1] == "say" and permissions["manageMessagePerms"]):
