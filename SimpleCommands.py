@@ -23,7 +23,7 @@ NUMBER_SIGN_EMOJI = "#⃣"
 
 class Command:
   def __init__(self, command_id, trigger, response, referencingMessage):
-    self.command_id = command_id
+    self.command_id = str(command_id)
     self.trigger = trigger.decode('utf-8')
     self.response = response.decode('utf-8')
     self.referencingMessage = "Yes" if referencingMessage == 1 else "No"
@@ -175,7 +175,7 @@ async def deleteCommand(args, message, client):
 
 async def editCommandSession(args, message, client): # for editing commands
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s" % (message.guild.id, message.author.id))
+  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s/response_id=None" % (message.guild.id, message.author.id))
 
   mc = " ".join(args)
   trigger = mc.split("%s %s" % (args[1], args[2]))[1].strip() # split on "edit command"
@@ -206,7 +206,7 @@ async def editCommandSession(args, message, client): # for editing commands
 
 async def createCommandSession(message, client):
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s" % (message.guild.id, message.author.id))
+  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s/response_id=None" % (message.guild.id, message.author.id))
 
   embed.description = "---\n**Follow the instructions below.**\n\nTo set your command, you will need to set a trigger and a response.\n\n__To set the trigger:__\n1. Type the trigger\n2. Click the %s\n\n__To set the response:__\n1. Type the response\n2. Click the %s\n\n__To reference a message:__\n1. Paste message ID\n2. Click the %s\n3. Click the %s\n*If you are referencing a message, then if the message is deleted or changed, the response will be affected.*\n---" % (ONE_EMOJI, TWO_EMOJI, NUMBER_SIGN_EMOJI, TWO_EMOJI)
 
@@ -224,11 +224,12 @@ async def createCommandSession(message, client):
 # end createCommandSession
 
 async def handleNewTrigger(commandOwner, message, embed):
-  history = await message.channel.history(after=message).flatten()
+  history = await message.channel.history(after=message, oldest_first=False).flatten()
   trigger = None
   for msg in history:
     if (msg.author == commandOwner):
       trigger = msg.content
+      break
 
   oldTrigger = embed.fields[0].value[1:-3]
   if (trigger != oldTrigger):
@@ -254,11 +255,15 @@ async def handleNewResponse(commandOwner, message, embed):
           break
       break
 
-  history = await message.channel.history(after=message).flatten()
+  history = await message.channel.history(after=message, oldest_first=False).flatten()
   response = None
   for msg in history:
     if (msg.author == commandOwner):
       response = msg.content
+      embed = embed.to_dict()
+      embed["author"]["url"] = embed["author"]["url"].replace(embed["author"]["url"].split("response_id=")[1].split("/")[0], str(msg.id))
+      embed = discord.Embed().from_dict(embed)
+      break
 
   command = getCommand(embed.fields[0].value, message.guild.id)
   try:
@@ -293,8 +298,25 @@ async def handleNewResponse(commandOwner, message, embed):
 # end handleNewResponse
 
 async def saveCommand(message, embed):
+  await message.channel.trigger_typing()
+
   trigger = embed.fields[0].value
-  response = embed.fields[1].value
+  commandID = embed.author.url.split("command_id=")[1].split("/")[0] # if we are creating command this will be None
+  responseID = embed.author.url.split("response_id=")[1].split("/")[0] # if a response was update/set this will not be None
+  response = None
+  if (commandID is not "None" and responseID == "None"): # editing without new response
+    response = getCommand(commandID, message.guild.id).response
+  elif (responseID is not "None"): # new response
+    for channel in message.guild.text_channels:
+      try:
+        responseMsg = await channel.fetch_message(int(responseID))
+        response = responseMsg.content
+      except discord.errors.NotFound:
+        pass
+  if (response is None):
+    await message.channel.send("**Could Not Save Command**\nEither no response exists, or the original response was deleted before saving.", delete_after=10)
+    return
+
   otherDetails = embed.fields[2].value
   referencingMessage = 1 if otherDetails.split("Referencing Message:")[1].split("\n")[0].strip() == "Yes" else 0
   guild = message.guild
@@ -306,25 +328,26 @@ async def saveCommand(message, embed):
 
   moBotDB = MoBotDatabase.connectDatabase()
   moBotDB.connection.commit()
-  if (not triggerExists(trigger, getGuildCommands(message.guild.id))):  
+  if (not commandExists(commandID, getGuildCommands(message.guild.id))):  
     moBotDB.cursor.execute("""
     INSERT INTO `MoBot`.`custom_commands` 
-      (`trigger`, `response`, `guild_name`, `guild_id`, `owner_name`, `owner_id`, referencing_message)      
+      (`trigger`, `response`, `guild_name`, `guild_id`, `owner_name`, `owner_id`, referencing_message) 
     VALUES 
       ('%s', '%s', '%s', '%s', '%s', '%s', '%s');
-    """ % (trigger.replace("'", "''"), response.replace("'", "''"), guild.name.replace("'", "''"), guild.id, owner, owner.id, referencingMessage))
+    """ % (trigger.replace("'", "''").replace("\\", "\\\\"), response.replace("'", "''").replace("\\", "\\\\"), guild.name.replace("'", "''").replace("\\", "\\\\"), guild.id, owner, owner.id, referencingMessage))
 
   else:
     moBotDB.cursor.execute("""
     UPDATE custom_commands
     SET
+      custom_commands.trigger = '%s',
       custom_commands.response = '%s',
       custom_commands.owner_name = '%s',
       custom_commands.owner_id = '%s',
       custom_commands.guild_name = '%s',
       custom_commands.referencing_message = '%s'
     WHERE
-      custom_commands.command_id = '%s'""" % (response.replace("'", "''"), owner, owner.id, guild.name.replace("'", "''"), referencingMessage, command_id))
+      custom_commands.command_id = '%s'""" % (trigger.replace("'", "''").replace("\\", "\\\\"), response.replace("'", "''").replace("\\", "\\\\"), owner, owner.id, guild.name.replace("'", "''").replace("\\", "\\\\"), referencingMessage, command_id))
 
   moBotDB.connection.commit()
   moBotDB.connection.close()
@@ -349,11 +372,25 @@ def triggerExists(trigger, commandList): # checking guild commands if trigger ma
   return None if not command else command[0]
 # end triggerExists
 
+def commandExists(commandID, commandList): # checking guild commands if commandID matches
+  command = [command for command in commandList if command.command_id == commandID]
+  return None if not command else command[0]
+# end commandExists
+
+
 def getGuildCommands(guildID):
   moBotDB = MoBotDatabase.connectDatabase()
   moBotDB.connection.commit()
-  moBotDB.cursor.execute("""SELECT * FROM custom_commands 
-    WHERE custom_commands.guild_id = %s""" % guildID)
+  moBotDB.cursor.execute("""
+    SELECT
+      custom_commands.command_id,
+      custom_commands.trigger,
+      custom_commands.response,
+      custom_commands.referencing_message
+    FROM custom_commands 
+    WHERE 
+      custom_commands.guild_id = %s
+    """ % guildID)
   commandList = []
   for record in moBotDB.cursor:
     commandList.append(Command(record[0], record[1], record[2], record[3]))
@@ -361,7 +398,7 @@ def getGuildCommands(guildID):
   return commandList
 # end getGuildCommands
 
-def getCommand(trigger, guildID):
+def getCommand(commandID, guildID):
   moBotDB = MoBotDatabase.connectDatabase()
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
@@ -370,8 +407,8 @@ def getCommand(trigger, guildID):
     FROM custom_commands
     WHERE 
       custom_commands.guild_id = '%s' AND 
-      custom_commands.trigger = '%s'
-  """ % (guildID, trigger.replace("'", "''")))
+      custom_commands.command_id = '%s'
+  """ % (guildID, commandID))
 
   command = None
   for record in moBotDB.cursor:

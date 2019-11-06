@@ -220,7 +220,9 @@ async def on_message(message):
         await RLRanks.main(args, message, client)
       elif (args[1] == "remindme"):
         await EventScheduler.setReminder(message)
-      elif ("command" in args or "commands" in args):
+      elif ("command" in args[2]):
+        await SimpleCommands.main(args, message, client)
+      elif ("commands" in args[1]):
         await SimpleCommands.main(args, message, client)
 
       ## general use server commands
@@ -530,19 +532,20 @@ async def on_message(message):
 
   if (not message.author.bot):
     try:
-      moBotDB.connection.commit()
-      moBotDB.cursor.execute("""
+      sql = """
         SELECT *
         FROM custom_commands 
         WHERE 
           custom_commands.trigger = '%s' AND 
           custom_commands.guild_id = '%s'
-        """ % (message.content.replace("'", "''"), message.guild.id))
+        """ % (message.content.replace("'", "''").replace("\\", "\\\\"), message.guild.id)
+      moBotDB.connection.commit()
+      moBotDB.cursor.execute(sql)
       for record in moBotDB.cursor:
         await SimpleCommands.sendCommand(message, record)
         break
     except:
-      await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
+      await client.get_user(int(mo)).send("MoBot Database Error!```" + sql + "``` ```" + str(traceback.format_exc()) + "```")
 
   if (message.author.id == mo):
     pass
