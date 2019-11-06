@@ -79,11 +79,15 @@ async def memberRemove(member, client):
 # end memberRemove
 
 async def sendCommand(message, command):
-  response = command[2].decode('utf-8')
-  referencing_message = command[7]
+  try:
+    response = command[2].decode('utf-8')
+    referencingMessage = command[7]
+  except TypeError: # when command = Command from displayFullResponse, not record from onMessage
+    response = command.response
+    referencingMessage = 1 if command.referencingMessage == "Yes" else 0
   await message.channel.trigger_typing()
 
-  if (referencing_message == 1):
+  if (referencingMessage == 1):
     msg = None
     for channel in message.guild.text_channels:
       try:
@@ -106,7 +110,11 @@ async def sendCommand(message, command):
 # end sendCommand
 
 async def displayFullResponse(message, embed):
-  await message.channel.send("``` %s ```" % embed.fields[1].value)
+  command = getCommand(embed.fields[0].value, message.guild.id)
+  if (command.referencingMessage == "No"):
+    await message.channel.send("``` %s ```" % command.response)
+  else:
+    await sendCommand(message, command)
 # end displayFullResponse
 
 async def displayCommands(message, client):
@@ -200,16 +208,17 @@ async def createCommandSession(message, client):
   embed = discord.Embed(color=int("0xd1d1d1", 16))
   embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s" % (message.guild.id, message.author.id))
 
-  embed.description = "---\n**Follow the instructions below.**\n\nTo set your command, you will need to set a trigger and a response.\n\n__To update the trigger:__\n1. Type the new trigger\n2. Click the %s\n\n__To update the response:__\n1. Type the new response\n2. Click the %s\n\n__To reference a message:__\n1. Paste message ID\n2. Click the %s\n3. Click the %s\n*If you are referencing a message, then if the message is deleted or changed, the response will be affected.*\n---" % (ONE_EMOJI, TWO_EMOJI, NUMBER_SIGN_EMOJI, TWO_EMOJI)
+  embed.description = "---\n**Follow the instructions below.**\n\nTo set your command, you will need to set a trigger and a response.\n\n__To set the trigger:__\n1. Type the trigger\n2. Click the %s\n\n__To set the response:__\n1. Type the response\n2. Click the %s\n\n__To reference a message:__\n1. Paste message ID\n2. Click the %s\n3. Click the %s\n*If you are referencing a message, then if the message is deleted or changed, the response will be affected.*\n---" % (ONE_EMOJI, TWO_EMOJI, NUMBER_SIGN_EMOJI, TWO_EMOJI)
 
   embed.add_field(name="__**Trigger**__", value=spaceChar)
   embed.add_field(name="__**Response**__", value=spaceChar)
-  embed.add_field(name="__**Other Details**__", value=spaceChar)
+  embed.add_field(name="__**Other Details**__", value="Referencing Message:")
   embed.set_footer(text="%s - Save Command %s - Full Response " % (FLOPPY_DISK_EMOJI, MAG_EMOJI))
 
   msg = await message.channel.send(embed=embed)
   await msg.add_reaction(ONE_EMOJI)
   await msg.add_reaction(TWO_EMOJI)
+  await msg.add_reaction(NUMBER_SIGN_EMOJI)
   await msg.add_reaction(FLOPPY_DISK_EMOJI)
   await msg.add_reaction(MAG_EMOJI)
 # end createCommandSession
@@ -260,12 +269,15 @@ async def handleNewResponse(commandOwner, message, embed):
     if (referencingMessage == 1):
       m = await message.channel.send("**Searching for Message**\nThis could take a second or two, so don't click anything!")
       msg = None
-      for channel in message.guild.text_channels:
-        try:
-          msg = await channel.fetch_message(int(response))
-          break
-        except discord.errors.NotFound:
-          pass
+      try:
+        msg = await message.channel.fetch_message(int(response))
+      except discord.errors.NotFound:
+        for channel in message.guild.text_channels:
+          try:
+            msg = await channel.fetch_message(int(response))
+            break
+          except discord.errors.NotFound:
+            pass
         
       await m.delete()
       if (msg is None):
@@ -276,7 +288,7 @@ async def handleNewResponse(commandOwner, message, embed):
     embed = embed.to_dict()
     embed["fields"][1]["value"] = response[:40] + ("..." if len(response) >= 40 else "")
     embed = discord.Embed().from_dict(embed)
-    embed = buildOtherDetails(embed, "Yes" if referencingMessage == 1 else "No", "Referencing Message: ")
+    embed = buildOtherDetails(embed, "Yes" if referencingMessage == 1 else "No", "Referencing Message:")
     await message.edit(embed=embed)
 # end handleNewResponse
 
@@ -302,7 +314,7 @@ async def saveCommand(message, embed):
       (`trigger`, `response`, `guild_name`, `guild_id`, `owner_name`, `owner_id`, referencing_message)      
     VALUES 
       ('%s', '%s', '%s', '%s', '%s', '%s', '%s');
-    """ % (trigger.replace("'", "''"), response.replace("'", "''"), owner, owner.id, guild.name.replace("'", "''"), guild.id, referencingMessage))
+    """ % (trigger.replace("'", "''"), response.replace("'", "''"), guild.name.replace("'", "''"), guild.id, owner, owner.id, referencingMessage))
 
   else:
     moBotDB.cursor.execute("""
@@ -314,7 +326,7 @@ async def saveCommand(message, embed):
       custom_commands.guild_name = '%s',
       custom_commands.referencing_message = '%s'
     WHERE
-      custom_commands.command_id = %s""" % (response.replace("'", "''"), owner, owner.id, guild.name.replace("'", "''"), referencingMessage, command_id))
+      custom_commands.command_id = '%s'""" % (response.replace("'", "''"), owner, owner.id, guild.name.replace("'", "''"), referencingMessage, command_id))
 
   moBotDB.connection.commit()
   moBotDB.connection.close()
@@ -323,13 +335,13 @@ async def saveCommand(message, embed):
 
 def buildOtherDetails(embed, detail, detailType):
   embed = embed.to_dict()
-  otherDetails = embed["fields"][2]["value"]
+  otherDetails = embed["fields"][2]["value"] + "\n"
   newOtherDetails = ""
   for line in otherDetails.split("\n"):
-    if detailType not in line:
+    if (detailType not in line):
       newOtherDetails += line + "\n"
     else:
-      newOtherDetails += detailType + detail + "\n"
+      newOtherDetails += "%s %s\n" % (detailType, detail)
   embed["fields"][2]["value"] = newOtherDetails
   return discord.Embed().from_dict(embed)
 # end buildOtherDetails
