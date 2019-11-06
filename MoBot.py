@@ -643,6 +643,7 @@ async def on_raw_reaction_add(payload):
     if (not member.bot):
       logActionToConsole(message, member, "reactionAdd")
       if (len(message.embeds) > 0):
+
         if ("RLScrims" in embedAuthor):
           await RLScrims.mainReactionAdd(message, payload, client, member)
 
@@ -656,6 +657,10 @@ async def on_raw_reaction_add(payload):
           await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
         elif ("Clock Editor" in embedAuthor):
           await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "clock")
+
+        elif ("MoBot Custom Commands" in embedAuthor):
+          await SimpleCommands.mainReactionAdd(message, payload, client)
+
         elif ("•" in embedFooter and "-- (" in embedFooter and ")" in embedFooter):
           if (payload.emoji.name == "⬅"):
             await CollectionsOLD.leftRightCollection(message, "left", message.embeds[0], client)
