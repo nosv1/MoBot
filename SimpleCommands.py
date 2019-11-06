@@ -296,9 +296,7 @@ async def saveCommand(message, embed):
   trigger = embed.fields[0].value
   response = embed.fields[1].value
   otherDetails = embed.fields[2].value
-  print(otherDetails.split("Referencing Message:")[1].split("\n")[0].strip())
   referencingMessage = 1 if otherDetails.split("Referencing Message:")[1].split("\n")[0].strip() == "Yes" else 0
-  print(referencingMessage)
   guild = message.guild
   owner = guild.get_member(int(embed.author.url.split("owner_id=")[1].split("/")[0]))
   command_id = embed.author.url.split("command_id=")[1].split("/")[0]
