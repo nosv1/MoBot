@@ -222,9 +222,8 @@ async def on_message(message):
         await EventScheduler.setReminder(message)
       elif ("commands" in args[1]):
         await SimpleCommands.main(args, message, client)
-      if (len(args) >= 3):
-        if ("command" in args[2]):
-          await SimpleCommands.main(args, message, client)
+      elif (len(args) >= 3 and "command" in args[2]):
+        await SimpleCommands.main(args, message, client)
 
       ## general use server commands
       elif (args[1] == "say" and permissions["manageMessagePerms"]):
