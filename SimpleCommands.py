@@ -27,7 +27,6 @@ class Command:
     self.trigger = trigger.decode('utf-8')
     self.response = response.decode('utf-8')
     self.referencingMessage = "Yes" if referencingMessage == 1 else "No"
-    print(command_id, refMsgChannelID)
     self.refMsgChannelID = refMsgChannelID.decode("utf-8")
 # end Command
 
