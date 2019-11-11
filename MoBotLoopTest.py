@@ -60,7 +60,7 @@ async def on_ready():
 
 async def main(client):
   global moBotDB
-  moBotDB = await MoBotDatabase.connectDatabase()
+  moBotDB = await MoBotDatabase.connectDatabase('MoBot')
   print ("Connected to MoBot Database")
 
   print()

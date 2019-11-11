@@ -71,7 +71,7 @@ async def on_ready():
   print("AutoRoles Received")
 
   global moBotDB
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   print ("Connected to MoBot Database")
 
   '''mobotLog = client.get_guild(moBotSupport).get_channel(604099911251787776) # mobot log
@@ -123,7 +123,9 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await ClocksAndCountdowns.prepareEditor(message, "clock", "640788058475855875", 1, 0)
+        await AOR.getStandings(message)
+        #await AOR.openDriverProfileEmbed(message)
+        await message.channel.send("done", delete_after=3)
       elif ("command" in args or "commands" in args):
         await SimpleCommands.main(args, message, client)
       elif (args[1] == "dk"):
@@ -279,7 +281,12 @@ async def on_message(message):
 
   if (not message.author.bot):
     try:
-      moBotDB.connection.commit()
+      global moBotDB
+      try:
+        moBotDB.connection.commit()
+      except AttributeError: # when no connection was made
+        moBotDB = MoBotDatabase.connectDatabase('MoBot')
+
       moBotDB.cursor.execute("""
         SELECT *
         FROM custom_commands 
@@ -367,6 +374,8 @@ async def on_raw_reaction_add(payload):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
       if ("SimpleCommands" in message.embeds[0].author.url):
         await SimpleCommands.mainReactionAdd(message, payload, client)
+      if ("AOR" in embedAuthor):
+        await AOR.mainReactionAdd(message, payload, client)
       '''if ("Countdown Editor" in message.embeds[0].author.name):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
       if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):

@@ -119,7 +119,7 @@ async def on_ready():
   print("AutoRoles Received")
   
   global moBotDB
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   print("Connected to MoBot Database")
   
   # priming the temp storage
@@ -181,7 +181,6 @@ async def on_message(message):
         "changeNicknamePerms" : isNos or isMo or authorPerms.change_nickname or isBotSpam,
         "manageChannelPerms" : isNos or isMo or authorPerms.manage_channels or isBotSpam,
         "manageMessagePerms" : isNos or isMo or authorPerms.manage_messages or isBotSpam,
-        "manageChannelPerms" : isNos or isMo or authorPerms.manage_channels or isBotSpam,
         "manageRolePerms" : isNos or isMo or authorPerms.manage_roles or isBotSpam,
         "administratorPerms" : isNos or isMo or authorPerms.administrator
       }
@@ -535,13 +534,19 @@ async def on_message(message):
 
   if (not message.author.bot):
     try:
+      global moBotDB
+      try:
+        moBotDB.connection.commit()
+      except AttributeError: # when no connection was made
+        moBotDB = MoBotDatabase.connectDatabase('MoBot')
+        
       sql = """
         SELECT *
         FROM custom_commands 
         WHERE 
           custom_commands.trigger = '%s' AND 
           custom_commands.guild_id = '%s'
-        """ % (message.content.replace("'", "''").replace("\\", "\\\\"), message.guild.id)
+        """ % (MoBotDatabase.replaceChars(message.content), message.guild.id)
       moBotDB.connection.commit()
       moBotDB.cursor.execute(sql)
       for record in moBotDB.cursor:

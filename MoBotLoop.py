@@ -269,7 +269,7 @@ async def updateMoBotStatus(client):
       await client.change_presence(activity=donate)
 
 async def getGuildCountdowns():
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
     SELECT * 
@@ -285,7 +285,7 @@ async def getGuildCountdowns():
 # end getGuildCountdowns
 
 async def getGuildClocks():
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
     SELECT * 

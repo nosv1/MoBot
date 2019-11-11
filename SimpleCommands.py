@@ -158,7 +158,7 @@ async def deleteCommand(args, message, client):
       return
     
     if (payload.emoji.name == CHECKMARK_EMOJI):
-      moBotDB = MoBotDatabase.connectDatabase()
+      moBotDB = MoBotDatabase.connectDatabase('MoBot')
       moBotDB.connection.commit()
       moBotDB.cursor.execute("""
       DELETE FROM 
@@ -336,7 +336,7 @@ async def saveCommand(message, embed):
   if (spaceChar in trigger + response):
     return
 
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   if (not commandExists(commandID, getGuildCommands(message.guild.id))):  
     moBotDB.cursor.execute("""
@@ -345,9 +345,9 @@ async def saveCommand(message, embed):
       VALUES 
         ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');
       """ % (
-      trigger.replace("'", "''").replace("\\", "\\\\"), 
-      response.replace("'", "''").replace("\\", "\\\\"),
-      guild.name.replace("'", "''").replace("\\", "\\\\"), 
+      MoBotDatabase.replaceChars(trigger), 
+      MoBotDatabase.replaceChars(response),
+      MoBotDatabase.replaceChars(guild.name),
       guild.id, 
       owner, 
       owner.id, 
@@ -369,11 +369,11 @@ async def saveCommand(message, embed):
         custom_commands.ref_msg_channel_id = '%s'
       WHERE
         custom_commands.command_id = '%s'""" % (
-      trigger.replace("'", "''").replace("\\", "\\\\"), 
-      response.replace("'", "''").replace("\\", "\\\\"), 
+      MoBotDatabase.replaceChars(trigger), 
+      MoBotDatabase.replaceChars(response), 
       owner, 
       owner.id, 
-      guild.name.replace("'", "''").replace("\\", "\\\\"), 
+      MoBotDatabase.replaceChars(guild.name), 
       referencingMessage, 
       refMsgChannelID, 
       command_id
@@ -409,7 +409,7 @@ def commandExists(commandID, commandList): # checking guild commands if commandI
 # end commandExists
 
 def getGuildCommands(guildID):
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
     SELECT
@@ -430,7 +430,7 @@ def getGuildCommands(guildID):
 # end getGuildCommands
 
 def getCommand(commandID, guildID):
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
     SELECT 

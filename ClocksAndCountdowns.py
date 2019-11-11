@@ -106,7 +106,7 @@ async def mainReactionRemove(message, payload, client):
 # end mainReactionRemove
 
 async def delete(clockType, channelID):
-    moBotDB = MoBotDatabase.connectDatabase()
+    moBotDB = MoBotDatabase.connectDatabase('MoBot')
     moBotDB.connection.commit()
     moBotDB.cursor.execute("""
       DELETE FROM %ss
@@ -124,7 +124,7 @@ async def getClock(message, guildID, channelID):
     "%H:%M %Z - %b %d" : "24-hour + date",
   }
   
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
   SELECT clocks.channel_id, clocks.time_format, clocks.time_zone
@@ -140,7 +140,7 @@ async def getClock(message, guildID, channelID):
 # end getClock
 
 async def getCountdown(message, guildID, channelID):  
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
   SELECT countdowns.channel_id, countdowns.end_datetime, countdowns.time_zone, countdowns.text, countdowns.repeating
@@ -209,7 +209,7 @@ async def updateClockInfo(guild, clock):
   }
 
   oldClock = None
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
     SELECT * 
@@ -241,7 +241,7 @@ async def updateClockInfo(guild, clock):
 
 async def updateCountdownInfo(guild, countdown):
   oldCountdown = None
-  moBotDB = MoBotDatabase.connectDatabase()
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
     SELECT *

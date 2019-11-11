@@ -1,7 +1,7 @@
 import mysql.connector
 import SecretStuff
 
-def connectDatabase():
+def connectDatabase(dbName):
   class MoBotDB:
     def __init__(self, connection, cursor):
       self.connection = connection
@@ -12,7 +12,7 @@ def connectDatabase():
     host="10.0.0.227",
     user="MoBot",
     passwd=SecretStuff.getToken("MoBotDatabaseToken.txt"),
-    database="MoBot",
+    database=dbName,
     charset="utf8mb4",
     use_unicode=True,
     buffered=True
@@ -20,3 +20,7 @@ def connectDatabase():
   dbCursor = dbConnection.cursor()
   return MoBotDB(dbConnection, dbCursor)
 # end connectDatabase
+
+def replaceChars(badString):
+  return badString.replace("'", "''").replace("\\", "\\\\")
+# end replaceChars
