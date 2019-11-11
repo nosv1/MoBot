@@ -103,7 +103,7 @@ async def main(args, message, client):
     args[i].strip()
 
   if (str(moBot) in args[0]):
-    if (message.guild.id == officialServer):
+    if (message.guild.id == aor):
       if (args[1].lower() == "aor"):
         if ("add game emojis" in message.content):
           await addGameEmojis(message)  
@@ -118,13 +118,18 @@ async def memberRemove(member, client):
 # end memberRemove
 
 async def mainReactionAdd(message, payload, client): 
-  embed = message.embeds[0]
+  try:
+    embed = message.embeds[0]
 
-  if (str(payload.user_id) in embed.author.url):
-    if ("AOR F1 Driver Profile" in embed.author.name):
-      userID = int(embed.author.url.split("user_id=")[1].split("/")[0])
-      if (payload.emoji.name == OK_EMOJI):
-        await editDriverProfileOverviewEmbed(message, getDriverProfileOverview(await getDriverProfileNames(message, userID)))
+    if (str(payload.user_id) in embed.author.url):
+      if ("AOR F1 Driver Profile" in embed.author.name):
+        userID = int(embed.author.url.split("user_id=")[1].split("/")[0])
+        if (payload.emoji.name == OK_EMOJI):
+          await editDriverProfileOverviewEmbed(message, getDriverProfileOverview(await getDriverProfileNames(message, userID)))
+          
+  except IndexError: # when there is no embed...
+    pass
+
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
