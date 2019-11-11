@@ -19,6 +19,7 @@ import SecretStuff
 import ClocksAndCountdowns
 import EventScheduler
 import MoBotDatabase
+import AOR
 
 import MoBotTimeZones
   
@@ -173,6 +174,7 @@ async def main(client):
           await nobleLeaugesDestination.send(embed=embed)'''
         
         await updateTimeZoneList(currentTime)
+        await AOR.updateStandings(client)
         # --- Everything is sent --- 
 
         clocks = await getGuildClocks()

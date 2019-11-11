@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup as bSoup
 import requests
 import feedparser
 import os
+import random
 
 import MoBotDatabase
 
@@ -13,8 +14,11 @@ OK_EMOJI = "🆗"
 QUESTION_EMOJI = "❓"
 
 moBot = 449247895858970624
-officialServer = 298938326306521098
+
+moBotSupport = 467239192007671818
+aor = 298938326306521098
 pcF9 = 592086506068377624
+f1GOAT = 291658352336044033
 
 class Race:
   def __init__(
@@ -85,6 +89,14 @@ class DriverProfileOverview: # need to add teams raced for
     self.avgRacePos = avgRacePos
 # end DriverProfileOverview
 
+class AutoUpdateStandingsMessage:
+  def __init__(self, messageID, channelID, guildID, url):
+    self.messageID = messageID
+    self.channelID = channelID
+    self.guildID = guildID
+    self.url = url
+# end AutoUpdateStandingsMessage
+
 async def main(args, message, client):
   now = datetime.now()
   for i in range(len(args)):
@@ -120,6 +132,7 @@ async def mainReactionRemove(message, payload, client):
 # end mainReactionRemove
 
 # ---- AOR F1 DATABASE -----
+
 #   --- AOR F1 DRIVER PROFILES ---
 
 async def editDriverProfileOverviewEmbed(message, driverProfile):
@@ -250,23 +263,71 @@ async def getDriverProfileNames(message, userID):
 
 #   --- AOR STANDINGS ---
 
-async def getStandings(message):
-  await message.channel.trigger_typing()
+async def updateStandings(client):
+  now = datetime.utcnow()
 
-  spreadsheetKeys = getStandingsSheetLinks()
+  autoUpdateStandings = getAutoUpdateStandings()
+
+  guildsChannels = {}
+  messages = []
+
+  moBotDB = MoBotDatabase.connectDatabase("AOR F1")
+  moBotDB.connection.commit()
+  for standingsMessage in autoUpdateStandings:
+    guildID = str(standingsMessage.guildID)
+    channelID = str(standingsMessage.channelID)
+    messageID = standingsMessage.messageID
+    url = standingsMessage.url
+
+    if (guildID not in guildsChannels):
+      guildsChannels[guildID] = {}
+    if (channelID not in guildsChannels[guildID]):
+      guildsChannels[guildID][channelID] = client.get_guild(int(guildID)).get_channel(int(channelID))
+
+    r = random.random()
+    d = now.weekday()
+    hourDays = [7, 1, 2] # sunday, monday, tuesday, when refresh should be once per hour
+    if ((d in hourDays and r < 1/60) or (d not in hourDays and r < 1/(60*24))):
+      messages.append([await guildsChannels[guildID][channelID].fetch_message(messageID), getStandings(url, client, moBotDB)])
+  moBotDB.connection.close()
+    
+  for messageEmbed in messages:
+    message = messageEmbed[0]
+    embed = messageEmbed[1]
+
+    moBotMember = message.guild.get_member(moBot)
+    embed.color = moBotMember.roles[-1].color
+    embed.set_thumbnail(url=message.guild.icon_url)
+
+    await messageEmbed[0].edit(content=spaceChar, embed=messageEmbed[1])
+# end updateStandings
+
+def getStandings(url, client, moBotDB):
+
+  moBotDB.cursor.execute("""
+  SELECT season, region, platform, split
+  FROM standings_sheets_links
+  WHERE url = '%s'
+  """ % (url))
+  
+  season = ""
+  region = ""
+  platform = ""
+  split = ""
+  for record in moBotDB.cursor:
+    season = record[0]
+    region = record[1]
+    platform = record[2]
+    split = record[3]
+
   flags = getFlags()
 
-  season = "S18"
-  platform = "PC"
-  region = "UK"
-  split = message.content.split("standings")[1].strip().upper()
-  url = "%s?hl=en&widget=false&headers=false" % spreadsheetKeys[season][region][platform][split]
+  url = "%s?hl=en&widget=false&headers=false" % url
   standingsTable, roundFlag = getSpreadsheet(url)
 
-  moBotMember = message.guild.get_member(moBot)
-  embed = discord.Embed(color=moBotMember.roles[-1].color)
+  moBotMember = client.get_user(moBot)
+  embed = discord.Embed()
   embed.set_author(name="%s-%s-%s-%s" % (season, region, platform, split), icon_url=moBotMember.avatar_url, url=url)
-  embed.set_thumbnail(url=message.guild.icon_url)
 
   value = ""
   for i in range(len(standingsTable)):
@@ -288,7 +349,7 @@ async def getStandings(message):
   embed.add_field(name="__Driver Standings - After %s__" % flags[roundFlag.upper()], value=value)
   embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Refreshed: %H:%M UTC |"))
 
-  await message.channel.send(embed=embed)
+  return embed
 # end getStandings
 
 #   --- END AOR STANDINGS ---
@@ -349,6 +410,20 @@ def getStandingsSheetLinks():
     spreadsheetLinks[season][region][platform][split] = url
   return spreadsheetLinks
 # end getStandingsSheetLinks
+
+def getAutoUpdateStandings():
+  moBotDB = MoBotDatabase.connectDatabase("AOR F1")
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+  SELECT message_id, channel_id, guild_id, url
+  FROM auto_update_standings""")
+
+  messages = []
+  for record in moBotDB.cursor:
+    messages.append(AutoUpdateStandingsMessage(*record))
+  moBotDB.connection.close()
+  return messages
+# end getAutoUpdateStandings
 
 def getFlags():
   moBotDB = MoBotDatabase.connectDatabase("AOR F1")

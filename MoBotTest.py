@@ -123,7 +123,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        #await AOR.getStandings(message)
+        await AOR.updateStandings(client)
         #await AOR.openDriverProfileEmbed(message)
         await message.channel.send("done", delete_after=3)
       elif ("command" in args or "commands" in args):
