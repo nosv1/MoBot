@@ -291,7 +291,7 @@ async def updateStandings(client):
 
     r = random.random()
     d = now.weekday()
-    hourDays = [7, 1, 2] # sunday, monday, tuesday, when refresh should be once per hour
+    hourDays = [7, 0, 1] # sunday, monday, tuesday, when refresh should be once per hour
     if ((d in hourDays and r < 1/60) or (d not in hourDays and r < 1/(60*24))):
       messages.append([await guildsChannels[guildID][channelID].fetch_message(messageID), getStandings(url, client, moBotDB)])
   moBotDB.connection.close()
