@@ -155,7 +155,7 @@ async def getJob(message, args):
             break
 
   if (len(value) >= 800):
-    value += "\n*There are more jobs than what are show. Either view the spreadsheet, or to narrow your search, be more specific in the inputted job name.*"
+    value += "\n*There are more jobs than what are shown. Either view the spreadsheet, or to narrow your search, be more specific in the inputted job name.*"
 
   embed.add_field(name="**Result(s):**", value=value)
   embed.set_footer(text="If the track you have searched for is not appearing, it is most likely not currently on the Catalogue. Please DM a member of the admin team who can assist you and hopefully you will have the track added shortly! (You can request your own tracks or anyone else's)")
