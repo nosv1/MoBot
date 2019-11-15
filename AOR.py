@@ -90,11 +90,12 @@ class DriverProfileOverview: # need to add teams raced for
 # end DriverProfileOverview
 
 class AutoUpdateStandingsMessage:
-  def __init__(self, messageID, channelID, guildID, url):
+  def __init__(self, messageID, channelID, guildID, url, league):
     self.messageID = messageID
     self.channelID = channelID
     self.guildID = guildID
     self.url = url
+    self.league = league
 # end AutoUpdateStandingsMessage
 
 async def main(args, message, client):
@@ -103,10 +104,10 @@ async def main(args, message, client):
     args[i].strip()
 
   if (str(moBot) in args[0]):
-    if (message.guild.id == aor):
-      if (args[1].lower() == "aor"):
-        if ("add game emojis" in message.content):
-          await addGameEmojis(message)  
+    if (args[1].lower() == "aor"):
+      if ("add game emojis" in message.content):
+        await addGameEmojis(message)  
+    
 # end main
 
 async def memberJoin(member):
@@ -276,13 +277,12 @@ async def updateStandings(client):
   guildsChannels = {}
   messages = []
 
-  moBotDB = MoBotDatabase.connectDatabase("AOR F1")
-  moBotDB.connection.commit()
   for standingsMessage in autoUpdateStandings:
     guildID = str(standingsMessage.guildID)
     channelID = str(standingsMessage.channelID)
     messageID = standingsMessage.messageID
     url = standingsMessage.url
+    league = standingsMessage.league
 
     if (guildID not in guildsChannels):
       guildsChannels[guildID] = {}
@@ -292,9 +292,9 @@ async def updateStandings(client):
     r = random.random()
     d = now.weekday()
     hourDays = [7, 0, 1] # sunday, monday, tuesday, when refresh should be once per hour
-    if ((d in hourDays and r < 1/60) or (d not in hourDays and r < 1/(60*24))):
-      messages.append([await guildsChannels[guildID][channelID].fetch_message(messageID), getStandings(url, client, moBotDB)])
-  moBotDB.connection.close()
+    # 54 not 60 because 90% of 60, and bot isn't up 100% of time
+    if ((d in hourDays and r < 1/54) or (d not in hourDays and r < 1/(54*24))):
+      messages.append([await guildsChannels[guildID][channelID].fetch_message(messageID), getStandings(url, league, client)])
     
   for messageEmbed in messages:
     message = messageEmbed[0]
@@ -307,23 +307,13 @@ async def updateStandings(client):
     await messageEmbed[0].edit(content=spaceChar, embed=messageEmbed[1])
 # end updateStandings
 
-def getStandings(url, client, moBotDB):
-
-  moBotDB.cursor.execute("""
-  SELECT season, region, platform, split
-  FROM standings_sheets_links
-  WHERE url = '%s'
-  """ % (url))
+def getStandings(url, league, client):
   
-  season = ""
-  region = ""
-  platform = ""
-  split = ""
-  for record in moBotDB.cursor:
-    season = record[0]
-    region = record[1]
-    platform = record[2]
-    split = record[3]
+  league = league.split("-")
+  season = league[0]
+  region = league[1]
+  platform = league[2]
+  split = league[3]
 
   flags = getFlags()
 
@@ -350,9 +340,9 @@ def getStandings(url, client, moBotDB):
 
     except IndexError:
       pass
-  value += "\n__[Results Spreadsheet](" + url.replace("_", "\\_") + ")__"
-  embed.add_field(name="__Driver Standings - After %s__" % flags[roundFlag.upper()], value=value)
-  embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Refreshed: %H:%M UTC |"))
+  value += "\n[__Results Spreadsheet__](" + url.replace("_", "\\_") + ")"
+  embed.add_field(name="**__Driver Standings - After %s__**" % flags[roundFlag.upper()], value=value)
+  embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Last Refresh: %H:%M UTC - %d %b |"))
 
   return embed
 # end getStandings
@@ -420,7 +410,7 @@ def getAutoUpdateStandings():
   moBotDB = MoBotDatabase.connectDatabase("AOR F1")
   moBotDB.connection.commit()
   moBotDB.cursor.execute("""
-  SELECT message_id, channel_id, guild_id, url
+  SELECT message_id, channel_id, guild_id, url, league
   FROM auto_update_standings""")
 
   messages = []
