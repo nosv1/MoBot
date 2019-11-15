@@ -94,11 +94,6 @@ async def main(client):
     remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
     reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
     print("Scheduled Events Received")
-    
-    clocks = await getGuildClocks()
-    print("Clocks Received")
-    countdowns = await getGuildCountdowns()
-    print("Countdowns Received")
   except httplib2.ServerNotFoundError:
     try:
       await client.get_user(int(mo)).send("Just checking when this happenes\nMoBotLoop Error!```" + str(traceback.format_exc()) + "```")
@@ -125,6 +120,9 @@ async def main(client):
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
       if (second == 0): # check for every 60 seconds
+        clocks = await getGuildClocks()
+        countdowns = await getGuildCountdowns()
+
         try:
           await updateGuildCountdowns(client, currentTime, countdowns)
           await updateGuildClocks(client, currentTime, clocks)
@@ -176,10 +174,6 @@ async def main(client):
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
         # --- Everything is sent --- 
-
-        clocks = await getGuildClocks()
-        countdowns = await getGuildCountdowns()
-        # --- Everything is received ---
     except:
       try:
         await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(traceback.format_exc()) + "```")

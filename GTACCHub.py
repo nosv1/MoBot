@@ -6,7 +6,7 @@ import random
 
 import SecretStuff
 
-moBot = "449247895858970624"
+moBot = 449247895858970624
 spaceChar = "⠀"
 
 # gta cc hub spreadsheet stuff
@@ -57,8 +57,11 @@ async def getJob(message, args):
   jobTypes = platSheet.range("B12:B" + str(platSheet.row_count-1))
   jobListSplit = {}
 
-  embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="Catalogue Search Results")
+  moBotMember = message.guild.get_member(moBot)
+  embed = discord.Embed(color=moBotMember.roles[-1].color)
+  embed.set_author(name="Catalogue Search Results", icon_url=moBotMember.avatar_url, url=catalogueLink)
+  embed.set_thumbnail(url=message.guild.icon_url)
+  embed.description = "[__Creation Catalogue__](%s)" % catalogueLink
 
   jobType = None
   startJobName = 3
@@ -67,7 +70,7 @@ async def getJob(message, args):
     startJobName = 2
   else:
     jobType = args[2]
-    embed.add_field(name="Job Type:", value=jobTypeLetters[args[2].lower()], inline=False)
+    embed.add_field(name="**Job Type:**", value=jobTypeLetters[args[2].lower()], inline=False)
     await message.channel.trigger_typing()
 
   jobName = ""
@@ -75,7 +78,7 @@ async def getJob(message, args):
   for i in range(startJobName, len(args)):
     jobName += args[i] + " "
   jobName = jobName[:-1]
-  embed.add_field(name="Job Name:", value=jobName + "\n" + spaceChar, inline=False)
+  embed.add_field(name="**Job Name:**", value=jobName, inline=False)
 
   # if there is a job type specification, fix jobs and jobTypes arrays to match specification
   if (jobType != None):
@@ -94,7 +97,7 @@ async def getJob(message, args):
     if ("jobs by" not in cellValue and "..." not in cellValue and len(jobs[i].value) > 1):
       if (jobs[i].value.lower() == jobName.lower()):
         jobFound = True
-        link = "<" + platSheet.cell(jobs[i].row, jobs[i].col, value_render_option='FORMULA').value.split('"')[1] + ">"
+        link = platSheet.cell(jobs[i].row, jobs[i].col, value_render_option='FORMULA').value.split('"')[1]
         job = jobs[i].value
         break
       elif (jobs[i].value != ""):
@@ -107,7 +110,7 @@ async def getJob(message, args):
   value = ""
 
   if (jobFound):
-    value = "**" + job + "**\n" + link
+    value = "[**__%s__**](%s)\n" % (job, link)
   else:
     potentialJobs = []
     splitJobName = []
@@ -143,15 +146,18 @@ async def getJob(message, args):
       for i in range(0, returnAmount):
         for j in range(0, len(jobs)):
           if (jobs[j].value == potentialJobs[i][0]):
-            value += "\n__**[" + jobs[j].value + "](" + catalogueLink + ")**__"
-            try:
-              value = value.replace(catalogueLink, platSheet.cell(jobs[j].row, jobs[j].col, value_render_option='FORMULA').value.split('"')[1])
-            except IndexError:
-              print(jobs[j])
-              value += " - *Link Not Available*"
+            if (len(value) < 800):
+              value += "\n[__**%s**__](%s)" % (jobs[j].value, catalogueLink)
+              try:
+                value = value.replace(catalogueLink, platSheet.cell(jobs[j].row, jobs[j].col, value_render_option='FORMULA').value.split('"')[1])
+              except IndexError: # when there isn't a link for the job
+                value += " - *Link Not Available*"
             break
-        
-  embed.add_field(name="Result(s):", value=value)
+
+  if (len(value) >= 800):
+    value += "\n*There are more jobs than what are show. Either view the spreadsheet, or to narrow your search, be more specific in the inputted job name.*"
+
+  embed.add_field(name="**Result(s):**", value=value)
   embed.set_footer(text="If the track you have searched for is not appearing, it is most likely not currently on the Catalogue. Please DM a member of the admin team who can assist you and hopefully you will have the track added shortly! (You can request your own tracks or anyone else's)")
 
   await message.channel.send(embed=embed)
