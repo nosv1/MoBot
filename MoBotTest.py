@@ -33,6 +33,7 @@ import EventScheduler
 import DKGetPicks
 import SimpleCommands
 import MoBotDatabase
+import Mazes
 
 import COTM
 import AOR
@@ -40,7 +41,7 @@ import Noble2sLeague
 
 client = discord.Client()
 moBotDB = None
-moBot = "449247895858970624"
+moBot = 449247895858970624
 mo = 405944496665133058
 moBotTestID = 476974462022189056
 moBotSupport = 467239192007671818
@@ -123,9 +124,18 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await AOR.updateStandings(client)
+        url = "https://docs.google.com/spreadsheets/d/1GJnnfUYtFDeXsfZOYHPhdx-a292lrJ9bQgTlhVf774w/pubhtml"
+        embed = AOR.getStandings(url, "S18-UK-PC-F1", client)
+        moBotMember = message.guild.get_member(moBot)
+        embed.color = moBotMember.roles[-1].color
+        embed.set_thumbnail(url=message.guild.icon_url)
+        await message.channel.send(embed=embed)
         #await AOR.openDriverProfileEmbed(message)
         await message.channel.send("done", delete_after=3)
+      elif (args[1] == "maze"):
+        size = int(message.content.split("maze")[1].strip())
+        maze = Mazes.mazeBuilder(size)
+        await message.channel.send("```%s\n%s```" % (size, maze))
       elif ("command" in args or "commands" in args):
         await SimpleCommands.main(args, message, client)
       elif (args[1] == "dk"):
@@ -276,7 +286,7 @@ async def on_message(message):
       elif (args[1] == "remindme"):
         await EventScheduler.setReminder(message)
         
-  elif ("!" in args[0]):
+  if ("!" in args[0]):
     await GTACCHub.main(args, message, client)
 
   if (not message.author.bot):
@@ -704,12 +714,12 @@ async def makeEmbed(message):
   moBotUser = message.guild.get_member(int(moBot))
   embed = discord.Embed(colour=discord.Embed().Empty)
   embed.set_thumbnail(url=moBotUser.avatar_url)
-  embed.set_author(name="Test\ntest" + spaceChar, url="https://google.com/MoBotReservation/collection=605980661492350976/id=605980829818159128/left=605980830430658581/right=605980830430658581/emojis=👑,🔧/sub_specifiers=host,pit_marshall", icon_url="https://images.discordapp.net/avatars/449247895858970624/6e2a9f666b1190d5bf59be5c3bb20327.png?size=512")
+  embed.set_author(name="**Tes**\n*test*" + spaceChar, url="https://google.com/MoBotReservation/collection=605980661492350976/id=605980829818159128/left=605980830430658581/right=605980830430658581/emojis=👑,🔧/sub_specifiers=host,pit_marshall", icon_url="https://images.discordapp.net/avatars/449247895858970624/6e2a9f666b1190d5bf59be5c3bb20327.png?size=512")
   embed.add_field(name="Field Name\ntest", value='Field Value', inline=True)
   embed.description = "**Big test** <@" + str(moBot) + ">"
 
   embed.set_image(url=message.author.avatar_url)
-  embed.set_footer(text="Footer\nFooter")
+  embed.set_footer(text="Footer\n**__Footer__**")
   print(embed.to_dict())
 
   await message.channel.send(embed=embed)
