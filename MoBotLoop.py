@@ -172,7 +172,7 @@ async def main(client):
           await nobleLeaugesDestination.send(embed=embed)'''
         
         await updateTimeZoneList(currentTime)
-        await AOR.updateStandings(None, client)
+        await AOR.updateStandings(client)
         # --- Everything is sent --- 
     except:
       try:
