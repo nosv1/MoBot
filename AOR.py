@@ -107,7 +107,7 @@ async def main(args, message, client):
     if (args[1].lower() == "aor"):
       if ("add game emojis" in message.content):
         await addGameEmojis(message)
-    if (len(args) > 4):
+    if (len(args) > 3):
       if ("standings" in args[1] and "new" in args[2]):
         await newStandings(message, client)
     
@@ -288,6 +288,9 @@ async def newStandings(message, client):
   url = standingsSheetLinks[season][region][platform][split]
   await msg.edit(content="**Creating Standings Embed**\n*This could take a second...*")
   standingsEmbed = getStandings(url, league, client)
+  moBotMember = message.guild.get_member(moBot)
+  standingsEmbed.color = moBotMember.roles[-1].color
+  standingsEmbed.set_thumbnail(url=message.guild.icon_url)
   await msg.edit(embed=standingsEmbed, content=spaceChar)
 
   moBotDB = MoBotDatabase.connectDatabase("AOR F1")
@@ -302,7 +305,7 @@ async def newStandings(message, client):
   await message.channel.send("**Automatic Standings Embed Saved**", delete_after=5)
 # end newStandings
 
-async def updateStandings(msgID, client): # msgID is none if not from command
+async def updateStandings(client):
   now = datetime.utcnow()
 
   autoUpdateStandings = getAutoUpdateStandings()
@@ -328,8 +331,7 @@ async def updateStandings(msgID, client): # msgID is none if not from command
     # 54 not 60 because 90% of 60, and bot isn't up 100% of time
     if (
       (d in hourDays and r < 1/54) or 
-      (d not in hourDays and r < 1/(54*24)) or
-      messageID is int(msgID) # if it's from command, we want to update
+      (d not in hourDays and r < 1/(54*24))
     ):
       messages.append([await guildsChannels[guildID][channelID].fetch_message(messageID), getStandings(url, league, client)])
     
