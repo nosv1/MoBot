@@ -108,7 +108,7 @@ async def main(args, message, client):
       if ("add game emojis" in message.content):
         await addGameEmojis(message)
     if (len(args) > 3):
-      if ("standings" in args[1] and "new" in args[2]):
+      if ("standings" in args[1] and "new" in args[2]): # @MoBot standings new S18-UK-PC-F1
         await newStandings(message, client)
     
 # end main
@@ -268,6 +268,68 @@ async def getDriverProfileNames(message, userID):
   return names
 # end getDriverProfileNames
 
+def getFlags():
+  moBotDB = MoBotDatabase.connectDatabase("AOR F1")
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+  SELECT flags.key, flags.flag
+  FROM flags
+  """)
+  moBotDB.connection.close()
+
+  flags = {}
+  for record in moBotDB.cursor:
+    flags[record[0]] = record[1]
+  return flags
+# end getFlag
+
+def getDriverRaces(names):
+  sqlNames = ""
+  for name in names:
+    sqlNames+= "\ndriver_name = '%s' OR\n" % (MoBotDatabase.replaceChars(name))
+  sqlNames = sqlNames[:-3]
+
+  moBotDB = MoBotDatabase.connectDatabase("AOR F1")
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+    SELECT *
+    FROM race_inputs
+    WHERE %s
+    ORDER BY date ASC
+  """ % sqlNames)
+
+  races = []
+  for record in moBotDB.cursor:
+    races.append(Race(*record))
+
+  moBotDB.connection.close()
+  return races
+# end getDriverRaces
+
+def getSimilarDriverNames(names):
+  whereClause = ""
+  for name in names:
+    whereClause += ("LOWER(driver_name) LIKE '%s' OR\n"
+      % ("%" + MoBotDatabase.replaceChars(name.strip().lower()) + "%"))
+  whereClause = whereClause[:-3]
+
+  moBotDB = MoBotDatabase.connectDatabase('AOR F1')
+  moBotDB.connection.commit()
+  moBotDB.cursor.execute("""
+    SELECT DISTINCT(driver_name)
+    FROM race_inputs
+    WHERE %s
+    ORDER BY driver_name
+    """ % (whereClause))
+
+  names = []
+  for record in moBotDB.cursor:
+    names.append(record[0])
+  moBotDB.connection.close()
+
+  return names
+# end getSimilarDriverNames
+
 #   --- END AOR F1 DRIVER PROFILES ---
 
 #   --- AOR STANDINGS ---
@@ -387,8 +449,6 @@ def getStandings(url, league, client):
   return embed
 # end getStandings
 
-#   --- END AOR STANDINGS ---
-
 def getSpreadsheet(url):
   soup = bSoup(requests.get(url).text, "html.parser")
   rows = soup.findAll("tr")
@@ -460,67 +520,7 @@ def getAutoUpdateStandings():
   return messages
 # end getAutoUpdateStandings
 
-def getFlags():
-  moBotDB = MoBotDatabase.connectDatabase("AOR F1")
-  moBotDB.connection.commit()
-  moBotDB.cursor.execute("""
-  SELECT flags.key, flags.flag
-  FROM flags
-  """)
-  moBotDB.connection.close()
-
-  flags = {}
-  for record in moBotDB.cursor:
-    flags[record[0]] = record[1]
-  return flags
-# end getFlag
-
-def getDriverRaces(names):
-  sqlNames = ""
-  for name in names:
-    sqlNames+= "\ndriver_name = '%s' OR\n" % (MoBotDatabase.replaceChars(name))
-  sqlNames = sqlNames[:-3]
-
-  moBotDB = MoBotDatabase.connectDatabase("AOR F1")
-  moBotDB.connection.commit()
-  moBotDB.cursor.execute("""
-    SELECT *
-    FROM race_inputs
-    WHERE %s
-    ORDER BY date ASC
-  """ % sqlNames)
-
-  races = []
-  for record in moBotDB.cursor:
-    races.append(Race(*record))
-
-  moBotDB.connection.close()
-  return races
-# end getDriverRaces
-
-def getSimilarDriverNames(names):
-  whereClause = ""
-  for name in names:
-    whereClause += ("LOWER(driver_name) LIKE '%s' OR\n"
-      % ("%" + MoBotDatabase.replaceChars(name.strip().lower()) + "%"))
-  whereClause = whereClause[:-3]
-
-  moBotDB = MoBotDatabase.connectDatabase('AOR F1')
-  moBotDB.connection.commit()
-  moBotDB.cursor.execute("""
-    SELECT DISTINCT(driver_name)
-    FROM race_inputs
-    WHERE %s
-    ORDER BY driver_name
-    """ % (whereClause))
-
-  names = []
-  for record in moBotDB.cursor:
-    names.append(record[0])
-  moBotDB.connection.close()
-
-  return names
-# end getSimilarDriverNames
+#   --- END AOR STANDINGS ---
 
 # ----- END AOR F1 DATABASE -----
 
