@@ -106,7 +106,10 @@ async def main(args, message, client):
   if (str(moBot) in args[0]):
     if (args[1].lower() == "aor"):
       if ("add game emojis" in message.content):
-        await addGameEmojis(message)  
+        await addGameEmojis(message)
+    if (len(args) > 4):
+      if ("standings" in args[1] and "new" in args[2]):
+        await newStandings(message, client)
     
 # end main
 
@@ -269,7 +272,37 @@ async def getDriverProfileNames(message, userID):
 
 #   --- AOR STANDINGS ---
 
-async def updateStandings(client):
+async def newStandings(message, client):
+  msg = await message.channel.send("**Getting League Spreadsheet Link**")
+
+  msgID = msg.id
+  channelID = msg.channel.id
+  guildID = msg.guild.id
+  league = message.content.split("new")[1].strip().split("-")
+  season = league[0]
+  region = league[1]
+  platform = league[2]
+  split = league[3]
+  
+  standingsSheetLinks = getStandingsSheetLinks()
+  url = standingsSheetLinks[season][region][platform][split]
+  await msg.edit(content="**Creating Standings Embed**\n*This could take a second...*")
+  standingsEmbed = getStandings(url, league, client)
+  await msg.edit(embed=standingsEmbed, content=spaceChar)
+
+  moBotDB = MoBotDatabase.connectDatabase("AOR F1")
+  moBotDB.cursor.execute("""
+  INSERT INTO `AOR F1`.auto_update_standings 
+    (`message_id`, `channel_id`, `guild_id`, `url`, `league`, `notes`)
+  VALUES
+    ('%s', '%s', '%s', '%s', '%s', '#%s, %s')
+  """ % (msgID, channelID, guildID, url, "-".join(league), msg.channel.name, msg.guild.name))
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
+  await message.channel.send("**Automatic Standings Embed Saved**", delete_after=5)
+# end newStandings
+
+async def updateStandings(msgID, client): # msgID is none if not from command
   now = datetime.utcnow()
 
   autoUpdateStandings = getAutoUpdateStandings()
@@ -293,7 +326,11 @@ async def updateStandings(client):
     d = now.weekday()
     hourDays = [7, 0, 1] # sunday, monday, tuesday, when refresh should be once per hour
     # 54 not 60 because 90% of 60, and bot isn't up 100% of time
-    if ((d in hourDays and r < 1/54) or (d not in hourDays and r < 1/(54*24))):
+    if (
+      (d in hourDays and r < 1/54) or 
+      (d not in hourDays and r < 1/(54*24)) or
+      messageID is int(msgID) # if it's from command, we want to update
+    ):
       messages.append([await guildsChannels[guildID][channelID].fetch_message(messageID), getStandings(url, league, client)])
     
   for messageEmbed in messages:
@@ -309,7 +346,8 @@ async def updateStandings(client):
 
 def getStandings(url, league, client):
   
-  league = league.split("-")
+  if (type([]) is not type(league)): # given league may already be split
+    league = league.split("-")
   season = league[0]
   region = league[1]
   platform = league[2]

@@ -580,7 +580,6 @@ async def on_member_remove(member):
     await eval(servers[str(member.guild.id)] + ".memberRemove(member, client)")
 # end on_member_remove
 
-# when a reactio is added to a message
 @client.event
 async def on_raw_reaction_add(payload):
   if (not isConnected):
