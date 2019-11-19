@@ -26,7 +26,7 @@ import NobleHub
 import AOR
 
 # importing external functions files
-import getGTAWeather
+import GTAWeather
 import XboxGamertags
 import watchWords
 #import tTeams // no longer supported
