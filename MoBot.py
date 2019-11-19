@@ -168,11 +168,11 @@ async def on_message(message):
   
   logActionToConsole(message, message.author, "message")
 
-  if (str(message.author) != "MoBot#0697"):
+  if (moBot is not message.author.id):
     if ((message.author.id == 209584832030834688 or mo == message.author.id) and "beep" in args): # if potterman says beep...
       await message.channel.send("boop")
 
-    if (args[0][-19:-1] == str(moBot)):
+    if (str(moBot) in args[0]):
       authorPerms = message.channel.permissions_for(message.author)
       isBotSpam = message.channel.id == 593911201658961942
       isMo = mo == message.author.id
@@ -392,6 +392,8 @@ async def on_message(message):
           await message.channel.send("**No [#destination-channel] Given**\n\n`@MoBot#0697 copy [embed] [Message_ID] [#destination-channel]` *(`[embed]` is only needed if there is an embed in the source message)*")
 
       ## random commands
+      elif ("gtaweather" in args[1] or "gta weather" in message.content):
+        await GTAWeather.sendWeatherForecast(message)
       elif (args[1] == "admin" and isMo):
         await AdminFunctions.main(args, message,client) 
       elif (args[1] == "dk" and isMo):

@@ -5,6 +5,8 @@ import math
 
 moBot = 449247895858970624
 
+spaceChar = "⠀"
+
 weatherPeriod = 384
 gameHourLength = 120
 sunriseTime = 5
@@ -151,6 +153,38 @@ async def sendWeather(message): # nothing permanent...
   await message.channel.send(report)
 # end updateWeather
 
+async def sendWeatherForecast(message):
+  def getFutureRain(n):
+    rainStr = ""
+    oldRainState = None
+    t = n
+    while (t < n + timedelta(hours=24)):
+      currentWeather = getForecast(t)
+      rainState = currentWeather.isRaining
+      if (rainState != oldRainState):
+        if (rainState):
+          rainStr += "%s - %s\n"% (t.strftime("%H:%M"), currentWeather.rainEtaStr)
+      oldRainState = rainState
+      t += timedelta(minutes=1)
+    return rainStr
+  # end getFutureRain
+
+  n = datetime.utcnow()
+
+  moBotMember = message.guild.get_member(moBot)
+  embed = discord.Embed(color=moBotMember.roles[-1].color)
+  embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar_url)
+
+  currentWeather = getForecast(n)
+  currentWeatherStr = "**It is currently `%s` and `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
+  currentRainStr = "**Rain will `%s` in `%s`.**" % ("end" if (currentWeather.isRaining)else "begin", currentWeather.rainEtaStr.strip())
+  futureRainStr = "**Rain in the next 12 hours:\n```%s```**" % getFutureRain(n)
+
+  embed.description = "`%s UTC`\n%s\n%s\n\n%s" % (n.strftime("%b %d %H:%M"), currentWeatherStr, currentRainStr, futureRainStr)
+
+  await message.channel.send(embed=embed)
+# end openWeatherSession
+
 # --- GET WEATHER FROM UTC DATE ---
 
 def secToVerboseInterval(seconds):
@@ -161,8 +195,8 @@ def secToVerboseInterval(seconds):
   hours = math.floor(seconds / 3600 + (sMod60 / 3600))
   minutes = math.floor((seconds - (hours * 3600)) / 60 + (sMod60 / 60))
   ret = (
-    ((str(hours) + " hours " if (hours > 1) else " hour ") if (hours > 0) else "") + 
-    ((str(minutes) + " minutes " if (minutes > 1) else " minute ") if (minutes > 0) else "")
+    ((str(hours) + (" hours " if (hours > 1) else " hour ")) if (hours > 0) else "") + 
+    ((str(minutes) + (" minutes " if (minutes > 1) else " minute ")) if (minutes > 0) else "")
   )
 
   return ret

@@ -126,7 +126,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await GTAWeather.sendWeather(message)
+        await GTAWeather.sendWeatherForecast(message)
         #await AOR.openDriverProfileEmbed(message)
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "?"):
