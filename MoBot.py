@@ -1,5 +1,16 @@
 # MoBot made by Mo#9991
 
+'''
+ISSUES: 
+  get rid of 'priming temp storage' on_ready()
+    UPDATE COLLECTIONS
+  yeet MoBotServers.txt, get that shit in the database
+
+FUTURE UPDATES:
+  Upon updating MoBot Help
+    check deleteMessages() in General Commands
+'''
+
 import discord
 import asyncio
 from datetime import datetime, timedelta
@@ -45,6 +56,7 @@ import AdminFunctions
 import EventScheduler
 import SimpleCommands
 import MoBotDatabase
+import GeneralCommands
 
 import Hangman
 import DKGetPicks
@@ -62,14 +74,18 @@ moBotDB = None # connection on onReady()
 
 moBot = 449247895858970624
 
-# common guilds
+# guilds
 cotm = 527156310366486529
 moBotSupport = 467239192007671818
 noble2sLeauge = 437936224402014208
 
-# common users
+# channels
+botSpam = 593911201658961942
+
+# users
 mo = 405944496665133058
 nosv1 = 475325629688971274
+potterman = 209584832030834688
 
 spaceChar = "⠀"
 
@@ -103,6 +119,15 @@ questionWords = {
 reactionMessages = {}
 autoRoles = {} 
 isConnected = False
+
+class UserPerms:
+  def __init__(self, administrator, manageMessages, manageRoles, manageChannels, changeNicknames):
+    self.administrator = administrator
+    self.manageMessages = manageMessages
+    self.manageRoles = manageRoles
+    self.manageChannels = manageChannels
+    self.changeNicknames = changeNicknames
+# end UserPerms
 
 @client.event
 async def on_ready():
@@ -158,52 +183,53 @@ async def on_raw_message_edit(payload):
 
 @client.event
 async def on_message(message):
-  if (not isConnected):
+  if (not isConnected): # don't check messages unless on_ready() is done
     return
   message.content = message.content.replace('“','"').replace('”','"').replace("  ", " ")
 
-  args = message.content.split(" ")
-  for i in range(0, len(args)):
-    args[i] = args[i].split("\n")[0].strip()
+  mc = message.content.translate({ord(c) : " " for c in ["\n", "\t", "\r"]}) # that was beautiful
+  while ("  " in mc):
+    mc = mc.replace("  ", " ")
+  args = mc.split(" ")
   
   logActionToConsole(message, message.author, "message")
 
   if (moBot is not message.author.id):
-    if ((message.author.id == 209584832030834688 or mo == message.author.id) and "beep" in args): # if potterman says beep...
+    if ((message.author.id is potterman or message.author.id is mo) and "beep" in args): # if potterman says beep...
       await message.channel.send("boop")
 
     if (str(moBot) in args[0]):
       authorPerms = message.channel.permissions_for(message.author)
-      isBotSpam = message.channel.id == 593911201658961942
-      isMo = mo == message.author.id
-      isNos = nosv1 == message.author.id
-      permissions = {
-        "changeNicknamePerms" : isNos or isMo or authorPerms.change_nickname or isBotSpam,
-        "manageChannelPerms" : isNos or isMo or authorPerms.manage_channels or isBotSpam,
-        "manageMessagePerms" : isNos or isMo or authorPerms.manage_messages or isBotSpam,
-        "manageRolePerms" : isNos or isMo or authorPerms.manage_roles or isBotSpam,
-        "administratorPerms" : isNos or isMo or authorPerms.administrator
-      }
+      isBotSpam = message.channel.id is botSpam
+      isMo = message.author.id is mo
+      isNos = message.author.id is nosv1
+      authorPerms = UserPerms(
+        isNos or isMo or authorPerms.administrator,
+        isNos or isMo or authorPerms.manage_messages or isBotSpam,
+        isNos or isMo or authorPerms.manage_roles or isBotSpam,
+        isNos or isMo or authorPerms.manage_channels or isBotSpam,
+        isNos or isMo or authorPerms.change_nickname or isBotSpam,
+      )
 
-      if (len(args) == 1):
-        await message.channel.send("Use `@MoBot#0697 help` to see a list of commands.")
+      if (len(args) is 1):
+        await message.channel.send(":eyes: Use `@MoBot#0697 help` for help...")
 
-      ## commands that have seperate files
-      elif (args[1] == "ticket"):
+      # --- SPECALIZED COMMANDS ---
+      elif ("ticket" in args[1]):
         await ticketManager.main(args, message, client)
-      elif ("schedule" in args[1] and "message" in args[2]):
+      elif ("schedule message" in mc):
           await MessageScheduler.main(args, message, client)
-      elif (args[1] == "sheets"):
+      elif ("sheets" in args[1]):
         await DiscordSheets.main(args, message, client)
-      elif ((args[1] == "countdown" or args[1] == "clock") and permissions["manageChannelPerms"]):
+      elif (args[1] in ["countdown", "clock"] and authorPerms.manageChannels):
         await ClocksAndCountdowns.main(args, message, client)
-      elif (args[1] == "scrims"):
+      elif ("scrims" in args[1]):
         await RLScrims.main(args, message, client)
-      elif (args[1] == "watch" and permissions["manageRolePerms"]):
+      elif ("watch" in args[1] and authorPerms.manageRoles):
         global reactionMessages 
         reactionMessages = await ReactionRole.addReactionRoleMessage(message, args, reactionMessages)
         reactionMessages = await ReactionRole.clearDeletedMessages(reactionMessages, client)
-      elif (args[1] == "autorole" and permissions["manageRolePerms"]):
+      elif ("autorole" in args[1] and authorPerms.manageRoles):
         global autoRoles
         if (args[2] == "add"):
           autoRoles = await ReactionRole.addAutoRole(message, autoRoles)
@@ -215,58 +241,42 @@ async def on_message(message):
         await Reservations.main(args, message, client)
       elif ("tz" in args[1]):
         await MoBotTimeZones.main(args, message, client)
-      elif (args[1] == "rlrank"):
+      elif ("rlrank" in args[1]):
         await RLRanks.main(args, message, client)
-      elif (args[1] == "remindme"):
+      elif ("remindme" in args[1]):
         await EventScheduler.setReminder(message)
       elif ("commands" in args[1]):
         await SimpleCommands.main(args, message, client)
       elif (len(args) >= 3 and "command" in args[2]):
-        if (permissions["manageMessagePerms"]):
+        if (authorPerms.manageMessages):
           await SimpleCommands.main(args, message, client)
         else:
           await message.channel.send("**Not Enough Permissions**\nMust have Manage Message permisisons to create/edit/delete MoBot Custom Commands.")
 
-      ## general use server commands
-      elif (args[1] == "say" and permissions["manageMessagePerms"]):
-        if (args[2] == "embed"):
-          await moBotEmbed(message, args, False)
+      # --- GENERAL USE COMMANDS --- 
+      elif ("say" in args[1] and authorPerms.manageMessages):
+        if ("embed" in args[2]):
+          await GeneralCommands.sayEmbed(message, args, False)
         else:
           try:
             await message.delete()
           except discord.errors.Forbidden:
             pass
           await message.channel.send(message.content[26:])
-      # edit a message based on given id
-      elif (args[1] == "edit" and permissions["manageMessagePerms"]):
-        if (args[2] == "embed"):
-          await moBotEmbed(message, args, True)
+      elif ("edit" in args[1] and authorPerms.manageMessages):
+        if ("embed" in args[2]):
+          await GeneralCommands.sayEmbed(message, args, True)
         else:
-          msg = None
-          try:
-            msg = await message.channel.fetch_message(int(args[2]))
-          except discord.errors.NotFound:
-            for channel in message.guild.channels:
-              try:
-                msg = await channel.fetch_message(int(args[2]))
-                break
-              except discord.errors.NotFound:
-                pass
-              except AttributeError:
-                pass
-          if (msg is None):
-            await message.channel.send("Looks like something didn't go quite right... The command for editing a regular message is, `@MoBot#0697 edit [MessageID] [new_text]`. The command for editing an embed can be found using `@MoBot#0697 embed help`.")
-          else:
-            await msg.edit(content=message.content.split(args[2])[1].strip())
-      elif (args[1] == "channel" and permissions["manageChannelPerms"]):
+          await GeneralCommands.editMessage(message, args)
+      elif ("channel" in args[1] and authorPerms.manageChannels):
         channel = message.guild.get_channel(int(args[2]))
         await channel.edit(name=message.content.split(str(channel.id))[1].strip())
         try:
           await message.delete()
         except discord.errors.Forbidden:
           pass
-      elif (args[1] == "nick" and permissions["changeNicknamePerms"]):
-        if (message.guild.id == noble2sLeauge):
+      elif ("nick" in args[1] and authorPerms.changeNicknames):
+        if (message.guild.id is noble2sLeauge):
           await Noble2sLeague.setnick(message)
         else:
           await message.author.edit(nick=message.content.split("nick")[1].strip())
@@ -274,122 +284,28 @@ async def on_message(message):
             await message.delete()
           except discord.errors.Forbidden:
             pass
-      elif (args[1] == "monick" and isMo):
-        await client.get_user(moBot).edit(nick=message.content.split(args[1]+" ")[1])
-      # add a reaction to a message based on given id 
-      elif (args[1] == "add"):
-        if (args[2] == "reaction"):
+      elif ("monick" in args[1] and isMo):
+        await message.get_member.edit(nick=message.content.split(args[1])[1].strip())
+      elif ("add" in args[1]):
+        if ("reaction" in args[2]):
           if (len(args) > 2):
             try:
               await message.delete()
             except discord.errors.Forbidden:
               pass
             await ReactionRole.addReactionToMessage(await message.channel.fetch_message(int(args[4])), args[3])
-      # clear messages based on given count
-      elif (args[1] == "clear" and permissions["manageMessagePerms"]):
-        try:
-          if (args[2] == "welcome" and args[3] == "messages"):
-            await message.channel.trigger_typing()
-            count = 0
-            history = message.channel.history(before=message)
-            async for msg in history:
-              if (msg.type == discord.MessageType.new_member):
-                count += 1
-                await msg.delete()
-            msg = await message.channel.send("Deleted " + str(count) + " messages.")
-            await asyncio.sleep(3)
-            await msg.delete()
-            await message.delete()
-          else:
-            count = int(args[2]) + 1
-            await message.channel.purge(limit=count)
-        except discord.errors.Forbidden:
-          await message.channel.send("**I need Manage Message permissions for this command.**")
-      elif (args[1] == "delete" and permissions["manageMessagePerms"]):
-        try:
-          topMsgID = int(message.content.split("delete ")[1].split(" ")[0].strip())
-          try:
-            if ("delete" not in message.content.split(" ")[-2]):
-              bottomMsgID = int(message.content.split(" ")[-1].strip())
-            else:
-              bottomMsgID = message.id
-          except ValueError:
-            bottomMsgID = message.id
-          try:
-            topMsg = await message.channel.fetch_message(topMsgID)
-            bottomMsg = await message.channel.fetch_message(bottomMsgID)
-            purged = await message.channel.purge(after=topMsg, before=bottomMsg)
-            try:
-              await topMsg.delete()
-            except discord.errors.NotFound:
-              pass
-            try:
-              await bottomMsg.delete()
-            except discord.errors.NotFound:
-              pass
-            try:
-              await message.delete()
-            except discord.errors.NotFound:
-              pass
-            msg = await message.channel.send("Deleted " + str(len(purged) + 1) + " messages.")
-            await asyncio.sleep(5)
-            await msg.delete()
-          except discord.errors.NotFound:
-            await message.channel.send("Message Not Found -- Check the ID you gave -- For futher help, use `@MoBot#0697 help` -> General Use -> `@MoBot#0697 delete`")
-          except AttributeError:
-            topMsg = await message.channel.fetch_message(topMsgID)
-            bottomMsg = await message.channel.fetch_message(bottomMsgID)
-            history = message.channel.history(after=topMsg, before=bottomMsg)
-            await topMsg.delete()
-            async for msg in history:
-              try:
-                await msg.delete()
-              except:
-                pass
-        except discord.errors.Forbidden:
-          await message.channel.send("**I need Manage Message permissions for this command.**")
+      elif ("clear" in args[1] and authorPerms.manageMessages):
+        await GeneralCommands.clearMessages(message, args)
+      elif ("delete" in args[1] and authorPerms.manageMessages):
+        await GeneralCommands.deleteMessages(message)
       # remove/add role to user
-      elif (args[1] == "role" and permissions["manageRolePerms"]):
-        r = args[3]
-        user = client.get_user(int(args[4]))
-        
-        roles = message.guild.roles
-        if (args[2] == "add"):
-          for role in roles:
-            if (role.id == int(r)):
-              await user.add_roles(role)
-        elif (args[2] == "remove"):
-          for role in roles:
-            if (role.id == int(r)):
-              await user.remove_roles(role)
-      elif (args[1] == "copy" and permissions["manageMessagePerms"]):
-        await message.channel.trigger_typing()
+      elif ("role" in args[1] and authorPerms.manageRoles):
+        await GeneralCommands.addRemoveRole(message, args)
+      elif (args[1] == "copy" and authorPerms.manageMessages):
+        await GeneralCommands.copyMessage(message, args)
+      elif ("replace" in args[1] and authorPerms.manageMessages):
+        await GeneralCommands.replaceMessage()
 
-        try:
-          destChannel = message.guild.get_channel(int(message.content.split("#")[1].split(">")[0].strip())) # checked error statement
-
-          msgIDs = message.content.split("copy")[1].strip().split("<#")[0].strip().split(" ")
-          for msgID in msgIDs:
-            if (msgID == "embed"):
-              continue
-            msg = await message.channel.fetch_message(int(msgID))
-            if (msg.content != ""):
-              content = msg.content
-            else:
-              content = None
-            if (args[2] == "embed"):
-              try:
-                await destChannel.send(embed=msg.embeds[0], content=content)
-              except IndexError:
-                await message.channel.send("**No Embed in Message**\n<" + msg.jump_url + ">.")
-            else:
-              content = msg.content
-              for attachment in msg.attachments:
-                content += "\n" + attachment.url
-              content += " " + spaceChar
-              await destChannel.send(content=content)
-        except IndexError:
-          await message.channel.send("**No [#destination-channel] Given**\n\n`@MoBot#0697 copy [embed] [Message_ID] [#destination-channel]` *(`[embed]` is only needed if there is an embed in the source message)*")
 
       ## random commands
       elif ("gtaweather" in args[1] or "gta weather" in message.content):
@@ -894,264 +810,6 @@ async def moBotQuestions(message, args):
   reply = reply[r % len(reply)]
   await message.channel.send(reply)
 # end moBotQuestions
-
-async def moBotEmbed(message, args, isEdit):
-  mc = message.content
-  empty = discord.Embed().Empty
-  color = empty
-  authorIcon = empty
-  authorLine = None
-  authorURL = None
-  thumbnail = empty
-  fields = []
-  embedPicture = None
-  footer = None
-  embed = None
-  isCollection = False
-  isReservation = False
-  if (isEdit):
-    try:
-      msg = None
-      try:
-        msg = await message.channel.fetch_message(int(args[3]))
-      except discord.errors.NotFound:
-        for channel in message.guild.channels:
-          try:
-            msg = await channel.fetch_message(int(args[3]))
-            break
-          except discord.errors.NotFound:
-            pass
-          except AttributeError:
-            pass
-      if (msg is None):
-        await message.channel.send("**Message ID Not Found**")
-        return
-      mc = mc.replace(args[3] + " ", "")
-      embed = msg.embeds[0]
-      color = embed.color
-      embed = embed.to_dict()
-
-      try:
-        authorIcon = embed["author"]["icon_url"]
-      except KeyError:
-        pass
-
-      try:
-        authorURL = embed["author"]["url"]
-        isCollection = "MoBotCollection" in authorURL
-        isReservation = "MoBotReservation" in authorURL
-      except KeyError:
-        pass
-
-      try:
-        descripton = embed["description"]
-      except KeyError:
-        pass
-
-      try:
-        authorLine = embed["author"]["name"]
-      except KeyError:
-        pass
-
-      try:
-        thumbnail = embed["thumbnail"]["url"]
-      except KeyError:
-        pass
-
-      try:
-        eFields = embed["fields"]
-        for i in range(len(eFields)):
-          fields.append([eFields[i]["name"], eFields[i]["value"]])
-      except KeyError:
-        pass
-
-      try:
-        embedPicture = embed["image"]["url"]
-      except KeyError:
-        pass
-
-      try:
-        footer = embed["footer"]["text"]
-      except KeyError:
-        pass
-
-      embed = discord.Embed().from_dict(embed)
-    except:
-      await message.channel.send("Looks like something wasn't quite right... Either the MessageID you typed isn't correct, or the MessageID of the message doesn't have an embed already. You also need to be in the same channel as the embed. Use `@MoBot#0697 embed help` for further guidence.")
-      return
-
-  # get color
-  try:
-    color = int("0x" + mc.split("embed #")[1].split("\n")[0].strip(), 16)
-  except IndexError:
-    pass
-  if (isEdit):
-    embed.color = color
-  else:
-    embed = discord.Embed(color=color)
-
-  # get author stuff
-  try:
-    authorIcon = mc.split("$$")[1].split("\n")[0].strip()
-    authorIcon = authorIcon if (authorIcon != "") else empty
-
-    try:
-      authorIcon = message.attachments[0].url
-    except IndexError:
-      pass
-
-  except IndexError:
-    pass
-
-  try:
-    authorLine = mc.split("!!")[1].split("\n")[0].strip().replace("\\n", "\n")
-  except IndexError:
-    pass
-
-  if (authorIcon != empty and authorLine == None):
-    if (isCollection):
-      embed.set_author(name=spaceChar, icon_url=authorIcon, url=authorURL)
-    else:
-      embed.set_author(name=spaceChar, icon_url=authorIcon)
-  elif (authorLine != None):
-    if (isCollection or isReservation):
-      embed.set_author(name=authorLine, icon_url=authorIcon, url=authorURL)
-    else:
-      embed.set_author(name=authorLine, icon_url=authorIcon)
-    
-  try:
-    description = mc.split("^^")[1].split("\n")[0].strip()
-    embed.description = description.replace("\\n", "\n")
-  except IndexError:
-    pass
-
-  # get footer
-  try:
-    footer = mc.split("##")[1].split("\n")[0].strip()
-    embed.set_footer(text=footer)
-  except IndexError:
-    pass
-
-  # get thumbnail
-  try:
-    thumbnail = mc.split("%%")[1].split("\n")[0].strip()
-
-    if (thumbnail == ""):
-      try:
-        thumbnail = message.attachments[0].url
-      except IndexError:
-        thumbnail = None
-
-    if (thumbnail == None):
-      embed = embed.to_dict()
-      try:
-        embed.pop("thumbnail")
-      except KeyError:
-        pass
-      embed = discord.Embed().from_dict(embed)
-    else:
-      embed.set_thumbnail(url=thumbnail)
-  except IndexError:
-    pass
-
-  # get embed picture
-  try:
-    embedPicture = mc.split("&&")[1].split("\n")[0].strip()
-
-    if (embedPicture == ""):
-      try:
-        embedPicture = message.attachments[0].url
-      except IndexError:
-        embedPicture = None
-
-    if (embedPicture == None):
-      embed = embed.to_dict()
-      try:
-        embed.pop("image")
-      except KeyError:
-        pass
-      embed = discord.Embed().from_dict(embed)
-    else:
-      embed.set_image(url=embedPicture)
-  except IndexError:
-    pass
-
-  newFields = []
-  # get fields
-  lines = mc.split("\n")
-  symbols = ["!!", "^^", "@@", "##", "$$", "%%", "&&"]
-  i = 1
-  while (i < len(lines)):
-    if (lines[i].strip() == ""):
-      lines[i] = spaceChar
-
-    fieldName = ""
-    fieldValue = ""
-    symbolInLine = False
-    for symbol in symbols:
-      symbolInLine = symbol in lines[i]
-      if (symbolInLine):
-        break
-
-    if ("@@" in lines[i]):
-      fieldName = lines[i].split("@@")[1].split("\n")[0].strip()
-
-    elif (not symbolInLine):
-      fieldName = spaceChar if (fieldName == "") else fieldName
-      fieldValue = lines[i] + "\n"
-    
-    if (fieldName != ""):
-      i += 1
-      j = i
-      while (j < len(lines)):
-        if (lines[j].strip() == ""):
-          lines[j] = spaceChar
-
-        symbolInLine = False
-        for symbol in symbols:
-          symbolInLine = symbol in lines[j]
-          if (symbolInLine):
-            break
-
-        if ("@@" in lines[j]):
-          i = j
-          break
-
-        elif (not symbolInLine):
-          fieldValue += lines[j] + "\n"
-          i = j + 1
-          j = i
-
-        else:
-          i = j + 1
-          break
-    else:
-      i += 1
-
-    if (fieldName != "" and fieldValue != ""):
-      newFields.append([fieldName, fieldValue])
-    elif (fieldName != "" and fieldValue == ""):
-      newFields.append([fieldName, spaceChar])
-  # end while
-
-  fields = newFields if (newFields != []) else fields
-  if (len(newFields) != 0):
-    embed.clear_fields()
-    for field in fields:
-      embed.add_field(name=field[0].replace("\\n", "\n"), value=field[1].replace("\\n", "\n"), inline=False)
-
-  try:
-    if (isEdit):
-      await msg.edit(embed=embed)
-      await message.channel.send("**Message Edited**", delete_after=5.0)
-      if (isCollection or isReservation):
-        await Collections.replaceCollectionEmbed(message, msg.id, msg.id, client)
-    else:
-      msg = await message.channel.send(embed=embed)
-      await message.channel.send("If you'd like to edit the embed above, in your original message, replace `say embed` with `edit embed " + str(msg.id) + "`. You don't need to copy and paste, or re-send the message, simply edit your original message, and press enter. You can also copy your embed to another channel by using `@MoBot#0697 copy embed  " + str(msg.id) + " [#destination-channel]`.")
-  except discord.errors.HTTPException:
-    await message.channel.send("Looks like something didn't go quite right... Discord has a limit on how long a message can be, 2000 characters  ... but there is also a limit on how big a field value can be, 1024 characters. If you have a large field value, perhaps adding another field header, and splitting the field value might work.")
-# end moBotEmbed
 
 async def bugReport(message):
   moBotSupportServer = client.get_guild(moBotSupport)

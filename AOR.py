@@ -444,7 +444,7 @@ def getStandings(url, league, client):
       pass
   value += "\n[__Results Spreadsheet__](" + url.replace("_", "\\_") + ")"
   embed.add_field(name="**__Driver Standings - After %s__**" % flags[roundFlag.upper()], value=value)
-  embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Last Refresh: %H:%M UTC - %d %b |"))
+  embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Last Refresh: %H:%M UTC - %d %b %a |"))
 
   return embed
 # end getStandings
