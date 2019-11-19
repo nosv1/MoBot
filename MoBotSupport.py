@@ -6,10 +6,13 @@ from oauth2client.service_account import ServiceAccountCredentials
 import mysql.connector
 
 import SecretStuff
+import MoBotDatabase
 
 moBot = 449247895858970624
 moBotTest = 476974462022189056
 mo = 405944496665133058
+
+spaceChar = "⠀"
 
 async def main(args, message, client):
   now = datetime.now()
