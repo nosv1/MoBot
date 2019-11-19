@@ -395,7 +395,7 @@ async def on_message(message):
       elif ("gtaweather" in args[1] or "gta weather" in message.content):
         await GTAWeather.sendWeatherForecast(message)
       elif (args[1] == "admin" and isMo):
-        await AdminFunctions.main(args, message,client) 
+        await AdminFunctions.main(args, message, client) 
       elif (args[1] == "dk" and isMo):
         await DKGetPicks.main(args, message, client)
       elif (args[1] == "avatar"):
@@ -672,6 +672,9 @@ async def on_raw_reaction_add(payload):
 
         elif ("MoBot Custom Commands" in embedAuthor):
           await SimpleCommands.mainReactionAdd(message, payload, client)
+
+        elif ("GTA V Weather Forecast" in embedAuthor):
+          await GTAWeather.handleFutureCast(message, member)
 
         elif ("•" in embedFooter and "-- (" in embedFooter and ")" in embedFooter):
           if (payload.emoji.name == "⬅"):

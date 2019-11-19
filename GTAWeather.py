@@ -6,6 +6,7 @@ import math
 moBot = 449247895858970624
 
 spaceChar = "⠀"
+CALENDEAR_EMOJI = "📅"
 
 weatherPeriod = 384
 gameHourLength = 120
@@ -138,37 +139,30 @@ weatherStateChanges = [
   [377, partlyCloudyWeatherState]
 ]
 
-async def sendWeather(message): # nothing permanent...
-  startTimes = [datetime(2019, 11, 24, 19, 0), datetime(2019, 11, 24, 20, 15), datetime(2019, 11, 24, 21, 30)]
+async def handleFutureCast(message, member):
+  await message.remove_reaction(CALENDEAR_EMOJI, member)
+  n = datetime.utcnow()
+  history = await message.channel.history(after=message, oldest_first=False).flatten()
+  for msg in history:
+    if (msg.author.id is member.id):
+      try:
+        n = datetime.strptime(msg.content.strip(), "%d %m %y %H:%M")
+      except ValueError:
+        await message.channel.send("**Could not convert message to date**\nPlease use the format `dd nm yy hh:mm`. The numbers MUST zero-padded (1 -> 01).")
+        return None
+      break
 
-  report = "**Weather Forecast**\n"
-  for d in startTimes:
-    report += "```Time Slot %s:\n" % (startTimes.index(d) + 1)
-    for i in range(0, 60, 5):
-      t = d + timedelta(minutes=i)
-      forecast = getForecast(t)
-      report += "  %s - %s\n" % (t.strftime("%H:%M"), forecast.currentWeatherDescription)
-    report += "```"
+  moBotMember = message.guild.get_member(moBot)
+  embed = discord.Embed(color=moBotMember.roles[-1].color)
+  embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar_url)
 
-  await message.channel.send(report)
+  futurecast = "**3-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%b %d %H:%M UTC"), getFuturecast(n))
+
+  embed.description = futurecast
+  msg = await message.channel.send(embed=embed)
 # end updateWeather
 
 async def sendWeatherForecast(message):
-  def getFutureRain(n):
-    rainStr = ""
-    oldRainState = None
-    t = n
-    while (t < n + timedelta(hours=24)):
-      currentWeather = getForecast(t)
-      rainState = currentWeather.isRaining
-      if (rainState != oldRainState):
-        if (rainState):
-          rainStr += "%s - %s\n"% (t.strftime("%H:%M"), currentWeather.rainEtaStr)
-      oldRainState = rainState
-      t += timedelta(minutes=1)
-    return rainStr
-  # end getFutureRain
-
   n = datetime.utcnow()
 
   moBotMember = message.guild.get_member(moBot)
@@ -176,13 +170,15 @@ async def sendWeatherForecast(message):
   embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar_url)
 
   currentWeather = getForecast(n)
-  currentWeatherStr = "**It is currently `%s` and `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
-  currentRainStr = "**Rain will `%s` in `%s`.**" % ("end" if (currentWeather.isRaining)else "begin", currentWeather.rainEtaStr.strip())
-  futureRainStr = "**Rain in the next 12 hours:\n```%s```**" % getFutureRain(n)
+  currentWeatherStr = "**The time is `%s`, and the weather is `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
+  currentRainStr = "**Rain will `%s` in `%s`.**" % ("end" if (currentWeather.isRaining) else "begin", currentWeather.rainEtaStr.strip())
+  futureRainStr = "**Rain in the next 12 hours:```%s```**" % getFutureRain(n)
+  specificDateInstructions = "**To use a specific date:**\n1. Type a date in the format `dd mm yy hh:mm`\n2. Click the %s\n*The numbers MUST BE zero-padded, and the time zone used is UTC.*\n__Example:__\n`1 February 2003 04:05 UTC` -> `01 02 03 04:05`" % CALENDEAR_EMOJI
 
-  embed.description = "`%s UTC`\n%s\n%s\n\n%s" % (n.strftime("%b %d %H:%M"), currentWeatherStr, currentRainStr, futureRainStr)
+  embed.description = "`%s UTC`\n%s\n%s\n\n%s\n%s" % (n.strftime("%b %d %H:%M"), currentWeatherStr, currentRainStr, futureRainStr, specificDateInstructions)
 
-  await message.channel.send(embed=embed)
+  msg = await message.channel.send(embed=embed)
+  await msg.add_reaction(CALENDEAR_EMOJI)
 # end openWeatherSession
 
 # --- GET WEATHER FROM UTC DATE ---
@@ -258,6 +254,34 @@ def isRaining(state):
 def isDayTime(gameTimeOfDayHrs):
   return gameTimeOfDayHrs >= sunriseTime and gameTimeOfDayHrs < sunsetTime
 # end isDayTime
+
+def getFutureRain(n):
+  rainStr = ""
+  oldRainState = None
+  t = n
+  while (t < n + timedelta(hours=24)):
+    currentWeather = getForecast(t)
+    rainState = currentWeather.isRaining
+    if (rainState != oldRainState):
+      if (rainState):
+        rainStr += "%s - %s\n" % (t.strftime("%H:%M"), currentWeather.rainEtaStr)
+    oldRainState = rainState
+    t += timedelta(minutes=1)
+  return rainStr
+# end getFutureRain
+
+def getFuturecast(n):
+  report = ""
+  t = n
+  oldWeatherDescription = None
+  while (t < n + timedelta(hours=3)):
+    currentWeather = getForecast(t)
+    if (currentWeather.currentWeatherDescription != oldWeatherDescription):
+      report += "%s - %s\n" % (t.strftime("%H:%M"), currentWeather.currentWeatherDescription.title())
+    oldWeatherDescription = currentWeather.currentWeatherDescription
+    t += timedelta(minutes=1)
+  return report
+# end getFuturecast
 
 def getForecast(currentDate):
   gtaTime = getGTATimeFromDate(currentDate)
