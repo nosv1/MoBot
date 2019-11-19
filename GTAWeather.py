@@ -148,7 +148,7 @@ async def handleFutureCast(message, member):
       try:
         n = datetime.strptime(msg.content.strip(), "%d %m %y %H:%M")
       except ValueError:
-        await message.channel.send("**Could not convert message to date**\nPlease use the format `dd nm yy hh:mm`. The numbers MUST BE zero-padded (`1 -> 01`).")
+        await message.channel.send("**Could not convert message to date**\nPlease use the format `dd mm yy hh:mm`. The numbers MUST BE zero-padded (`1 -> 01`).")
         return None
       break
 
