@@ -34,6 +34,8 @@ import DKGetPicks
 import SimpleCommands
 import MoBotDatabase
 import Mazes
+import Help
+import GTAWeather
 
 import COTM
 import AOR
@@ -124,14 +126,11 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        url = "https://docs.google.com/spreadsheets/d/1GJnnfUYtFDeXsfZOYHPhdx-a292lrJ9bQgTlhVf774w/pubhtml"
-        embed = AOR.getStandings(url, "S18-UK-PC-F1", client)
-        moBotMember = message.guild.get_member(moBot)
-        embed.color = moBotMember.roles[-1].color
-        embed.set_thumbnail(url=message.guild.icon_url)
-        await message.channel.send(embed=embed)
+        await GTAWeather.sendWeather(message)
         #await AOR.openDriverProfileEmbed(message)
         await message.channel.send("done", delete_after=3)
+      elif (args[1] == "?"):
+        await Help.main(args, message, client)
       elif (args[1] == "maze"):
         size = int(message.content.split("maze")[1].strip())
         maze = Mazes.mazeBuilder(size)
@@ -378,6 +377,8 @@ async def on_raw_reaction_add(payload):
         elif (payload.emoji.name == "🗑"):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      if ("MoBot Commands" in embedAuthor):
+        await Help.mainReactionAdd(message, payload, client)
       if ("Clock Editor" in embedAuthor):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "clock")
       if ("Countdown Editor" in embedAuthor):
@@ -425,6 +426,11 @@ async def on_raw_reaction_remove(payload):
   message = msg
 
   try:
+    embedAuthor = str(message.embeds[0].author.name)
+  except IndexError:
+    embedAuthor = "None"
+
+  try:
     pName = payload.emoji.name if (payload.emoji.id == None) else "<:" + payload.emoji.name + ":" + str(payload.emoji.id) + ">"
     msg = reactionMessages[pName][message.id]
     roles = message.guild.roles
@@ -450,6 +456,8 @@ async def on_raw_reaction_remove(payload):
         await COTM.reserveNotAvailable(message, member)
 
     if (len(message.embeds) > 0):
+      if ("MoBot Commands" in embedAuthor):
+        await Help.mainReactionAdd(message, payload, client)
       '''if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
         await Collections.mainReactionRemove(message, payload, message.embeds[0], client)'''
       pass
@@ -719,6 +727,7 @@ async def makeEmbed(message):
   embed.description = "**Big test** <@" + str(moBot) + ">"
 
   embed.set_image(url=message.author.avatar_url)
+  embed.set_image(url="https://giant.gfycat.com/MeekOrneryArgentineruddyduck.gif")
   embed.set_footer(text="Footer\n**__Footer__**")
   print(embed.to_dict())
 
