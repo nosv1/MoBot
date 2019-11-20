@@ -261,7 +261,7 @@ async def updateCountdownInfo(guild, countdown):
         countdowns.repeating = '%s'
       WHERE
         countdowns.channel_id = '%s'
-    """ % (countdown.endDatetime, countdown.timeZone, countdown.text, countdown.repeating, countdown.channelID))
+    """ % (countdown.endDatetime, countdown.timeZone, MoBotDatabase.replaceChars(countdown.text), countdown.repeating, countdown.channelID))
   else:
     moBotDB.cursor.execute("""
       INSERT INTO MoBot.countdowns
