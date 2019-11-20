@@ -110,7 +110,7 @@ async def main(client):
       currentTime = datetime.now() + timedelta(seconds=5)
       currentUTC = datetime.utcnow()
       second = currentTime.second
-      if (lastSecond == second):
+      if (lastSecond is second):
         await asyncio.sleep(1)
         continue
       else:
@@ -119,7 +119,7 @@ async def main(client):
       sys.stdout.write("\rCurrent Time: " + str(currentTime))
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
-      if (second == 0): # check for every 60 seconds
+      if (second is 0): # check for every 60 seconds
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
 
@@ -130,7 +130,7 @@ async def main(client):
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
 
-        if (currentTime.minute % 5 == 0): # check for new scheduled messages every 5 minutes
+        if (currentTime.minute % 5 is 0): # check every 5 minutes
           try:
             workbook = await EventScheduler.openSpreadsheet()
             eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
@@ -174,7 +174,7 @@ async def main(client):
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
     except gspread.exceptions.APIError:
-      type, value, traceback = sys.exc_info()
+      eType, value, eTraceback = sys.exc_info()
       await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(value) + "```")
     except:
       try:
