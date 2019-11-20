@@ -301,7 +301,7 @@ async def on_message(message):
         elif (args[1] == "copy" and authorPerms.manageMessages):
           await GeneralCommands.copyMessage(message, args)
         elif ("replace" in args[1] and authorPerms.manageMessages):
-          await GeneralCommands.replaceMessage()
+          await GeneralCommands.replaceMessage(message, args)
 
 
         ## random commands
@@ -434,7 +434,10 @@ async def on_message(message):
       ## calling server specific file 
       if (str(message.guild.id) in servers):
         # the servers dict is imported from a text file, found in the folder MoBotServers.txt
-        await eval(servers[str(message.guild.id)] + ".main(args, message, client)")
+        try:
+          await eval(servers[str(message.guild.id)] + ".main(args, message, client)")
+        except AttributeError: # some reason message.guild is none
+          pass
 
       if ((message.guild.id == cotm or message.guild.id == moBotSupport) and "<@" + str(moBot) + ">" in message.content):
         try:
