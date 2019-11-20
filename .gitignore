@@ -1,2 +1,14 @@
 __pycache__
 .vscode
+<<<<<<< HEAD
+=======
+MoBotServers.txt
+DKGetPicks.py
+DKSalaries/DKSalaries - SUN - W6.csv
+ValueList.txt
+MoBotTest.py
+ValueList.txt
+MoBotTest.py
+DKGetPicks.py
+ValueList.txt
+>>>>>>> parent of 1f1d90d... Merge branch 'master' into Updating-MoBot.py
