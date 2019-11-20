@@ -431,13 +431,13 @@ async def on_message(message):
         elif (args[1].lower() == "server"):
           await message.channel.send("Join my server... It's where you can see features that are in development and such, if you're into that... https://discord.gg/bgyEpEh")
 
+      try:
       ## calling server specific file 
-      if (str(message.guild.id) in servers):
+        if (str(message.guild.id) in servers):
         # the servers dict is imported from a text file, found in the folder MoBotServers.txt
-        try:
           await eval(servers[str(message.guild.id)] + ".main(args, message, client)")
-        except AttributeError: # some reason message.guild is none
-          pass
+      except AttributeError: # some reason message.guild is none
+        pass
 
       if ((message.guild.id == cotm or message.guild.id == moBotSupport) and "<@" + str(moBot) + ">" in message.content):
         try:
