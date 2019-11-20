@@ -183,8 +183,7 @@ async def on_message(message):
     return
 
   try:
-    message.content = message.content.replace('“','"').replace('”','"').replace("  ", " ")
-
+    message.content = message.content.translate({ord(c) : '"' for c in ['“', '”']})
     mc = message.content.translate({ord(c) : " " for c in ["\n", "\t", "\r"]}) # that was beautiful
     while ("  " in mc):
       mc = mc.replace("  ", " ")
@@ -471,8 +470,6 @@ async def on_message(message):
       except:
         await client.get_user(int(mo)).send("MoBot Database Error!```" + sql + "``` ```" + str(traceback.format_exc()) + "```")
 
-    if (message.author.id == mo):
-      pass
   except:
     await client.get_user(int(mo)).send("MoBot Error!```" + str(traceback.format_exc()) + "```")
 # end on_message
