@@ -36,7 +36,6 @@ import MoBotDatabase
 import Mazes
 import Help
 import GTAWeather
-import GeneralCommands
 
 import COTM
 import AOR
@@ -101,7 +100,6 @@ async def on_raw_message_edit(payload):
 @client.event
 async def on_message(message):
   logMessageToConsole(message, message.author, "reaction")
-  message.content = message.content.replace('“','"').replace('”','"').replace("  ", " ")
 
   try:
     if (not message.author.bot):
@@ -109,10 +107,9 @@ async def on_message(message):
   except:
     pass
 
-  mc = message.content.translate({ord(c) : " " for c in ["\n", "\t", "\r"]}) # that was beautiful
-  while ("  " in mc):
-    mc = mc.replace("  ", " ")
-  args = mc.split(" ")
+  args = message.content.split(" ")
+  for i in range(len(args)):
+    args[i] = args[i].split("\n")[0].strip()
 
   if (args[0] == "test" or "476974462022189056" in args[0]):
 
@@ -129,7 +126,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await GeneralCommands.replaceMessage(message, args)
+        await GTAWeather.sendWeatherForecast(message)
         #await AOR.openDriverProfileEmbed(message)
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "?"):
