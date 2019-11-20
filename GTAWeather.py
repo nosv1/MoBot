@@ -99,7 +99,7 @@ weatherStateChanges = [
   [72, partlyCloudyWeatherState],
   [78, fogWeatherState],
   [82, cloudyWeatherState],
-  [92, drizzleWeatherState],
+  [92, mostlyClearWeatherState],
   [104, partlyCloudyWeatherState],
   [105, drizzleWeatherState],
   [108, partlyCloudyWeatherState],
@@ -112,13 +112,13 @@ weatherStateChanges = [
   [151, mostlyCloudyWeatherState],
   [155, fogWeatherState],
   [159, clearWeatherState],
-  [176, drizzleWeatherState],
+  [176, mostlyClearWeatherState],
   [196, fogWeatherState],
   [201, partlyCloudyWeatherState],
   [220, mistWeatherState],
-  [222, drizzleWeatherState],
+  [222, mostlyClearWeatherState],
   [244, mistWeatherState],
-  [246, drizzleWeatherState],
+  [246, mostlyClearWeatherState],
   [247, rainWeatherState],
   [250, drizzleWeatherState],
   [252, partlyCloudyWeatherState],
@@ -285,6 +285,7 @@ def getFuturecast(n):
 
 def getForecast(currentDate):
   gtaTime = getGTATimeFromDate(currentDate)
+  print(gtaTime.weatherPeriodTime)
   currentWeather = getWeatherForPeriodTime(gtaTime.weatherPeriodTime)
   if (currentWeather is None):
     return "Failed to determine current weather"
@@ -304,5 +305,13 @@ def getForecast(currentDate):
     rainETA.isRaining
   )
 # end getForecast
+
+print(vars(getForecast(
+  datetime(2019, 11, 20, 18, 58) +
+  timedelta(hours=3, minutes=18) +
+  timedelta(minutes=32) +
+  timedelta(minutes=46 + 12) +
+  timedelta(hours=1, minutes=18 + 40 + 52)
+  )))
 
 # --- END GET WEATHER FROM UTC DATE ---
