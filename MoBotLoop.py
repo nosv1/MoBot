@@ -173,6 +173,9 @@ async def main(client):
         
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
+    except gspread.exceptions.APIError:
+      type, value, traceback = sys.exc_info()
+      await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(value) + "```")
     except:
       try:
         await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(traceback.format_exc()) + "```")
