@@ -172,10 +172,11 @@ async def sendWeatherForecast(message):
   currentWeather = getForecast(n)
   currentWeatherStr = "**The time is `%s`, and the weather is `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
   currentRainStr = "**Rain will `%s` in `%s`.**" % ("end" if (currentWeather.isRaining) else "begin", currentWeather.rainEtaStr.strip())
+  futurecast = "**3-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%a %b %d %H:%M UTC"), getFuturecast(n))
   futureRainStr = "**Rain in the next 12 hours:```%s```**" % getFutureRain(n)
   specificDateInstructions = "**To use a specific date:**\n1. Type a date in the format `dd mm yy hh:mm`\n2. Click the %s\n*The numbers MUST BE zero-padded, and the time zone used is UTC.*\n__Example:__\n`1 February 2003 04:05 UTC` -> `01 02 03 04:05`" % CALENDEAR_EMOJI
 
-  embed.description = "`%s UTC`\n%s\n%s\n\n%s\n%s" % (n.strftime("%a %b %d %H:%M"), currentWeatherStr, currentRainStr, futureRainStr, specificDateInstructions)
+  embed.description = "`%s UTC`\n%s\n%s\n\n%s\n%s\n%s" % (n.strftime("%a %b %d %H:%M"), currentWeatherStr, currentRainStr, futurecast, futureRainStr, specificDateInstructions)
 
   msg = await message.channel.send(embed=embed)
   await msg.add_reaction(CALENDEAR_EMOJI)
@@ -285,7 +286,6 @@ def getFuturecast(n):
 
 def getForecast(currentDate):
   gtaTime = getGTATimeFromDate(currentDate)
-  print(gtaTime.weatherPeriodTime)
   currentWeather = getWeatherForPeriodTime(gtaTime.weatherPeriodTime)
   if (currentWeather is None):
     return "Failed to determine current weather"
@@ -305,13 +305,5 @@ def getForecast(currentDate):
     rainETA.isRaining
   )
 # end getForecast
-
-print(vars(getForecast(
-  datetime(2019, 11, 20, 18, 58) +
-  timedelta(hours=3, minutes=18) +
-  timedelta(minutes=32) +
-  timedelta(minutes=46 + 12) +
-  timedelta(hours=1, minutes=18 + 40 + 52)
-  )))
 
 # --- END GET WEATHER FROM UTC DATE ---
