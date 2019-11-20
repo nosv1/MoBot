@@ -453,5 +453,9 @@ def getCurrent():
   reply += "GTA Online: {:02}:{:02}\n".format(gtaHour(t), gtaMinute(t))
   reply += "IRL: {:02d}:{:02d} UK / {:02d}:{:02d} ET / {:02d}:{:02d} PT\n".format(UK, MIN, ET, MIN, PT, MIN)
   reply += ("https://drive.google.com/uc?export=view&id=0B75PJ5mxM_" + images[gtaDay(t) * 24 + gtaHour(t)])
+  print(gtaDay(t) * 24 + gtaHour(t))
   reply += "\nSource (<http://gtaweather.herokuapp.com/weather>)"
   return reply
+
+print(getCurrent())
+print("https://drive.google.com/uc?export=view&id=0B75PJ5mxM_%s" % (images[247]))
