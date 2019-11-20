@@ -436,19 +436,20 @@ async def on_message(message):
         if (str(message.guild.id) in servers):
         # the servers dict is imported from a text file, found in the folder MoBotServers.txt
           await eval(servers[str(message.guild.id)] + ".main(args, message, client)")
+
+        if ((message.guild.id is cotm or message.guild.id is moBotSupport) and "<@%s>" % str(moBot) in message.content):
+          try:
+            #await message.channel.send("```" + message.content + "```")
+            await ReactionRole.addReactionToMessage(message, "🇲")
+            await ReactionRole.addReactionToMessage(message, "🇴")
+            await ReactionRole.addReactionToMessage(message, "🇧")
+            await ReactionRole.addReactionToMessage(message, "🅾")
+            await ReactionRole.addReactionToMessage(message, "🇹")
+          except discord.errors.NotFound:
+            pass
+
       except AttributeError: # some reason message.guild is none
         pass
-
-      if ((message.guild.id == cotm or message.guild.id == moBotSupport) and "<@" + str(moBot) + ">" in message.content):
-        try:
-          #await message.channel.send("```" + message.content + "```")
-          await ReactionRole.addReactionToMessage(message, "🇲")
-          await ReactionRole.addReactionToMessage(message, "🇴")
-          await ReactionRole.addReactionToMessage(message, "🇧")
-          await ReactionRole.addReactionToMessage(message, "🅾")
-          await ReactionRole.addReactionToMessage(message, "🇹")
-        except discord.errors.NotFound:
-          pass
 
     if (not message.author.bot):
       try:
