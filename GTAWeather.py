@@ -99,7 +99,7 @@ weatherStateChanges = [
   [72, partlyCloudyWeatherState],
   [78, fogWeatherState],
   [82, cloudyWeatherState],
-  [92, drizzleWeatherState],
+  [92, mostlyClearWeatherState],
   [104, partlyCloudyWeatherState],
   [105, drizzleWeatherState],
   [108, partlyCloudyWeatherState],
@@ -112,13 +112,13 @@ weatherStateChanges = [
   [151, mostlyCloudyWeatherState],
   [155, fogWeatherState],
   [159, clearWeatherState],
-  [176, drizzleWeatherState],
+  [176, mostlyClearWeatherState],
   [196, fogWeatherState],
   [201, partlyCloudyWeatherState],
   [220, mistWeatherState],
-  [222, drizzleWeatherState],
+  [222, mostlyClearWeatherState],
   [244, mistWeatherState],
-  [246, drizzleWeatherState],
+  [246, mostlyClearWeatherState],
   [247, rainWeatherState],
   [250, drizzleWeatherState],
   [252, partlyCloudyWeatherState],
@@ -172,10 +172,11 @@ async def sendWeatherForecast(message):
   currentWeather = getForecast(n)
   currentWeatherStr = "**The time is `%s`, and the weather is `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
   currentRainStr = "**Rain will `%s` in `%s`.**" % ("end" if (currentWeather.isRaining) else "begin", currentWeather.rainEtaStr.strip())
+  futurecast = "**3-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%a %b %d %H:%M UTC"), getFuturecast(n))
   futureRainStr = "**Rain in the next 12 hours:```%s```**" % getFutureRain(n)
   specificDateInstructions = "**To use a specific date:**\n1. Type a date in the format `dd mm yy hh:mm`\n2. Click the %s\n*The numbers MUST BE zero-padded, and the time zone used is UTC.*\n__Example:__\n`1 February 2003 04:05 UTC` -> `01 02 03 04:05`" % CALENDEAR_EMOJI
 
-  embed.description = "`%s UTC`\n%s\n%s\n\n%s\n%s" % (n.strftime("%a %b %d %H:%M"), currentWeatherStr, currentRainStr, futureRainStr, specificDateInstructions)
+  embed.description = "`%s UTC`\n%s\n%s\n\n%s\n%s\n%s" % (n.strftime("%a %b %d %H:%M"), currentWeatherStr, currentRainStr, futurecast, futureRainStr, specificDateInstructions)
 
   msg = await message.channel.send(embed=embed)
   await msg.add_reaction(CALENDEAR_EMOJI)
