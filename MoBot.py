@@ -592,7 +592,7 @@ async def on_raw_reaction_add(payload):
           await SimpleCommands.mainReactionAdd(message, payload, client)
 
         elif ("GTA V Weather Forecast" in embedAuthor):
-          await GTAWeather.handleFutureCast(message, member)
+          await GTAWeather.mainReactionAdd(message, payload, client)
 
         elif ("•" in embedFooter and "-- (" in embedFooter and ")" in embedFooter):
           if (payload.emoji.name == "⬅"):
