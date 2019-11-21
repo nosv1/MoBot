@@ -108,6 +108,7 @@ async def on_message(message):
   messageRate = messagesSent / d.total_seconds()
 
   if (d.seconds > 600):
+    messagesSent = 0
     tenMinutetime = n
 # end on_message
 
