@@ -452,27 +452,24 @@ async def on_message(message):
         pass
 
     if (not message.author.bot):
+      global moBotDB
       try:
-        global moBotDB
-        try:
-          moBotDB.connection.commit()
-        except AttributeError: # when no connection was made
-          moBotDB = MoBotDatabase.connectDatabase('MoBot')
-          
-        sql = """
-          SELECT *
-          FROM custom_commands 
-          WHERE 
-            custom_commands.trigger = '%s' AND 
-            custom_commands.guild_id = '%s'
-          """ % (MoBotDatabase.replaceChars(message.content), message.guild.id)
         moBotDB.connection.commit()
-        moBotDB.cursor.execute(sql)
-        for record in moBotDB.cursor:
-          await SimpleCommands.sendCommand(message, record)
-          break
-      except:
-        await client.get_user(int(mo)).send("MoBot Database Error!```" + sql + "``` ```" + str(traceback.format_exc()) + "```")
+      except AttributeError: # when no connection was made
+        moBotDB = MoBotDatabase.connectDatabase('MoBot')
+        
+      sql = """
+        SELECT *
+        FROM custom_commands 
+        WHERE 
+          custom_commands.trigger = '%s' AND 
+          custom_commands.guild_id = '%s'
+        """ % (MoBotDatabase.replaceChars(message.content), message.guild.id)
+      moBotDB.connection.commit()
+      moBotDB.cursor.execute(sql)
+      for record in moBotDB.cursor:
+        await SimpleCommands.sendCommand(message, record)
+        break
 
     # check for clock accuracy...
     if (random.random() < .1):
