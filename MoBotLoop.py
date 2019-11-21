@@ -15,6 +15,7 @@ import websockets
 import httplib2
 import feedparser
 import SecretStuff
+import RandomFunctions
 
 import ClocksAndCountdowns
 import EventScheduler
@@ -66,14 +67,18 @@ donations = {
 scheduledEvents = []
 reminders = []
 
-started = False
+tenMinutetime = datetime.now()
+messagesSent = 0
+messageRate = 0
+
+isConnected = False
 # when bot is first online
 @client.event
 async def on_ready():
-  global started
-  if (not started):
+  global isConnected
+  if (not isConnected):
     print("\nMoBotLoop is online - " + str(datetime.now()) + "\n")
-    started = True
+    isConnected = True
   else:
     sys.exit()
   
@@ -84,6 +89,27 @@ async def on_ready():
     await mobotLog.send(embed=embed)
     await main(client)
 # end on_ready
+
+@client.event
+async def on_message(message):
+  global isConnected
+  global tenMinutetime
+  global messagesSent
+  global messageRate
+  global messageRate
+
+  if (not isConnected):
+    return
+  
+  n = datetime.now()
+  d = n - tenMinutetime
+
+  messagesSent += 1
+  messageRate = messagesSent / d.total_seconds()
+
+  if (d.seconds > 600):
+    tenMinutetime = n
+# end on_message
 
 async def main(client):
   try:
@@ -175,10 +201,13 @@ async def main(client):
         await AOR.updateStandings(client)
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
-      await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(value) + "```")
+      if (value["error"][0] is 5):
+        pass
+      else:
+        await RandomFunctions.sendErrorToMo("MoBotLoop", client, mo)
     except:
       try:
-        await client.get_user(int(mo)).send("MoBotLoop Error!```" + str(traceback.format_exc()) + "```")
+        await RandomFunctions.sendErrorToMo("MoBotLoop", client, mo)
       except:
         print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
         sys.exit()
@@ -260,11 +289,15 @@ async def updateMoBotStatus(client):
   elif (rand < 30): # 10%
     serverCount = discord.Activity(type=discord.ActivityType.watching, name=str(len(client.guilds)) + " servers")
     await client.change_presence(activity=serverCount)
-  elif (rand >= 30): # 70%
-    if (rand >= 65): # 50%
+  elif (rand < 40): # 10%
+    msgRate = discord.Activity(type=discord.ActivityType.watching, name="Msg/Sec: %.2f" % messageRate)
+    await client.change_presence(activity=msgRate)
+  elif (rand >= 40):
+    if (rand >= 50): 
       await client.change_presence(activity=moBotHelp)
-    else: # 50%
+    else:
       await client.change_presence(activity=donate)
+# end updateMoBotStatus
 
 async def getGuildCountdowns():
   moBotDB = MoBotDatabase.connectDatabase('MoBot')

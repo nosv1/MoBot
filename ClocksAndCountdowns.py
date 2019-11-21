@@ -7,8 +7,12 @@ from dateutil.relativedelta import relativedelta
 
 import SecretStuff
 import MoBotDatabase
+import RandomFunctions
 
-moBot = "449247895858970624"
+mo = 405944496665133058
+moBot = 449247895858970624
+moBotSupport = 467239192007671818
+clockChannel = 579774370684207133 # channel in mobot support with clock
 
 editorPages = {
   "Author" : "",
@@ -61,7 +65,7 @@ async def memberRemove(member, client):
 # end memberRemove
 
 async def mainReactionAdd(message, payload, client, clockType): 
-  if (payload.user_id != int(moBot)):
+  if (payload.user_id is not moBot):
     await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
 
     channelID = message.content.split("**Channel ID**: ")[1].split("\n")[0].strip()
@@ -432,13 +436,13 @@ async def closeEditor(message, payload, clockType, channelID, isEditor):
 
       await message.edit(embed=embed)
 
-      await message.remove_reaction("🗑", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("◀", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("▶", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("🔼", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("⏫", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("⏬", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("🔽", message.guild.get_member(int(moBot)))
+      await message.remove_reaction("🗑", message.guild.get_member(moBot))
+      await message.remove_reaction("◀", message.guild.get_member(moBot))
+      await message.remove_reaction("▶", message.guild.get_member(moBot))
+      await message.remove_reaction("🔼", message.guild.get_member(moBot))
+      await message.remove_reaction("⏫", message.guild.get_member(moBot))
+      await message.remove_reaction("⏬", message.guild.get_member(moBot))
+      await message.remove_reaction("🔽", message.guild.get_member(moBot))
 
     elif (payload.emoji.name == "🗑"):
       embed = discord.Embed(colour=0x36393f)
@@ -447,13 +451,13 @@ async def closeEditor(message, payload, clockType, channelID, isEditor):
 
       await message.edit(embed=embed)
 
-      await message.remove_reaction("🗑", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("◀", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("▶", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("🔼", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("⏫", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("⏬", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("🔽", message.guild.get_member(int(moBot)))
+      await message.remove_reaction("🗑", message.guild.get_member(moBot))
+      await message.remove_reaction("◀", message.guild.get_member(moBot))
+      await message.remove_reaction("▶", message.guild.get_member(moBot))
+      await message.remove_reaction("🔼", message.guild.get_member(moBot))
+      await message.remove_reaction("⏫", message.guild.get_member(moBot))
+      await message.remove_reaction("⏬", message.guild.get_member(moBot))
+      await message.remove_reaction("🔽", message.guild.get_member(moBot))
   else:
     if (payload.emoji.name == "✅"):
       embed = message.embeds[0].to_dict()
@@ -517,11 +521,11 @@ async def openEditor(message, editorPages, pageNumber, editorID, clockType, coun
       await message.add_reaction("⏬")
     await editorMsg.add_reaction("🔽")
   else:
-    await editorMsg.remove_reaction("🔼", message.guild.get_member(int(moBot)))
+    await editorMsg.remove_reaction("🔼", message.guild.get_member(moBot))
     if (clockType == "countdown"):
-      await message.remove_reaction("⏫", message.guild.get_member(int(moBot)))
-      await message.remove_reaction("⏬", message.guild.get_member(int(moBot)))
-    await editorMsg.remove_reaction("🔽", message.guild.get_member(int(moBot)))
+      await message.remove_reaction("⏫", message.guild.get_member(moBot))
+      await message.remove_reaction("⏬", message.guild.get_member(moBot))
+    await editorMsg.remove_reaction("🔽", message.guild.get_member(moBot))
 # end openEditor
 
 async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
@@ -675,3 +679,13 @@ async def createChannel(message, clockType):
   channel = await guild.create_voice_channel(channelName)
   return channel.id
 # end createChannel
+
+async def checkClockAccuracy(client):
+  n = datetime.now()
+  guild = client.get_guild(moBotSupport)
+  channel = guild.get_channel(clockChannel)
+  timeZone = channel.name.split(" ")[1]
+  
+  if(n.minute - int(channel.name.split(":")[1][:2]) > 1):
+    await RandomFunctions.sendMessageToMo("**CLOCKS AREN'T UPDATED**\nCurrent Time: `%s`\nClock: `%s`" % (n.strftime("%H:%M%p " + timeZone + " - %b %d" ), channel.name), client, mo)
+# end checkClockAccuracy
