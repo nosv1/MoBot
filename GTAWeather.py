@@ -23,6 +23,7 @@ async def mainReactionAdd(message, payload, client):
     await handleFutureCast(message, member)
   elif (payload.emoji.name == COUNTER_CLOCKWISE_EMOJI):
     await sendWeatherForecast(message)
+    await message.remove_reaction(COUNTER_CLOCKWISE_EMOJI, member)
 # end mainReactionAdd
 
 class Weather:
@@ -180,7 +181,7 @@ async def sendWeatherForecast(message):
   embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar_url)
 
   currentWeather = getForecast(n)
-  currentWeatherStr = "**The time is `%s`, and the weather is `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
+  currentWeatherStr = "**The time is `%s`, and it is `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
   currentRainStr = "**Rain will `%s` in `%s`.**" % ("end" if (currentWeather.isRaining) else "begin", currentWeather.rainEtaStr.strip())
   futurecast = "**3-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%a %b %d %H:%M UTC"), getFuturecast(n))
   futureRainStr = "**Rain in the next 12 hours:```%s```**" % getFutureRain(n)
@@ -189,12 +190,12 @@ async def sendWeatherForecast(message):
   embed.description = "`%s UTC`\n%s\n%s\n\n%s\n%s\n%s" % (n.strftime("%a %b %d %H:%M"), currentWeatherStr, currentRainStr, futurecast, futureRainStr, specificDateInstructions)
   embed.set_footer(text="| %s Refresh |" % COUNTER_CLOCKWISE_EMOJI)
 
-  if (message.author.id is not moBot):
+  if (message.author.id != moBot):
     msg = await message.channel.send(embed=embed)
+    await msg.add_reaction(CALENDEAR_EMOJI)
+    await msg.add_reaction(COUNTER_CLOCKWISE_EMOJI)
   else:
     msg = await message.edit(embed=embed)
-  await msg.add_reaction(CALENDEAR_EMOJI)
-  await msg.add_reaction(COUNTER_CLOCKWISE_EMOJI)
 # end openWeatherSession
 
 # --- GET WEATHER FROM UTC DATE ---

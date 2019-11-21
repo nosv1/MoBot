@@ -191,15 +191,15 @@ async def on_message(message):
     
     logActionToConsole(message, message.author, "message")
 
-    if (moBot is not message.author.id):
-      if ((message.author.id is potterman or message.author.id is mo) and "beep" in args): # if potterman says beep...
+    if (moBot != message.author.id):
+      if ((message.author.id == potterman or message.author.id == mo) and "beep" in args): # if potterman says beep...
         await message.channel.send("boop")
 
       if (str(moBot) in args[0]):
         authorPerms = message.channel.permissions_for(message.author)
-        isBotSpam = message.channel.id is botSpam
-        isMo = message.author.id is mo
-        isNos = message.author.id is nosv1
+        isBotSpam = message.channel.id == botSpam
+        isMo = message.author.id == mo
+        isNos = message.author.id == nosv1
         authorPerms = UserPerms(
           isNos or isMo or authorPerms.administrator,
           isNos or isMo or authorPerms.manage_messages or isBotSpam,
@@ -273,7 +273,7 @@ async def on_message(message):
           except discord.errors.Forbidden:
             pass
         elif ("nick" in args[1] and authorPerms.changeNicknames):
-          if (message.guild.id is noble2sLeauge):
+          if (message.guild.id == noble2sLeauge):
             await Noble2sLeague.setnick(message)
           else:
             await message.author.edit(nick=message.content.split("nick")[1].strip())
@@ -437,7 +437,7 @@ async def on_message(message):
         # the servers dict is imported from a text file, found in the folder MoBotServers.txt
           await eval(servers[str(message.guild.id)] + ".main(args, message, client)")
 
-        if ((message.guild.id is cotm or message.guild.id is moBotSupport) and "<@%s>" % str(moBot) in message.content):
+        if ((message.guild.id == cotm or message.guild.id == moBotSupport) and "<@%s>" % str(moBot) in message.content):
           try:
             #await message.channel.send("```" + message.content + "```")
             await ReactionRole.addReactionToMessage(message, "🇲")

@@ -65,7 +65,7 @@ async def memberRemove(member, client):
 # end memberRemove
 
 async def mainReactionAdd(message, payload, client, clockType): 
-  if (payload.user_id is not moBot):
+  if (payload.user_id != moBot):
     await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
 
     channelID = message.content.split("**Channel ID**: ")[1].split("\n")[0].strip()
