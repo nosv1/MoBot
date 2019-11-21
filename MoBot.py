@@ -475,7 +475,7 @@ async def on_message(message):
         await client.get_user(int(mo)).send("MoBot Database Error!```" + sql + "``` ```" + str(traceback.format_exc()) + "```")
 
     # check for clock accuracy...
-    if (random.random < .1):
+    if (random.random() < .1):
       await ClocksAndCountdowns.checkClockAccuracy(client)
 
   except:
