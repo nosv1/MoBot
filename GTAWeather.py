@@ -7,6 +7,7 @@ moBot = 449247895858970624
 
 spaceChar = "⠀"
 CALENDEAR_EMOJI = "📅"
+COUNTER_CLOCKWISE_EMOJI = "🔄"
 
 weatherPeriod = 384
 gameHourLength = 120
@@ -14,6 +15,15 @@ sunriseTime = 5
 sunsetTime = 21
 
 b = datetime(1970, 1, 1) # used to get total_seconds
+
+async def mainReactionAdd(message, payload, client): 
+  member = message.guild.get_member(payload.user_id)
+
+  if (payload.emoji.name == CALENDEAR_EMOJI):
+    await handleFutureCast(message, member)
+  elif (payload.emoji.name == COUNTER_CLOCKWISE_EMOJI):
+    await sendWeatherForecast(message)
+# end mainReactionAdd
 
 class Weather:
   def __init__(self, name, emoji, thumbnailDay, thumbnailNight):
@@ -177,9 +187,14 @@ async def sendWeatherForecast(message):
   specificDateInstructions = "**To use a specific date:**\n1. Type a date in the format `dd mm yy hh:mm`\n2. Click the %s\n*The numbers MUST BE zero-padded, and the time zone used is UTC.*\n__Example:__\n`1 February 2003 04:05 UTC` -> `01 02 03 04:05`" % CALENDEAR_EMOJI
 
   embed.description = "`%s UTC`\n%s\n%s\n\n%s\n%s\n%s" % (n.strftime("%a %b %d %H:%M"), currentWeatherStr, currentRainStr, futurecast, futureRainStr, specificDateInstructions)
+  embed.set_footer(text="| %s Refresh |" % COUNTER_CLOCKWISE_EMOJI)
 
-  msg = await message.channel.send(embed=embed)
+  if (message.author.id is not moBot):
+    msg = await message.channel.send(embed=embed)
+  else:
+    msg = await message.edit(embed=embed)
   await msg.add_reaction(CALENDEAR_EMOJI)
+  await msg.add_reaction(COUNTER_CLOCKWISE_EMOJI)
 # end openWeatherSession
 
 # --- GET WEATHER FROM UTC DATE ---
