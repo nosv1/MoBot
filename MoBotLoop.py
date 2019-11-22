@@ -202,7 +202,7 @@ async def main(client):
         await AOR.updateStandings(client)
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
-      if (value["error"][0] is 5):
+      if (value["error"]["code"][0] is 5):
         pass
       else:
         await RandomFunctions.sendErrorToMo("MoBotLoop", client, mo)
