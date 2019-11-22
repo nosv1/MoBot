@@ -686,6 +686,6 @@ async def checkClockAccuracy(client):
   channel = guild.get_channel(clockChannel)
   timeZone = channel.name.split(" ")[1]
   
-  if(n.minute - int(channel.name.split(":")[1][:2]) > 1):
+  if(n.minute - int(channel.name.split(":")[1][:2]) > 2):
     await RandomFunctions.sendMessageToMo("**CLOCKS AREN'T UPDATED**\nCurrent Time: `%s`\nClock: `%s`" % (n.strftime("%H:%M%p " + timeZone + " - %b %d" ), channel.name), client, mo)
 # end checkClockAccuracy
