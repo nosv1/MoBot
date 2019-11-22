@@ -472,7 +472,7 @@ async def on_message(message):
         break
 
     # check for clock accuracy...
-    if (random.random() < .01):
+    if (random.random() < .005):
       await ClocksAndCountdowns.checkClockAccuracy(client)
 
   except:
