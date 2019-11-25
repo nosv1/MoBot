@@ -409,7 +409,7 @@ async def deleteLap(message, member):
   msg = await message.channel.fetch_message(int(embed["footer"]["text"].split("|")[1]))
   embed["description"] += "\n\nLAP DELETED: " + reason
   embed["description"] = embed["description"].replace("New Lap Submission", "~~New Lap Submission~~")
-  await message.edit(embd=discord.Emebd().from_dict(embed))
+  await message.edit(embd=discord.Embed().from_dict(embed))
   for reaction in msg.reactions:
     if (reaction.emoji == TRASHCAN_EMOJI):
       async for user in reaction.users():
