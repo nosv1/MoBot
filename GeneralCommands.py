@@ -401,12 +401,15 @@ async def copyMessage(message, args):
 # end copyMessage
 
 async def replaceMessage(message, args):
+  await message.channel.trigger_typing()
+
   async def replaceMsg(oldMessage, newMessage):
     try:
       try:
         await oldMessage.edit(content=newMessage.content, embed=newMessage.embeds[0])
       except IndexError: # when there is no embed
         await oldMessage.edit(content=newMessage.content)
+      await message.channel.send("**Message Replaced <#%s>**" % oldMessage.id)
     except discord.errors.Forbidden:
       await message.channel.send("**I can only edit my own messages.**")
   # end replaceMsg
@@ -425,11 +428,14 @@ async def replaceMessage(message, args):
 # end replaceMessage
 
 async def findMessageInGuild(message, messageID):
-  msg = await message.channel.fetch_message(int(messageID))
-  if (msg is None):
-    for channel in message.guild.channels:
-      msg = await channel.fetch_message(int(messageID))
-      if (msg is not None):
+  try:
+    msg = await message.channel.fetch_message(int(messageID))
+  except discord.errors.NotFound:
+    for channel in message.guild.text_channels:
+      try:
+        msg = await channel.fetch_message(int(messageID))
         break
+      except discord.errors.NotFound:
+        pass
   return msg
 # end findMessageInGuild
