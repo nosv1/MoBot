@@ -35,6 +35,7 @@ import Noble2sLeague
 import NobleGaming
 import NobleHub
 import AOR
+import TEPCOTT
 
 # importing external functions files
 import GTAWeather
@@ -57,22 +58,15 @@ import EventScheduler
 import SimpleCommands
 import MoBotDatabase
 import GeneralCommands
+import RandomFunctions
 
 import Hangman
 import DKGetPicks
 
-# getting server ids
-servers = {}
-file = open("MoBotServers.txt", "r")
-lines = file.readlines()
-file.close()
-for line in lines:
-  servers[line.split(",")[1]] = line.split(",")[0]
-  
 client = discord.Client()
-moBotDB = None # connection on onReady()
 
-moBot = 449247895858970624
+servers = {} # server files and ids are recieved in on_ready() after database connection  
+moBotDB = None # connection is on_ready()
 
 # guilds
 cotm = 527156310366486529
@@ -83,6 +77,7 @@ noble2sLeauge = 437936224402014208
 botSpam = 593911201658961942
 
 # users
+moBot = 449247895858970624
 mo = 405944496665133058
 nosv1 = 475325629688971274
 potterman = 209584832030834688
@@ -146,6 +141,7 @@ async def on_ready():
   global moBotDB
   moBotDB = MoBotDatabase.connectDatabase('MoBot')
   print("Connected to MoBot Database")
+  getServers()
   
   # priming the temp storage
   msg = await client.get_user(nosv1).send(".")
@@ -434,7 +430,6 @@ async def on_message(message):
       try:
       ## calling server specific file 
         if (str(message.guild.id) in servers):
-        # the servers dict is imported from a text file, found in the folder MoBotServers.txt
           await eval(servers[str(message.guild.id)] + ".main(args, message, client)")
 
         if ((message.guild.id == cotm or message.guild.id == moBotSupport) and "<@%s>" % str(moBot) in message.content):
@@ -472,7 +467,7 @@ async def on_message(message):
         break
 
     # check for clock accuracy...
-    if (random.random() < .005):
+    if (random.random() < .0025):
       await ClocksAndCountdowns.checkClockAccuracy(client)
 
   except:
@@ -828,6 +823,17 @@ async def bugReport(message):
     bug += i.url + "\n" 
   await bugReportChannel.send(bug)
   await message.channel.send("Thank you for reporting a bug!\nJoin `@MoBot#0697 server` to stay updated on udpates and patches.")
+
+def getServers():
+  global servers
+  moBotDB.cursor.execute("""
+    SELECT id, file_name
+    FROM servers
+  """)
+  
+  for record in moBotDB.cursor:
+    servers[record[0]] = record[1]
+# end getServers
 
 async def test(message, client):
   msg = await message.channel.fetch_message(600812373212921866)
