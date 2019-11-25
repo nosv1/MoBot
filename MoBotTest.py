@@ -36,6 +36,7 @@ import MoBotDatabase
 import Mazes
 import Help
 import GTAWeather
+import TEPCOTT
 
 import COTM
 import AOR
@@ -126,8 +127,8 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await ClocksAndCountdowns.checkClockAccuracy(client)
-        #await AOR.openDriverProfileEmbed(message)
+        await TEPCOTT.main(args, message, client)
+
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "?"):
         await Help.main(args, message, client)
@@ -377,6 +378,8 @@ async def on_raw_reaction_add(payload):
         elif (payload.emoji.name == "🗑"):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      if ("TEPCOTT - Season 4" in embedAuthor):
+        await TEPCOTT.mainReactionAdd(message, payload, client)
       if ("GTA V Weather Forecast" in embedAuthor):
         await GTAWeather.handleFutureCast(message, member)
       if ("MoBot Commands" in embedAuthor):
@@ -385,8 +388,6 @@ async def on_raw_reaction_add(payload):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "clock")
       if ("Countdown Editor" in embedAuthor):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
-      if ("SimpleCommands" in message.embeds[0].author.url):
-        await SimpleCommands.mainReactionAdd(message, payload, client)
       if ("AOR" in embedAuthor):
         await AOR.mainReactionAdd(message, payload, client)
       '''if ("Countdown Editor" in message.embeds[0].author.name):
