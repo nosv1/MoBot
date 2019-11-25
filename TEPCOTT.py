@@ -22,9 +22,12 @@ moBotTest = 476974462022189056
 mo = 405944496665133058
 
 # qualifying
-lapSubmissionChannel = 648538018117845002
+'''lapSubmissionChannel = 648538018117845002
 lapSubmissionEmbed = 648538377263513635
-lapSubmissionLog = 648538067573145643
+lapSubmissionLog = 648538067573145643'''
+lapSubmissionChannel = 641465243897167882
+lapSubmissionEmbed = 648364611761995788
+lapSubmissionLog = 648401621977399298
 
 TEPCOTT_LIGHT_BLUE = int("0x568fd7", 16)
 
@@ -44,7 +47,7 @@ qualiVehicles = [
 ]
 
 class Qualifier:
-  def __init__(self, date, time, id, displayName, lapTime, lapTimeSec, proofLink, vehicle):
+  def __init__(self, date, time, id, displayName, lapTime, lapTimeSec, proofLink, vehicle, deleted):
     self.date = str(date)
     self.time = str(time)
     self.id = id
@@ -53,6 +56,7 @@ class Qualifier:
     self.lapTimeSec = lapTimeSec
     self.proofLink = proofLink
     self.vehicle = vehicle
+    self.deleted = int(deleted) # usually 0, only 1 if from deleteLap()
 # end Qualifier
 
 async def main(args, message, client):
@@ -112,7 +116,6 @@ async def handleLapSubmission(message, member):
             vehicle = qualiVehicles[RandomFunctions.numberEmojis.index(reaction.emoji)]
             return [vehicle]
           except ValueError: # when reaction is not a number
-            print(traceback.format_exc())
             pass
     await message.channel.send("**<@%s>, click a vehicle number, then click the %s.**" % (member.id, STOPWATCH_EMOJI), delete_after=10)
     return []
@@ -138,7 +141,8 @@ async def handleLapSubmission(message, member):
             lapTime,
             getLapTimeSecFromLapTime(lapTime),
             proofLink,
-            vehicle
+            vehicle,
+            "0"
           )
 
           inputLapSubmission(qualifier)
@@ -166,7 +170,6 @@ async def handleLapSubmission(message, member):
 async def getLinkAndLapTimeFromMsg(msg):
   def getLapTimeFromMsg(msg):
     lapTime = msg.content[:9].strip()
-    print(lapTime)
     lapTime = lapTime[-8:-7] + ":" + lapTime[-6:-4] + "." + lapTime[-3:]
     return lapTime
   # end getLapTimeFromMsg
@@ -176,7 +179,6 @@ async def getLinkAndLapTimeFromMsg(msg):
       lapTimeSec = getLapTimeSecFromLapTime(lapTime)
       return True
     except:
-      print(traceback.format_exc())
       return False
   # end checkIfLegitLap
 
@@ -203,29 +205,38 @@ def inputLapSubmission(qualifier):
   n = datetime.utcnow()
   moBotDB = connectDatabase()
   try:
-    moBotDB.cursor.execute("""
-    INSERT INTO qualifying (
-      date, 
-      time, 
-      discord_id, 
-      display_name, 
-      lap_time, 
-      lap_time_sec, 
-      proof_link, 
-      vehicle)
-    VALUES (
-      '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'
-    )
-    """ % (
-      n.strftime("%Y-%m-%d"), # date
-      n.strftime("%H:%M:%S"), # time
-      qualifier.id,
-      MoBotDatabase.replaceChars(qualifier.displayName),
-      qualifier.lapTime,
-      qualifier.lapTimeSec,
-      MoBotDatabase.replaceChars(qualifier.proofLink),
-      MoBotDatabase.replaceChars(qualifier.vehicle)
-    ))
+    for table in ["qualifying_log", "qualifying"]:
+      if (qualifier.deleted is 1 and table == "qualifying_log"):
+        continue
+
+      moBotDB.cursor.execute("""
+      INSERT INTO %s (
+        date, 
+        time, 
+        discord_id, 
+        display_name, 
+        lap_time, 
+        lap_time_sec, 
+        proof_link, 
+        vehicle
+        %s
+      )
+      VALUES (
+        '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' %s
+      )
+      """ % (
+        table,
+        "" if table == "qualifying" else ", deleted",
+        n.strftime("%Y-%m-%d") if qualifier.deleted is 0 else qualifier.date,
+        n.strftime("%H:%M:%S") if qualifier.deleted is 0 else qualifier.time, 
+        qualifier.id,
+        MoBotDatabase.replaceChars(qualifier.displayName),
+        qualifier.lapTime,
+        qualifier.lapTimeSec,
+        MoBotDatabase.replaceChars(qualifier.proofLink),
+        MoBotDatabase.replaceChars(qualifier.vehicle),
+        "" if table == "qualifying" else ", '0'"
+      ))
     moBotDB.connection.commit()
   except mysql.connector.errors.IntegrityError: # when duplicate id
     moBotDB.cursor.execute("""
@@ -281,7 +292,8 @@ def getQualifiers():
     ORDER BY lap_time_sec, date, time
   """)
   for record in moBotDB.cursor:
-    qualifiers.append(Qualifier(*record))
+    r = record + ("0",)
+    qualifiers.append(Qualifier(*r))
   moBotDB.connection.close()
   return qualifiers
 # end buildQualiEmbeds
@@ -402,27 +414,60 @@ async def deleteLap(message, member):
   """ % (
     qualifer.id
   ))
+  
+  await message.clear_reactions()
+  await message.channel.send("**Lap Deleted**")
+  try:
+    await driver.send("**TEPCOTT QUALIFYING LAP DELETED**\nLap Time: `%s`\nReason: `%s`" % (qualifer.lapTime, reason))
+    await message.channel.send("**Driver Notified**")
+  except discord.errors.Forbidden:
+    await message.channel.send("**Driver Not Notified**\nDriver does not allow DMs from bots. Message the driver manually.")
+
+  moBotDB.cursor.execute("""
+    UPDATE qualifying_log
+    SET
+      deleted = '1'
+    WHERE
+      discord_id = '%s' AND
+      date = '%s' AND
+      time = '%s'
+  """ % (
+    qualifer.id,
+    qualifer.date,
+    qualifer.time
+  ))
   moBotDB.connection.commit()
+
+  moBotDB.cursor.execute("""
+    SELECT *
+    FROM qualifying_log
+    WHERE
+      discord_id = '%s' AND
+      deleted <> 1
+    ORDER BY date DESC, time DESC
+  """ % (
+    qualifer.id
+  ))
+  qualifer = None
+  for record in moBotDB.cursor:
+    r = record[:-1] + ("1",) # only setting to 1 to not log an old time
+    qualifer = Qualifier(*r)
+    break
+
+  if (qualifer is not None):
+    inputLapSubmission(qualifer)
   moBotDB.connection.close()
 
   embed = message.embeds[0].to_dict()
   msg = await message.channel.fetch_message(int(embed["footer"]["text"].split("|")[1]))
-  embed["description"] += "\n\nLAP DELETED: " + reason
+  embed["description"] += "\n\n**LAP DELETED:** `%s`" % reason
   embed["description"] = embed["description"].replace("New Lap Submission", "~~New Lap Submission~~")
-  await message.edit(embd=discord.Embed().from_dict(embed))
+  await message.edit(embed=discord.Embed().from_dict(embed))
   for reaction in msg.reactions:
     if (reaction.emoji == TRASHCAN_EMOJI):
       async for user in reaction.users():
         await msg.remove_reaction(reaction.emoji, user)
       break
-  
-  await message.clear_reactions()
-  await message.channel.send("**Lap Deleted**")
-  try:
-    await driver.send("**TEPCOTT QUALIFYING LAP DELETED**\n%s" % reason)
-    await message.channel.send("**Driver Notified**")
-  except discord.errors.Forbidden:
-    await message.channel.send("**Driver Not Notified**\nDriver does not allow DMs from bots. Message the driver manually.")
 
   await updateQualifyingChannel(message)
 # end deleteLap
@@ -435,17 +480,20 @@ def getLapTimeSecFromLapTime(lapTime):
 
 def getQualifierFromEmbed(embed):
   driverID = embed.description.split("Driver: <@")[1].split(">")[0].replace("!", "")
+  lapTime = embed.description.split("Lap Time: `")[1].split("`")[0]
   moBotDB = connectDatabase()
   moBotDB.cursor.execute("""
   SELECT *
-  FROM qualifying
+  FROM qualifying_log
   WHERE 
-    discord_id = '%s'
-  """ % driverID)
+    discord_id = '%s' AND
+    lap_time = '%s'
+  """ % (driverID, lapTime))
 
   qualifer = None
   for record in moBotDB.cursor:
-    qualifer = Qualifier(*record)
+    r = record[:-1] + ("0",)
+    qualifer = Qualifier(*r)
     break
 
   moBotDB.connection.close()
