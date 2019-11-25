@@ -288,7 +288,10 @@ async def editMessage(message, args):
   if (msg is None):
     await message.channel.send("Looks like something didn't go quite right... The command for editing a regular message is, `@MoBot#0697 edit [MessageID] [new_text]`. The command for editing an embed can be found using `@MoBot#0697 embed help`.")
   else:
-    await msg.edit(content=message.content.split(args[2])[1].strip())
+    try:
+      await msg.edit(content=message.content.split(args[2])[1].strip())
+    except discord.errors.HTTPException: # trying to edit with blank message
+      await message.channel.send("Looks like something didn't go quite right... The command for editing a regular message is, `@MoBot#0697 edit [message_id] [new_text]`. The command for edidint an embed can be found using `@MoBot#0697 embed help`.")
 # end editMessage
 
 async def clearMessages(message, args):
