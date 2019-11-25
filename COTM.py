@@ -5,6 +5,12 @@ Issues:
     Manual Reserves - Use dates to order reserves in database
     Ping the resereve even if they are full time reserve
     Show if a reserve was requested
+  Voting:
+    Get more fellers to vote 
+    Better voting code
+  General Information:
+    Easier to find slightly less information
+      better faq?
 
 '''
 
