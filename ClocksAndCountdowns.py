@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 
 import SecretStuff
 import MoBotDatabase
-import RandomFunctions
+import RandomSupport
 
 mo = 405944496665133058
 moBot = 449247895858970624
@@ -687,5 +687,5 @@ async def checkClockAccuracy(client):
   timeZone = channel.name.split(" ")[1]
   
   if(n.minute - int(channel.name.split(":")[1][:2]) > 2):
-    await RandomFunctions.sendMessageToMo("**CLOCKS AREN'T UPDATED**\nCurrent Time: `%s`\nClock: `%s`" % (n.strftime("%H:%M%p " + timeZone + " - %b %d" ), channel.name), client, mo)
+    await RandomSupport.sendMessageToMo("**CLOCKS AREN'T UPDATED**\nCurrent Time: `%s`\nClock: `%s`" % (n.strftime("%H:%M%p " + timeZone + " - %b %d" ), channel.name), client, mo)
 # end checkClockAccuracy

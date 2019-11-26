@@ -58,7 +58,7 @@ import EventScheduler
 import SimpleCommands
 import MoBotDatabase
 import GeneralCommands
-import RandomFunctions
+import RandomSupport
 
 import Hangman
 import DKGetPicks
@@ -471,7 +471,7 @@ async def on_message(message):
       await ClocksAndCountdowns.checkClockAccuracy(client)
 
   except:
-    await RandomFunctions.sendErrorToMo("MoBot", client, mo)
+    await RandomSupport.sendErrorToMo("MoBot", client, mo)
 # end on_message
 
 @client.event

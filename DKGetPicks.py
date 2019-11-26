@@ -11,7 +11,7 @@ import operator
 import copy
 from difflib import get_close_matches
 
-import RandomFunctions
+import RandomSupport
 
 spaceChar = "⠀"
 CHECKMARK_EMOJI = "✅"
@@ -612,7 +612,7 @@ async def printLineup(lineup, moBotMessage, embed):
     for player in lineup[position]:
       try:
         playerCount += 1
-        emojiNumber = RandomFunctions.numberToEmojiNumbers(playerCount)
+        emojiNumber = RandomSupport.numberToEmojiNumbers(playerCount)
         game = player.game.replace(player.team, "**" + player.team + "**")
         embed["fields"][5]["value"] += ("\n%s %s - **%s** - %s - %s - %s" % (emojiNumber, position, player.name, player.appg, player.price, game))
         lineupIDs += player.id + ","
@@ -752,7 +752,7 @@ async def getNewPlayerLimitations(playerLimitations, member, moBotMessage, embed
 async def getLineupStyle(member, moBotMessage, embed, client):
   
   def checkEmoji(payload):
-    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomFunctions.numberEmojis
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomSupport.numberEmojis
   # end checkEmoji
 
   lineupStyles = [
@@ -763,7 +763,7 @@ async def getLineupStyle(member, moBotMessage, embed, client):
   ]
   embed["description"] = "*Lineup Styles:*"
   for i in range(len(lineupStyles)):
-    emojiNumber = RandomFunctions.numberToEmojiNumbers(i+1)
+    emojiNumber = RandomSupport.numberToEmojiNumbers(i+1)
     embed["description"] += "\n" + spaceChar + emojiNumber + " - " + lineupStyles[i]
     await moBotMessage.add_reaction(emojiNumber)
 
@@ -771,7 +771,7 @@ async def getLineupStyle(member, moBotMessage, embed, client):
   await editEmbed(moBotMessage, embed)
   try:
     payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
-    lineupStyle = lineupStyles[RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
+    lineupStyle = lineupStyles[RandomSupport.emojiNumbertoNumber(payload.emoji.name)-1]
   except asyncio.TimeoutError:
     await moBotMessage.channel.send("**TIMED OUT**")
     lineupStyle = lineupStyles[0]
@@ -785,13 +785,13 @@ async def getLineupStyle(member, moBotMessage, embed, client):
 async def getLineupType(member, moBotMessage, embed, client):
   
   def checkEmoji(payload):
-    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomFunctions.numberEmojis
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomSupport.numberEmojis
   # end checkEmoji
 
   lineupTypes = ["Classic", "Showdown"]
   embed["description"] = "*Lineup Types:*"
   for i in range(len(lineupTypes)):
-    emojiNumber = RandomFunctions.numberToEmojiNumbers(i+1)
+    emojiNumber = RandomSupport.numberToEmojiNumbers(i+1)
     embed["description"] += "\n" + spaceChar + emojiNumber + " - " + lineupTypes[i]
     await moBotMessage.add_reaction(emojiNumber)
 
@@ -799,7 +799,7 @@ async def getLineupType(member, moBotMessage, embed, client):
   await editEmbed(moBotMessage, embed)
   try:
     payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
-    lineupType = lineupTypes[RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
+    lineupType = lineupTypes[RandomSupport.emojiNumbertoNumber(payload.emoji.name)-1]
   except asyncio.TimeoutError:
     await moBotMessage.channel.send("**TIMED OUT**")
     lineupType = lineupTypes[0]
@@ -813,7 +813,7 @@ async def getLineupType(member, moBotMessage, embed, client):
 async def getFile(member, moBotMessage, embed, client):  
 
   def checkEmoji(payload):
-    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomFunctions.numberEmojis
+    return payload.user_id == member.id and payload.channel_id == moBotMessage.channel.id and payload.emoji.name in RandomSupport.numberEmojis
   # end checkEmoji
 
   embed["description"] = "*Salaries Files:*"
@@ -824,7 +824,7 @@ async def getFile(member, moBotMessage, embed, client):
     for file in dir[-1]:
       if (file[-3:] == "csv" and str(weekNumber+1) in file):
         files.append(file)
-        emojiNumber = RandomFunctions.numberToEmojiNumbers(len(files))
+        emojiNumber = RandomSupport.numberToEmojiNumbers(len(files))
         embed["description"] += "\n" + spaceChar + emojiNumber + " - " + file
         await moBotMessage.add_reaction(emojiNumber)
 
@@ -832,7 +832,7 @@ async def getFile(member, moBotMessage, embed, client):
   await editEmbed(moBotMessage, embed)
   try:
     payload = await client.wait_for("raw_reaction_add", timeout=60, check=checkEmoji)
-    file = files[RandomFunctions.emojiNumbertoNumber(payload.emoji.name)-1]
+    file = files[RandomSupport.emojiNumbertoNumber(payload.emoji.name)-1]
   except asyncio.TimeoutError:
     await moBotMessage.channel.send("**TIMED OUT**")
     file = files[0]

@@ -15,7 +15,7 @@ import websockets
 import httplib2
 import feedparser
 import SecretStuff
-import RandomFunctions
+import RandomSupport
 
 import ClocksAndCountdowns
 import EventScheduler
@@ -205,10 +205,10 @@ async def main(client):
       if (str(value["error"]["code"])[0] == "5"):
         pass
       else:
-        await RandomFunctions.sendErrorToMo("MoBotLoop", client, mo)
+        await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
     except:
       try:
-        await RandomFunctions.sendErrorToMo("MoBotLoop", client, mo)
+        await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
       except:
         print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
         sys.exit()

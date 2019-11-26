@@ -30,7 +30,7 @@ import os
 
 import SecretStuff
 
-import RandomFunctions
+import RandomSupport
 
 GUILD_ID = 527156310366486529
 
@@ -934,7 +934,7 @@ async def votingProcess(message, member, client):
 
 async def closeVotingChannel(message, member, totalVoters, log):
   await message.channel.delete()
-  totalVotersEmojiNumbers = RandomFunctions.numberToEmojiNumbers(totalVoters)
+  totalVotersEmojiNumbers = RandomSupport.numberToEmojiNumbers(totalVoters)
   currentVotersMsg = await getCurrentVotersVoteOptionsMsg(message)
   currentVotersEmbed = currentVotersMsg.embeds[0].to_dict()
   currentVoters = (currentVotersEmbed["fields"][2]["value"] + "\n").split("\n")
