@@ -1,6 +1,11 @@
 import discord
 import asyncio
 import traceback
+from datetime import datetime
+import os
+
+moBotSupport = 467239192007671818
+randomStorage = 649014730622763019
 
 numberEmojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 
@@ -25,3 +30,19 @@ async def sendErrorToMo(fileName, client, moID):
 async def sendMessageToMo(message, client, moID):
   await client.get_user(int(moID)).send(message)
 # end sendMessageToMo
+
+async def saveImageReturnURL(attachment, client):
+  guild = client.get_guild(moBotSupport)
+  channel = guild.get_channel(randomStorage)
+
+  n = datetime.utcnow()
+  fileName = "%s_%s" % (n.microsecond, attachment.filename)
+  await attachment.save(fileName)
+  
+  f = open(fileName, "rb")
+  msg = await channel.send(file=discord.File(f, spoiler=True))
+  f.close()
+  os.remove(fileName)
+
+  return msg.attachments[0].url
+# end saveImageReturnURL
