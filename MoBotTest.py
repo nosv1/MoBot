@@ -127,7 +127,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await TEPCOTT.main(args, message, client)
+        await RandomSupport.saveImageReturnURL(message.attachments[0], client)
 
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "?"):
