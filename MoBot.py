@@ -286,7 +286,7 @@ async def on_message(message):
                 await message.delete()
               except discord.errors.Forbidden:
                 pass
-              await ReactionRole.addReactionToMessage(await message.channel.fetch_message(int(args[4])), args[3])
+              await ReactionRole.addReactionToMessage(await message.channel.fetch_message(int(args[-1])), args[3:-1])
         elif ("clear" in args[1] and authorPerms.manageMessages):
           await GeneralCommands.clearMessages(message, args)
         elif ("delete" in args[1] and authorPerms.manageMessages):

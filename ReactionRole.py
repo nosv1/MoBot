@@ -30,8 +30,9 @@ async def mainReactionRemove(message, payload, client):
   pass
 # end mainReactionRemove
 
-async def addReactionToMessage(msg, emoji):
-  await msg.add_reaction(emoji)
+async def addReactionToMessage(msg, emojis):
+  for emoji in emojis:
+    await msg.add_reaction(emoji)
 # end addReactionToMessage
 
 async def addReactionRoleMessage(message, args, reactionMessages):
@@ -80,7 +81,7 @@ async def addReactionRoleMessage(message, args, reactionMessages):
       break
       
   try:
-    await addReactionToMessage(await channel.fetch_message(int(args[3])), args[2])
+    await addReactionToMessage(await channel.fetch_message(int(args[3])), [args[2]])
     sheet.update_cells(messages, value_input_option="USER_ENTERED")
   except:
     await msg.delete()
