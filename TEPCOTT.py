@@ -1,8 +1,3 @@
-'''
-Updating Div Number...
-  Check your quali embeds! They're set to have 18 per div right now.
-'''
-
 import discord
 import asyncio
 from datetime import datetime
@@ -11,10 +6,13 @@ from oauth2client.service_account import ServiceAccountCredentials
 import mysql.connector
 import copy
 import traceback
+import sys
 
 import SecretStuff
 import MoBotDatabase
-import RandomFunctions
+import RandomSupport
+
+client = None
 
 # users
 moBot = 449247895858970624
@@ -22,9 +20,17 @@ moBotTest = 476974462022189056
 mo = 405944496665133058
 
 # qualifying
-lapSubmissionChannel = 648538018117845002
+'''lapSubmissionChannel = 648538018117845002
 lapSubmissionEmbed = 648538377263513635
-lapSubmissionLog = 648538067573145643
+lapSubmissionLog = 648538067573145643'''
+lapSubmissionChannel = 648924604022390793
+lapSubmissionEmbed = 648957018446626846
+lapSubmissionLog = 648401621977399298
+
+# pit marshalls
+pitMarshallChannel = 649741834783817738
+pitMarshallEmbed = 649743670161178654
+pitMarshallRole = 649741250114617363
 
 TEPCOTT_LIGHT_BLUE = int("0x568fd7", 16)
 
@@ -34,6 +40,8 @@ LINK_EMOJI = "🔗"
 TRASHCAN_EMOJI = "🗑️"
 CHECKMARK_EMOJI = "✅"
 X_EMOJI = "❌"
+CROWN_EMOJI = "👑"
+WRENCH_EMOJI = "🔧"
 
 epsilonLogo = "https://i.imgur.com/8ioQdaW.png"
 
@@ -44,18 +52,47 @@ qualiVehicles = [
 ]
 
 class Qualifier:
-  def __init__(self, date, time, id, displayName, lapTime, lapTimeSec, proofLink, vehicle):
+  def __init__(self, date, time, discordID, displayName, lapTime, lapTimeSec, proofLink, vehicle):
     self.date = str(date)
     self.time = str(time)
-    self.id = id
-    self.displayName = displayName
+    self.discordID = discordID
+    self.displayName = MoBotDatabase.replaceChars(displayName)
     self.lapTime = lapTime
     self.lapTimeSec = lapTimeSec
-    self.proofLink = proofLink
-    self.vehicle = vehicle
+    self.proofLink = MoBotDatabase.replaceChars(proofLink)
+    self.vehicle = MoBotDatabase.replaceChars(vehicle)
 # end Qualifier
 
-async def main(args, message, client):
+class Driver:
+  def __init__(self, discordID, displayName, division, previousDivision, totalPoints):
+    self.discordID = discordID
+    self.displayName = MoBotDatabase.replaceChars(displayName)
+    self.division = division
+    self.previousDivision = previousDivision
+    self.totalPoints = totalPoints
+# end Driver
+
+class PitMarshall:
+  def __init__(self, discordID, displayName, host, pitMarshall):
+    self.discordID = discordID
+    self.displayName = displayName
+    self.host = host
+    self.pitMarshall = pitMarshall
+# end PitMarshall
+
+class Event:
+  def __init__(self, numberOfDivs, driversPerDiv, qualiStartDate, qualiEndDate, roundDates): # roundDates is list of dates
+    self.numberOfDivs = numberOfDivs
+    self.driversPerDiv = driversPerDiv
+    self.qualiStartDate = datetime.strptime(qualiStartDate, "%Y-%m-%d %H:%M")
+    self.qualiEndDate = datetime.strptime(qualiEndDate, "%Y-%m-%d %H:%M")
+    self.roundDates = [datetime.strptime(dateStr, "%Y-%m-%d") for dateStr in roundDates]
+# end Event
+
+async def main(args, message, c):
+  global client
+  client = c
+
   now = datetime.now()
   for i in range(len(args)):
     args[i].strip()
@@ -65,7 +102,10 @@ async def main(args, message, client):
       await getLinkAndLapTimeFromMsg(message)
 # end main
 
-async def mainReactionAdd(message, payload, client): 
+async def mainReactionAdd(message, payload, c):
+  global client
+  client = c
+
   member = message.guild.get_member(payload.user_id)
 
   if (payload.emoji.name == STOPWATCH_EMOJI):
@@ -85,6 +125,10 @@ async def mainReactionAdd(message, payload, client):
     if (message.channel.id == lapSubmissionLog):
       await message.delete()
       await message.channel.send("**Canceled**", delete_after=3)
+
+  elif (payload.emoji.name in [CROWN_EMOJI, WRENCH_EMOJI]):
+    if (message.channel.id == pitMarshallChannel):
+      await handlePitMarshall(message, member, payload)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
@@ -99,29 +143,257 @@ async def memberRemove(member, client):
   pass
 # end memberRemove
 
-# --- RACE INPUT ---
+# --- PIT MARSHALLS ---
+async def handlePitMarshall(message, member, payload):
+  await message.channel.trigger_typing()
+  moBotMessage = await waitForUpdate(message)
 
-def getStartOrders(div):
+  async def checkForDiv(msg, member):
+    reactions = msg.reactions
+    for reaction in reactions:
+      async for user in reaction.users():
+        if (user.id == member.id):
+          try:
+            div = RandomSupport.emojiNumbertoNumber(reaction.emoji)
+            return div if div <= getEventDetails().numberOfDivs else False
+          except ValueError: # when a number is not clicked
+            pass
+    return False
+  # end checkForDiv
+
+  def insertPitMarshall(member, div, payload):
+    moBotDB = connectDatabase()
+    try:
+      moBotDB.cursor.execute("""
+        INSERT INTO pit_marshalls(
+          discord_id, display_name, host, pit_marshall
+        ) VALUES (
+          '%s', '%s', '%s', '%s'
+        )
+      """ % (
+        member.id, 
+        member.display_name, 
+        div if (payload.emoji.name == CROWN_EMOJI) else None,
+        div if (payload.emoji.name == WRENCH_EMOJI) else None,
+      ))
+      moBotDB.connection.commit()
+      moBotDB.connection.close()
+      return True
+    except mysql.connector.IntegrityError:
+      moBotDB.connection.close()
+      return False
+  # end insertPitMarshall
+
+  def removePitMarshall(member, div, payload): # find current person, then remove if same
+    moBotDB = connectDatabase()
+    moBotDB.cursor.execute("""
+      SELECT discord_id, display_name
+      FROM pit_marshalls
+      WHERE 
+        host = %s AND
+        pit_marshall = %s
+    """ % (
+      div if payload.emoji.name == CROWN_EMOJI else 0,
+      div if payload.emoji.name == WRENCH_EMOJI else 0
+    ))
+
+    delete = True
+    for record in moBotDB.cursor:
+      if (int(record[0]) == member.id):
+        break
+
+    if (delete):
+      moBotDB.cursor.execute("""
+        DELETE FROM pit_marshalls
+        WHERE 
+          host = %s AND
+          pit_marshall = %s 
+      """ % (
+        div if payload.emoji.name == CROWN_EMOJI else 0,
+        div if payload.emoji.name == WRENCH_EMOJI else 0
+      ))
+      moBotDB.connection.commit()
+      moBotDB.connection.close()
+      return False
+    else:
+      moBotDB.connection.close()
+      return True
+  # end removePitMarshall
+
+  div = await checkForDiv(message, member)
+  if (div):
+    if (insertPitMarshall(member, div, payload)):
+      await message.edit(embed=buildPitMarshallEmbed())
+      await moBotMessage.edit(content="**<@%s> is now a %s for Division %s.**" % (
+        member.id, 
+        "Host" if payload.emoji.name == CROWN_EMOJI else "Pit-Marshall",
+        div
+      ), delete_after=10)
+      await member.add_roles(RandomSupport.getRole(message.guild, pitMarshallRole))
+    else:
+      if (removePitMarshall(member, div, payload)):
+        await moBotMessage.edit(content="**<@%s>, there is already a %s for Division %s.**" % (
+        member.id,
+        "Host" if payload.emoji.name == CROWN_EMOJI else "Pit-Marshall",
+        div
+        ), delete_after=10)
+      else:
+        await message.edit(embed=buildPitMarshallEmbed())
+        await moBotMessage.edit(content="**<@%s> is no longer a %s for Division %s.**" % (
+        member.id,
+        "Host" if payload.emoji.name == CROWN_EMOJI else "Pit-Marshall",
+        div
+        ), delete_after=10)
+        await member.remove_roles(RandomSupport.getRole(message.guild, pitMarshallRole))
+  else:
+    await moBotMessage.edit(content="**<@%s>, click a division number, and then click the %s or the %s.**" % (member.id, CROWN_EMOJI, WRENCH_EMOJI), delete_after=10)
+    await message.remove_reaction(payload.emoji.name, member)
+
+  for reaction in message.reactions:
+    async for user in reaction.users():
+      if (user.id == member.id):
+        await message.remove_reaction(reaction.emoji, member)
+  await message.channel.edit(name=message.channel.name.replace("updating", ""))
+# end handlePitMarshall
+
+def buildPitMarshallEmbed():
+  pitMarshalls = getPitMarshalls()
+  event = getEventDetails()
+
+  embed = buildBasicEmbed()
+  embed.description = ""
+  for i in range(event.numberOfDivs):
+    div = i + 1
+    embed.description += "\n\n**Division %s**" % div
+
+    embed.description += "\nHost: "
+    host = [pitMarshall for pitMarshall in pitMarshalls if pitMarshall.host == div]
+    if (host):
+      embed.description += "`%s`" % host[0].displayName
+
+    embed.description += "\nPit-Marshall: "
+    pitMarshall = [pitMarshall for pitMarshall in pitMarshalls if pitMarshall.pitMarshall == div]
+    if (pitMarshall):
+      embed.description += "`%s`" % pitMarshall[0].displayName
+
+  embed.description += "\n\n**Start Times**\nTBD..."
+  # still need start times
+
+  embed.description += "\n\n**Instructions**"
+  embed.description += "\n1. Click the division number"
+  embed.description += "\n2. Click the %s or the %s" % (CROWN_EMOJI, WRENCH_EMOJI)
+  embed.description += "\n%sa. %s for Host" % (spaceChar, CROWN_EMOJI)
+  embed.description += "\n%sb. %s for Pit-Marshall" % (spaceChar, WRENCH_EMOJI)
+  embed.description += "\n*It is the same process for adding and removing yourself.*"
+  embed.description += "\n***Hosts __SHOULD NOT__ have a race before the race they are hosting.***"
+
+  return embed
+# end buildPitMarshallEmbeds
+
+def clearPitMarshalls():
   pass
+# end clearPitMarshalls
+
+def getPitMarshalls():
+  pitMarshalls = []
+  moBotDB = connectDatabase()
+  moBotDB.cursor.execute("""
+    SELECT *
+    FROM pit_marshalls
+  """)
+  for record in moBotDB.cursor:
+    pitMarshalls.append(PitMarshall(*record))
+  moBotDB.connection.close()
+  return pitMarshalls
+# end getPitMarshalls
+
+# --- END PIT MARSHALLS ---
+
+# --- START ORDERS ---
+
+def buildStartOrderEmbeds():
+  def getWidths(startOrder):
+    maxNameWidth = 4
+    maxPointsWidth = 1
+    for d in startOrder:
+      ld = len(d[0])
+      lp = len(str(d[2]))
+      maxNameWidth = ld if (ld > maxNameWidth) else maxNameWidth
+      maxPointsWidth = lp if (lp > maxPointsWidth) else maxPointsWidth
+    return maxNameWidth, maxPointsWidth
+  # end getWidths
+
+  startOrders = getStartOrders()
+
+  embed = buildBasicEmbed()
+  embed.description = ""
+  embeds = [copy.deepcopy(embed) for i in startOrders]
+  for embed in embeds:
+    div = embeds.index(embed) + 1
+    nameWidth, pointsWidth = getWidths(startOrders[div-1])
+
+    embed.description += "**Division %s**\n`Pos` `%s` `D` `%s`" % (
+      div, "Name".ljust(nameWidth), 
+      "P".center(pointsWidth)
+    )
+    for driver in startOrders[div-1]:
+      pos = startOrders[div-1].index(driver) + 1
+      name = driver[0]
+      previousDivision = driver[1]
+      totalPoints = driver[2]
+
+      embed.description += "`%s.` `%s` `%s` `%s`\n" % (
+        str(pos).rjust(2),
+        name.ljust(nameWidth),
+        previousDivision,
+        str(totalPoints).rjust(pointsWidth)
+      )
+
+    embed.description += "*D - Previous Division\nP - Total Points*"
+  return embeds
+# end buildStartOrderEmbeds
+
+def getStartOrders():
+  event = getEventDetails()
+  startOrders = [[] for i in range(event.numberOfDivs)]
+
+  moBotDB = connectDatabase()  
+  for i in range(event.numberOfDivs):
+    div = i + 1
+    moBotDB.cursor.execute("""
+      SELECT display_name, previous_division, total_points
+      FROM division_%s
+    """ % div)
+    for record in moBotDB.cursor:
+      startOrders[i].append([r for r in record])
+  moBotDB.connection.close()
+
+  for i in range(1, event.numberOfDivs):
+    stayedInDiv = [d for d in startOrders[i] if d[1] == i + 1]
+    demoted = [d for d in startOrders[i] if d[1] > i + 1]
+    promoted = [d for d in startOrders[i] if d[1] < i + 1]
+    startOrders[i] = stayedInDiv + demoted + promoted
+  return startOrders
 # end getStartOrders
 
-# --- END RACE INPUT---
+# --- END START ORDERS ---
 
 # --- QUALIFYING ---
 
 async def handleLapSubmission(message, member):
   await message.channel.trigger_typing()
+  moBotMessage = await waitForUpdate(message)
 
   async def getVehicleFromReactions(message, member):
     for reaction in message.reactions:
       async for user in reaction.users():
         if (user.id == member.id):
           try:
-            vehicle = qualiVehicles[RandomFunctions.numberEmojis.index(reaction.emoji)]
+            vehicle = qualiVehicles[RandomSupport.emojiNumbertoNumber(emoji)]
             return [vehicle]
           except ValueError: # when reaction is not a number
             pass
-    await message.channel.send("**<@%s>, click a vehicle number, then click the %s.**" % (member.id, STOPWATCH_EMOJI), delete_after=10)
+    await moBotMessage.edit(content="**<@%s>, click a vehicle number, then click the %s.**" % (member.id, STOPWATCH_EMOJI), delete_after=10)
     return []
   # end getVehicleFromReactions
 
@@ -148,16 +420,14 @@ async def handleLapSubmission(message, member):
             vehicle,
           )
 
-          inputLapSubmission(qualifier)
-          lapSubmitted = True
-          await message.channel.send("**Lap Submitted**", delete_after=3)
+          lapSubmitted = True # not submitting until a couple lines below...
           await msg.delete()
-          await logLapSubmission(message, qualifier)
       break
 
   if (lapSubmitted):
-    while ("updating" in message.channel.name): # check if already updating
-      await asyncio.sleep(5)
+    inputLapSubmission(qualifier)
+    await logLapSubmission(message, qualifier)
+    await moBotMessage.edit(content="**Lap Submitted**", delete_after=3)
 
     await updateQualifyingChannel(message)
 
@@ -168,6 +438,8 @@ async def handleLapSubmission(message, member):
         reactionsToRemove.append(reaction.emoji)
   for reaction in reactionsToRemove:
     await message.remove_reaction(reaction, member)
+
+  await message.channel.edit(name=message.channel.name.replace("updating", ""))
 # end handleLapSubmission
 
 async def getLinkAndLapTimeFromMsg(msg):
@@ -186,7 +458,7 @@ async def getLinkAndLapTimeFromMsg(msg):
   # end checkIfLegitLap
 
   if (msg.attachments):
-    proofLink = attachment.url
+    proofLink = await RandomSupport.saveImageReturnURL(msg.attachments[0], client)
     lapTime = getLapTimeFromMsg(msg)
   elif ("http" in msg.content):
     proofLink = "http" + msg.content.split("http")[1].split(">")[0]
@@ -216,19 +488,18 @@ def inputLapSubmission(qualifier):
     lap_time_sec, 
     proof_link, 
     vehicle
-  )
-  VALUES (
+  ) VALUES (
     '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s'
   )
   """ % (
     qualifier.date,
     qualifier.time, 
-    qualifier.id,
-    MoBotDatabase.replaceChars(qualifier.displayName),
+    qualifier.discordID,
+    qualifier.displayName,
     qualifier.lapTime,
     qualifier.lapTimeSec,
-    MoBotDatabase.replaceChars(qualifier.proofLink),
-    MoBotDatabase.replaceChars(qualifier.vehicle),
+    qualifier.proofLink,
+    qualifier.vehicle,
   ))
   moBotDB.connection.commit()
   moBotDB.connection.close()
@@ -236,18 +507,20 @@ def inputLapSubmission(qualifier):
 
 async def logLapSubmission(message, qualifier):
   logChannel = message.guild.get_channel(lapSubmissionLog)
-  embed = discord.Embed(color=TEPCOTT_LIGHT_BLUE)
-  embed.set_author(name="TEPCOTT - Season 4", icon_url=epsilonLogo)
-  embed.description = """
-    **New Lap Submission**
-
-    Driver: <@%s>
-    Lap Time: `%s`
-    Vehicle: `%s`
-    Proof: [%s](%s)
-    Submitted: `%s %s UTC`
-    <#%s>
-  """ % (qualifier.id, qualifier.lapTime, qualifier.vehicle, LINK_EMOJI, qualifier.proofLink, qualifier.date, qualifier.time, message.channel.id)
+  embed = buildBasicEmbed()
+  embed.description = "**New Lap Submission**\n"
+  embed.description = "Driver: <@%s>\n" % qualifier.discordID
+  embed.description = "Lap Time: `%s`\n" % qualifier.lapTime
+  embed.description = "Vehicle: `%s`\n" % qualifier.vehicle
+  embed.description = "Proof: [%s](%s)\n" % (
+    qualifier.proofLink, 
+    qualifier.proofLink
+  )
+  embed.description = "Submitted: `%s %s UTC`\n" % (
+    qualifier.date, 
+    qualifier.time
+  )
+  embed.description = "<#%s>\n" % message.channel.id
 
   msg = await logChannel.send(embed=embed)
   await msg.add_reaction(TRASHCAN_EMOJI)
@@ -264,22 +537,21 @@ def getQualifiers():
     qualifiers.append(Qualifier(*record))
   moBotDB.connection.close()
   return qualifiers
-# end buildQualiEmbeds
+# end getQualifiers
 
 def buildQualiEmbeds(qualifiers):
+  event = getEventDetails()
+
   maxNameWidth = 4
   for qualifier in qualifiers:
     l = len(qualifier.displayName)
     maxNameWidth = l if (l > maxNameWidth) else maxNameWidth
 
   numQualifiers = len(qualifiers)
-  driversPerEmbed = 18
-  numEmbeds = (numQualifiers // driversPerEmbed) + 1 if (numQualifiers % driversPerEmbed is not 0) else 0
+  numEmbeds = (numQualifiers // event.driversPerDiv) + 1 if (numQualifiers % event.driversPerDiv is not 0) else 0
   
-  embed = discord.Embed(color=TEPCOTT_LIGHT_BLUE)
-  embed.set_author(name="TEPCOTT - Season 4", icon_url=epsilonLogo)
-  embed.description = "`%s` `%s` `Lap Time` `Car`" % (
-    "".rjust(1+len(str(numQualifiers))," "),
+  embed = buildBasicEmbed()
+  embed.description = "`Pos` `%s` `Lap Time` `Car`" % (
     "Name".ljust(maxNameWidth," ")
   )
   embeds = []
@@ -288,10 +560,10 @@ def buildQualiEmbeds(qualifiers):
 
   for qualifier in qualifiers:
     position = qualifiers.index(qualifier) + 1
-    embedNumber = (position - 1) // driversPerEmbed
+    embedNumber = (position - 1) // event.driversPerDiv
     embed = embeds[embedNumber]
     embed.description += "\n`%s.` `%s` `%s` `%s` [%s](%s)" % (
-      str(position).rjust(len(str(numQualifiers)), " "),
+      str(position).rjust(2, " "),
       qualifier.displayName.ljust(maxNameWidth, " "),
       qualifier.lapTime,
       str(qualiVehicles.index(qualifier.vehicle) + 1).center(3, " "),
@@ -303,13 +575,12 @@ def buildQualiEmbeds(qualifiers):
 # end buildQualiEmbeds
 
 async def updateQualifyingChannel(message):
-  qualifiers = getQualifiers()
-  embeds = buildQualiEmbeds(qualifiers)
-
   channel = message.guild.get_channel(lapSubmissionChannel)
   message = await channel.fetch_message(lapSubmissionEmbed)
-  
-  await message.channel.edit(name=message.channel.name + " updating")
+  await message.channel.send("Waiting for update to finish...")
+
+  qualifiers = getQualifiers()
+  embeds = buildQualiEmbeds(qualifiers)
 
   history = await message.channel.history(after=message, oldest_first=False).flatten()
   for msg in history: # remove old standings
@@ -326,35 +597,27 @@ async def updateQualifyingChannel(message):
       embed.description = "\n".join(embed.description.split("\n")[1:])
       await message.channel.send(embed=embed)
 
-  await message.channel.edit(name=message.channel.name.replace("updating", ""))
+  setDriverDivsFromQualifiers()
 # end updateQualifyingChannel
 
 async def confirmDeleteLap(message):
   await message.channel.trigger_typing()
   qualifier = getQualifierFromEmbed(message.embeds[0])
 
-  embed = discord.Embed(color=TEPCOTT_LIGHT_BLUE)
-  embed.set_author(name="TEPCOTT - Season 4", icon_url=epsilonLogo)
-  embed.description = """
-    **Are you sure you want to delete this lap time?**
-
-    Driver: <@%s>
-    Lap Time: `%s`
-    Proof: [%s](%s)
-    Submitted: `%s %s UTC`
-
-    Type your reasoning, and then click the %s to delete the lap.
-    Click the %s to cancel.
-  """ % (
-    qualifier.id,
-    qualifier.lapTime,
+  embed = buildBasicEmbed()
+  embed.description = "**Are you sure you want to delete this lap time?**\n"
+  embed.description = "Driver: <@%s>\n" % qualiVehicles.discordID
+  embed.description = "Lap Time: `%s`\n" % qualifier.lapTime
+  embed.description = "Proof: [%s](%s)\n" % (
     LINK_EMOJI,
-    qualifier.proofLink,
-    qualifier.date,
-    qualifier.time,
-    CHECKMARK_EMOJI,
-    X_EMOJI
+    qualifier.proofLink
   )
+  embed.description = "Submitted: `%s %s UTC`\n" % (
+    qualifier.date,
+    qualifier.time
+  )
+  embed.description = "Type your reasoning, and then click the %s to delete the lap.\n" % CHECKMARK_EMOJI
+  embed.description = "Click the %s to cancel.\n" % X_EMOJI
   embed.set_footer(text="| %s |" % message.id)
 
   msg = await message.channel.send(embed=embed)
@@ -377,15 +640,15 @@ async def deleteLap(message, member):
     await message.remove_reaction(CHECKMARK_EMOJI, member)
     return
 
-  qualifer = getQualifierFromEmbed(message.embeds[0])
-  driver = message.guild.get_member(int(qualifer.id))
+  qualifier = getQualifierFromEmbed(message.embeds[0])
+  driver = message.guild.get_member(int(qualifier.discordID))
 
   moBotDB = connectDatabase()
   
   await message.clear_reactions()
   await message.channel.send("**Lap Deleted**")
   try:
-    await driver.send("**TEPCOTT QUALIFYING LAP DELETED**\nLap Time: `%s`\nReason: `%s`" % (qualifer.lapTime, reason))
+    await driver.send("**TEPCOTT QUALIFYING LAP DELETED**\nLap Time: `%s`\nReason: `%s`" % (qualifier.lapTime, reason))
     await message.channel.send("**Driver Notified**")
   except discord.errors.Forbidden:
     await message.channel.send("**Driver Not Notified**\nDriver does not allow DMs from bots. Message the driver manually.")
@@ -399,9 +662,9 @@ async def deleteLap(message, member):
       date = '%s' AND
       time = '%s'
   """ % (
-    qualifer.id,
-    qualifer.date,
-    qualifer.time
+    qualifier.discordID,
+    qualifier.date,
+    qualifier.time
   ))
   moBotDB.connection.commit()
   moBotDB.connection.close()
@@ -446,16 +709,106 @@ def getQualifierFromEmbed(embed):
     time = '%s'
   """ % (discordID, lapTime, date, time))
 
-  qualifer = None
+  qualifier = None
   for record in moBotDB.cursor:
-    qualifer = Qualifier(*record[:-1])
+    qualifier = Qualifier(*record[:-1])
     break
 
   moBotDB.connection.close()
-  return qualifer
+  return qualifier
 # end getQualifierFromEmbed
 
+def setDriverDivsFromQualifiers(): # use quali table to update driver divs...
+  qualifiers = getQualifiers()
+  drivers = getDrivers()
+  event = getEventDetails()
+
+  moBotDB = connectDatabase()
+  for qualifier in qualifiers:
+    div = qualifiers.index(qualifier) // event.driversPerDiv + 1
+    div = event.numberOfDivs + 1 if div > event.numberOfDivs else div
+    for driver in drivers:
+      if (qualifier.discordID == driver.discordID):
+        sql = """
+          \nUPDATE drivers
+          SET 
+            division = '%s'
+          WHERE discord_id = '%s'; 
+        """ % (
+          div, 
+          driver.discordID
+        )
+        break
+    else:
+      sql = """
+        \nINSERT INTO drivers (
+          display_name,
+          division,
+          total_points
+        ) VALUES (
+          '%s', '%s', '%s',
+        ); """ % (
+          qualifier.discordID,
+          qualifier.displayName,
+          div
+        )
+    moBotDB.cursor.execute(sql)
+  
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
+# end setDriverDivsFromQualifiers
+
 # --- END QUALIFYING ---
+
+async def waitForUpdate(message): 
+  moBotMessage = await message.channel.send("**Waiting for update to finish...**")
+  while ("updating" in message.channel.name):
+    await asyncio.sleep(5)
+  await message.channel.edit(name=message.channel.name + " updating")
+  return moBotMessage
+# end waitForUpdate
+
+def buildBasicEmbed():
+  embed = discord.Embed(color=TEPCOTT_LIGHT_BLUE)
+  embed.set_author(name="TEPCOTT - Season 4", icon_url=epsilonLogo)
+  return embed
+# end buildBasicEmbed
+
+def getEventDetails():
+  moBotDB = connectDatabase()
+
+  moBotDB.cursor.execute("SHOW COLUMNS FROM event_details")
+  round1Index = 0
+  for record in moBotDB.cursor:
+    if ("round_1" in record[0]):
+      break
+    round1Index += 1
+
+  moBotDB.cursor.execute("SELECT * FROM event_details")
+  t = ()
+  for record in moBotDB.cursor:
+    for i in range(len(record)):
+      if (i != round1Index):
+        t += (record[i],)
+      else:
+        t += ([d for d in record[i:]],)
+        break
+  moBotDB.connection.close()
+  return Event(*t)
+# end getEventDetails
+
+def getDrivers():
+  drivers = []
+  moBotDB = connectDatabase()
+  moBotDB.cursor.execute("""
+    SELECT *
+    FROM drivers
+  """)
+  for record in moBotDB.cursor:
+    drivers.append(Driver(*record))
+  moBotDB.connection.close()
+  return drivers
+# end getDrivers
 
 async def deleteMsgs(sleep, messagesToDelete):
   await asyncio.sleep(sleep)

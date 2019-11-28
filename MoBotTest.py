@@ -127,7 +127,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await RandomSupport.saveImageReturnURL(message.attachments[0], client)
+        await message.channel.send(embed=TEPCOTT.buildPitMarshallEmbed())
 
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "?"):
@@ -151,7 +151,7 @@ async def on_message(message):
         await Collections.displayCollection(message, False, "Help Menu", message.guild.id, client)
       elif (args[1] == "add" and args[2] == "reaction"):
         if (len(args) > 2):
-          await addReactionToMessage(message, int(args[4]), args[3])
+          await ReactionRole.addReactionToMessage(await message.channel.fetch_message(int(args[-1])), args[3:-1])
       elif (args[1] == "embed"):
         await makeEmbed(message)
       elif (args[1] == "permission"):
@@ -712,12 +712,7 @@ async def help(message):
 
   
   # if server specific, call server help command
-# end help     
-
-async def addReactionToMessage(message, msgId, emoji):
-  msg = await message.channel.fetch_message(msgId)
-  await msg.add_reaction(emoji)
-# end addReactionToMessage
+# end help
 
 async def makeEmbed(message):
   '''Creates an embed messasge with specified inputs'''

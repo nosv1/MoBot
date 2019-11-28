@@ -46,3 +46,11 @@ async def saveImageReturnURL(attachment, client):
 
   return msg.attachments[0].url
 # end saveImageReturnURL
+
+def getRole(guild, roleID):
+  for role in guild.roles:
+    if (role.id == roleID):
+      return role
+  else:
+    return False
+# end getRole
