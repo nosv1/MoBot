@@ -20,12 +20,12 @@ moBotTest = 476974462022189056
 mo = 405944496665133058
 
 # qualifying
-'''lapSubmissionChannel = 648538018117845002
+lapSubmissionChannel = 648538018117845002
 lapSubmissionEmbed = 648538377263513635
 lapSubmissionLog = 648538067573145643'''
 lapSubmissionChannel = 648924604022390793
 lapSubmissionEmbed = 648957018446626846
-lapSubmissionLog = 648401621977399298
+lapSubmissionLog = 648401621977399298'''
 
 # pit marshalls
 pitMarshallChannel = 649741834783817738
