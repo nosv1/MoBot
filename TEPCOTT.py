@@ -20,12 +20,12 @@ moBotTest = 476974462022189056
 mo = 405944496665133058
 
 # qualifying
-lapSubmissionChannel = 648538018117845002
+'''lapSubmissionChannel = 648538018117845002
 lapSubmissionEmbed = 648538377263513635
-lapSubmissionLog = 648538067573145643
-'''lapSubmissionChannel = 648924604022390793
+lapSubmissionLog = 648538067573145643'''
+lapSubmissionChannel = 648924604022390793
 lapSubmissionEmbed = 648957018446626846
-lapSubmissionLog = 648401621977399298'''
+lapSubmissionLog = 648401621977399298
 
 # pit marshalls
 pitMarshallChannel = 649741834783817738
@@ -44,12 +44,6 @@ CROWN_EMOJI = "👑"
 WRENCH_EMOJI = "🔧"
 
 epsilonLogo = "https://i.imgur.com/8ioQdaW.png"
-
-qualiVehicles = [
-  "Vehicle 1",
-  "Vehicle 2",
-  "Vehicle 3"
-]
 
 class Qualifier:
   def __init__(self, date, time, discordID, displayName, lapTime, lapTimeSec, proofLink, vehicle):
@@ -81,11 +75,12 @@ class PitMarshall:
 # end PitMarshall
 
 class Event:
-  def __init__(self, numberOfDivs, driversPerDiv, qualiStartDate, qualiEndDate, roundDates): # roundDates is list of dates
+  def __init__(self, numberOfDivs, driversPerDiv, qualiStartDate, qualiEndDate, qualiVehicles, roundDates): # roundDates is list of dates
     self.numberOfDivs = numberOfDivs
     self.driversPerDiv = driversPerDiv
     self.qualiStartDate = datetime.strptime(qualiStartDate, "%Y-%m-%d %H:%M")
     self.qualiEndDate = datetime.strptime(qualiEndDate, "%Y-%m-%d %H:%M")
+    self.qualiVehicles = [vehicle for vehicle in qualiVehicles]
     self.roundDates = [datetime.strptime(dateStr, "%Y-%m-%d") for dateStr in roundDates]
 # end Event
 
@@ -144,6 +139,7 @@ async def memberRemove(member, client):
 # end memberRemove
 
 # --- PIT MARSHALLS ---
+
 async def handlePitMarshall(message, member, payload):
   await message.channel.trigger_typing()
   moBotMessage = await waitForUpdate(message)
@@ -230,6 +226,7 @@ async def handlePitMarshall(message, member, payload):
         div
       ), delete_after=10)
       await member.add_roles(RandomSupport.getRole(message.guild, pitMarshallRole))
+      
     else:
       if (removePitMarshall(member, div, payload)):
         await moBotMessage.edit(content="**<@%s>, there is already a %s for Division %s.**" % (
@@ -380,16 +377,34 @@ def getStartOrders():
 
 # --- QUALIFYING ---
 
+''' 
+check to make sure lap and link are in message
+check to make sure user clicked a vehicle 
+handle lap submission
+input lap
+update drivers and divs
+log lap
+get qualifiers
+build embeds
+update qualifying channel
+
+confirm delete lap
+check for reason
+delete lap
+update qualifying channel
+'''
+
 async def handleLapSubmission(message, member):
   await message.channel.trigger_typing()
   moBotMessage = await waitForUpdate(message)
+  event = getEventDetails()
 
   async def getVehicleFromReactions(message, member):
     for reaction in message.reactions:
       async for user in reaction.users():
         if (user.id == member.id):
           try:
-            vehicle = qualiVehicles[RandomSupport.emojiNumbertoNumber(emoji)]
+            vehicle = event.qualiVehicles[RandomSupport.emojiNumbertoNumber(reaction.emoji)] - 1
             return [vehicle]
           except ValueError: # when reaction is not a number
             pass
@@ -509,18 +524,18 @@ async def logLapSubmission(message, qualifier):
   logChannel = message.guild.get_channel(lapSubmissionLog)
   embed = buildBasicEmbed()
   embed.description = "**New Lap Submission**\n"
-  embed.description = "Driver: <@%s>\n" % qualifier.discordID
-  embed.description = "Lap Time: `%s`\n" % qualifier.lapTime
-  embed.description = "Vehicle: `%s`\n" % qualifier.vehicle
-  embed.description = "Proof: [%s](%s)\n" % (
+  embed.description += "Driver: <@%s>\n" % qualifier.discordID
+  embed.description += "Lap Time: `%s`\n" % qualifier.lapTime
+  embed.description += "Vehicle: `%s`\n" % qualifier.vehicle
+  embed.description += "Proof: [%s](%s)\n" % (
     qualifier.proofLink, 
     qualifier.proofLink
   )
-  embed.description = "Submitted: `%s %s UTC`\n" % (
+  embed.description += "Submitted: `%s %s UTC`\n" % (
     qualifier.date, 
     qualifier.time
   )
-  embed.description = "<#%s>\n" % message.channel.id
+  embed.description += "<#%s>\n" % message.channel.id
 
   msg = await logChannel.send(embed=embed)
   await msg.add_reaction(TRASHCAN_EMOJI)
@@ -566,7 +581,7 @@ def buildQualiEmbeds(qualifiers):
       str(position).rjust(2, " "),
       qualifier.displayName.ljust(maxNameWidth, " "),
       qualifier.lapTime,
-      str(qualiVehicles.index(qualifier.vehicle) + 1).center(3, " "),
+      str(event.qualiVehicles.index(qualifier.vehicle) + 1).center(3, " "),
       LINK_EMOJI,
       qualifier.proofLink
     )
@@ -778,21 +793,29 @@ def getEventDetails():
   moBotDB = connectDatabase()
 
   moBotDB.cursor.execute("SHOW COLUMNS FROM event_details")
-  round1Index = 0
+  roundDateIndexes = []
+  qualiVehicleIndexes = []
+
+  index = 0
   for record in moBotDB.cursor:
-    if ("round_1" in record[0]):
-      break
-    round1Index += 1
+    if ("round_date" in record[0]):
+      roundDateIndexes.append(index)
+    if ("quali_vehicle" in record[0]):
+      qualiVehicleIndexes.append(index)
+    index += 1
 
   moBotDB.cursor.execute("SELECT * FROM event_details")
   t = ()
   for record in moBotDB.cursor:
     for i in range(len(record)):
-      if (i != round1Index):
+      if (i not in roundDateIndexes and i not in qualiVehicleIndexes):
         t += (record[i],)
-      else:
-        t += ([d for d in record[i:]],)
-        break
+
+      elif (i == roundDateIndexes[0]):
+        t += ([date for date in record[min(roundDateIndexes):max(roundDateIndexes)+1]],)
+
+      elif (i == qualiVehicleIndexes[0]):
+        t += ([vehicle for vehicle in record[min(qualiVehicleIndexes):max(qualiVehicleIndexes)+1]],)
   moBotDB.connection.close()
   return Event(*t)
 # end getEventDetails
