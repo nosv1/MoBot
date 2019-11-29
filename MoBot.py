@@ -453,18 +453,21 @@ async def on_message(message):
       except AttributeError: # when no connection was made
         moBotDB = MoBotDatabase.connectDatabase('MoBot')
         
-      sql = """
-        SELECT *
-        FROM custom_commands 
-        WHERE 
-          custom_commands.trigger = '%s' AND 
-          custom_commands.guild_id = '%s'
-        """ % (MoBotDatabase.replaceChars(message.content), message.guild.id)
-      moBotDB.connection.commit()
-      moBotDB.cursor.execute(sql)
-      for record in moBotDB.cursor:
-        await SimpleCommands.sendCommand(message, record)
-        break
+      try:
+        sql = """
+          SELECT *
+          FROM custom_commands 
+          WHERE 
+            custom_commands.trigger = '%s' AND 
+            custom_commands.guild_id = '%s'
+          """ % (MoBotDatabase.replaceChars(message.content), message.guild.id)
+        moBotDB.connection.commit()
+        moBotDB.cursor.execute(sql)
+        for record in moBotDB.cursor:
+          await SimpleCommands.sendCommand(message, record)
+          break
+      except AttributeError: # when messaage is a private message... idk 
+        pass
 
     # check for clock accuracy...
     if (random.random() < .01):
