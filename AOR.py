@@ -352,7 +352,6 @@ async def newStandings(message, client):
   standingsEmbed = getStandings(url, league, client)
   moBotMember = message.guild.get_member(moBot)
   standingsEmbed.color = moBotMember.roles[-1].color
-  standingsEmbed.set_thumbnail(url=message.guild.icon_url)
   await msg.edit(embed=standingsEmbed, content=spaceChar)
 
   moBotDB = MoBotDatabase.connectDatabase("AOR F1")
@@ -403,7 +402,6 @@ async def updateStandings(client):
 
     moBotMember = message.guild.get_member(moBot)
     embed.color = moBotMember.roles[-1].color
-    embed.set_thumbnail(url=message.guild.icon_url)
 
     await messageEmbed[0].edit(content=spaceChar, embed=messageEmbed[1])
 # end updateStandings
@@ -422,11 +420,13 @@ def getStandings(url, league, client):
   url = "%s?hl=en&widget=false&headers=false" % url
   standingsTable, roundFlag = getSpreadsheet(url)
 
-  moBotMember = client.get_user(moBot)
+  guild = client.get_guild(aor)
   embed = discord.Embed()
-  embed.set_author(name="%s-%s-%s-%s" % (season, region, platform, split), icon_url=moBotMember.avatar_url, url=url)
+  embed.set_author(name="%s-%s-%s-%s" % (season, region, platform, split), icon_url=guild.icon_url, url=url)
 
-  value = ""
+  lines = []
+  maxNameWidth = 0
+  maxPointsWdith = 0
   for i in range(len(standingsTable)):
     try:
       position = standingsTable[i][0]
@@ -438,14 +438,23 @@ def getStandings(url, league, client):
       points = standingsTable[i][-5]
 
       if (points != " - "):
-        value += "\n%s. %s **%s** - %s" % (position, flag, name, points)
-
+        lines.append([position, flag, name, points])
+        maxNameWidth = len(name) if len(name) > maxNameWidth else maxNameWidth
+        maxPointsWdith = len(points) if len(points) > maxPointsWdith else maxPointsWdith
     except IndexError:
       pass
-  value += "\n[__Results Spreadsheet__](" + url.replace("_", "\\_") + ")"
-  embed.add_field(name="**__Driver Standings - After %s__**" % flags[roundFlag.upper()], value=value)
-  embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Last Refresh: %H:%M UTC - %d %b %a |"))
 
+  embed.description = "**__Driver Standings - After %s__**" % flags[roundFlag.upper()]
+  for line in lines:
+    embed.description += "\n`%s.` %s `%s` `%s`" % (
+      line[0].rjust(2, " "),
+      line[1],
+      line[2].ljust(maxNameWidth, " "),
+      line[3].rjust(maxPointsWdith, " ")
+    )
+  
+  embed.description += "\n[__Results Spreadsheet__](%s)"  % url.replace("_", "\\_")
+  embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Last Refresh: %H:%M UTC - %d %b %a |"))
   return embed
 # end getStandings
 
