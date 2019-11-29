@@ -20,12 +20,12 @@ moBotTest = 476974462022189056
 mo = 405944496665133058
 
 # qualifying
-lapSubmissionChannel = 648538018117845002
+'''lapSubmissionChannel = 648538018117845002
 lapSubmissionEmbed = 648538377263513635
-lapSubmissionLog = 648538067573145643
-'''lapSubmissionChannel = 648924604022390793
+lapSubmissionLog = 648538067573145643'''
+lapSubmissionChannel = 648924604022390793
 lapSubmissionEmbed = 648957018446626846
-lapSubmissionLog = 648401621977399298'''
+lapSubmissionLog = 648401621977399298
 
 # pit marshalls
 pitMarshallChannel = 649741834783817738
@@ -404,7 +404,7 @@ async def handleLapSubmission(message, member):
       async for user in reaction.users():
         if (user.id == member.id):
           try:
-            vehicle = event.qualiVehicles[RandomSupport.emojiNumbertoNumber(reaction.emoji)] - 1
+            vehicle = event.qualiVehicles[RandomSupport.emojiNumbertoNumber(reaction.emoji)-1] 
             return [vehicle]
           except ValueError: # when reaction is not a number
             pass
@@ -621,18 +621,18 @@ async def confirmDeleteLap(message):
 
   embed = buildBasicEmbed()
   embed.description = "**Are you sure you want to delete this lap time?**\n"
-  embed.description = "Driver: <@%s>\n" % qualiVehicles.discordID
-  embed.description = "Lap Time: `%s`\n" % qualifier.lapTime
-  embed.description = "Proof: [%s](%s)\n" % (
+  embed.description += "Driver: <@%s>\n" % qualifier.discordID
+  embed.description += "Lap Time: `%s`\n" % qualifier.lapTime
+  embed.description += "Proof: [%s](%s)\n" % (
     LINK_EMOJI,
     qualifier.proofLink
   )
-  embed.description = "Submitted: `%s %s UTC`\n" % (
+  embed.description += "Submitted: `%s %s UTC`\n" % (
     qualifier.date,
     qualifier.time
   )
-  embed.description = "Type your reasoning, and then click the %s to delete the lap.\n" % CHECKMARK_EMOJI
-  embed.description = "Click the %s to cancel.\n" % X_EMOJI
+  embed.description += "Type your reasoning, and then click the %s to delete the lap.\n" % CHECKMARK_EMOJI
+  embed.description += "Click the %s to cancel.\n" % X_EMOJI
   embed.set_footer(text="| %s |" % message.id)
 
   msg = await message.channel.send(embed=embed)
