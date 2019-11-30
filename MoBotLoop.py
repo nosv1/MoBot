@@ -339,22 +339,20 @@ async def updateGuildClocks(client, currentTime, clocks):
   for clock in clocks:
     guild = client.get_guild(clock.guildID)
     if (guild is None):
+      #await ClocksAndCountdowns.delete("clock", clock.channelID)
+      #await client.get_user(int(mo)).send("GUILD ID: %s" % clock.guildID)
       continue
 
     tz = clock.timeZone
     convertedTime = timezone("US/Central").localize(currentTime).astimezone(timezone(tz))
 
     try:
-      for channel in guild.voice_channels:
-        if (channel.id == clock.channelID):
-          try:
-            await channel.edit(name=convertedTime.strftime(clock.timeFormat))
-          except AttributeError:
-            await client.get_user(int(mo)).send("**Could Not Update Clock**\nGuild ID: %s\nChannel ID: %s" % (guild.id, clock.channelID))
-          break
-    except AttributeError:
-      await client.get_user(int(mo)).send("**Guild Has No Voice Channels**\nGuild ID: %s" % (guild.id))
-      break
+      channel = guild.get_channel(clock.channelID)
+      await channel.edit(name=convertedTime.strftime(clock.timeFormat))
+    except AttributeError: # when channel doesn't exist
+      #await ClocksAndCountdowns.delete("clock", clock.channelID)
+      #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, clock.channelID))
+      pass
 # end guildClocks
 
 async def updateRepeatingCountdown(guild, endDatetime, countdown):
@@ -387,6 +385,8 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
   for countdown in countdowns:
     guild = client.get_guild(countdown.guildID)
     if (guild is None):
+      #await ClocksAndCountdowns.delete("countdown", countdown.channelID)
+      #await client.get_user(int(mo)).send("GUILD ID: %s" % countdown.guildID)
       continue
 
     tz = countdown.timeZone
@@ -419,38 +419,33 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
 
     countdownString = ""
     try:
-      for channel in guild.voice_channels:
-        if (channel.id == countdown.channelID):
-          try:
-            if (countdown.repeating != "Skip"):
-              if (timeDiff["Days"] > 1):
-                countdownString = str(timeDiff["Days"] + round(timeDiff["Hours"] / 24, 1)) + " days"
-              elif (timeDiff["Hours"] > 1):
-                countdownString = str(timeDiff["Hours"] + round(timeDiff["Minutes"] / 60, 1)) + " hours"
-              elif (timeDiff["Minutes"] > 1):
-                countdownString = str(timeDiff["Minutes"] + round(((seconds - 60) * -1) / 60, 1)) + " minutes"
-              elif (seconds > 0):
-                countdownString = str(seconds) + " seconds"
-              else:
-                countdownString = "0 seconds"
-                await updateRepeatingCountdown(guild, endDatetime, countdown)
-              try:
-                currentText = channel.name.split(":")[0]
-              except IndexError:
-                currentText = ""
-              if (currentText != countdown.text):
-                countdown.text = currentText
-                await ClocksAndCountdowns.updateCountdownInfo(guild, countdown)
-              await channel.edit(name=countdown.text.strip() + ": " + countdownString)
-            else:
-              await channel.edit(name=countdown.text.strip() + ": " + "Skip")
-          except AttributeError:
-            await client.get_user(int(mo)).send("**Could Not Update Countdown**\nGuild ID: %s\nChannel ID: %s" % (guild.id, countdown.channelID))
-          break
-        
-    except AttributeError:
-      await client.get_user(int(mo)).send("**Guild Has No Voice Channels**\nGuild ID: %s" % (guild.id))
-      break
+      channel = guild.get_channel(countdown.channelID)
+      if (countdown.repeating != "Skip"):
+        if (timeDiff["Days"] > 1):
+          countdownString = str(timeDiff["Days"] + round(timeDiff["Hours"] / 24, 1)) + " days"
+        elif (timeDiff["Hours"] > 1):
+          countdownString = str(timeDiff["Hours"] + round(timeDiff["Minutes"] / 60, 1)) + " hours"
+        elif (timeDiff["Minutes"] > 1):
+          countdownString = str(timeDiff["Minutes"] + round(((seconds - 60) * -1) / 60, 1)) + " minutes"
+        elif (seconds > 0):
+          countdownString = str(seconds) + " seconds"
+        else:
+          countdownString = "0 seconds"
+          await updateRepeatingCountdown(guild, endDatetime, countdown)
+        try:
+          currentText = channel.name.split(":")[0]
+        except IndexError:
+          currentText = ""
+        if (currentText != countdown.text):
+          countdown.text = currentText
+          await ClocksAndCountdowns.updateCountdownInfo(guild, countdown)
+        await channel.edit(name=countdown.text.strip() + ": " + countdownString)
+      else:
+        await channel.edit(name=countdown.text.strip() + ": " + "Skip")
+    except AttributeError: # when channel doesn't exist
+      #await ClocksAndCountdowns.delete("countdown", countdown.channelID)
+      #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, countdown.channelID))
+      pass
 # end updateGuildCountdowns
 
 async def updateTimeZoneList(currentTime):
