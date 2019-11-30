@@ -5,7 +5,7 @@ from pytz import timezone
 
 moBot = "449247895858970624"
 
-timeZones = ["America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York", "Canada/Atlantic", "UTC", "Europe/London", "Europe/Monaco", "Europe/Moscow", "Australia/Queensland"]
+timeZones = ["America/Los_Angeles", "America/Denver", "America/Chicago", "America/New_York", "Canada/Atlantic", "UTC", "Europe/London", "Europe/Monaco", "Europe/Moscow", "Asia/Indochina", "Australia/Queensland"]
 
 async def main(args, message, client):
   now = datetime.now()

@@ -127,7 +127,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await message.channel.send(embed=TEPCOTT.buildPitMarshallEmbed())
+        await AOR.newStandings(message, client)
 
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "?"):

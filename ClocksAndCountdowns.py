@@ -24,7 +24,7 @@ repeatingOptions = [
   "Skip", "None", "Hourly", "Daily", "Weekly", "Bi-Weekly", "Monthly", "Yearly"
 ]
 timeZones = [
-  "US/Pacific", "US/Eastern", "UTC", "Europe/London", "Europe/Amsterdam", "Japan", "Australia/Queensland"
+  "US/Pacific", "US/Eastern", "UTC", "Europe/London", "Europe/Amsterdam", "Asia/Vientiane", "Japan", "Australia/Queensland"
 ]
 
 class Clock:

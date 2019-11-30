@@ -397,23 +397,6 @@ def getStartOrders():
 
 # --- QUALIFYING ---
 
-''' 
-check to make sure lap and link are in message
-check to make sure user clicked a vehicle 
-handle lap submission
-input lap
-update drivers and divs
-log lap
-get qualifiers
-build embeds
-update qualifying channel
-
-confirm delete lap
-check for reason
-delete lap
-update qualifying channel
-'''
-
 async def handleLapSubmission(message, member):
   await message.channel.trigger_typing()
   moBotMessage = await waitForUpdate(message)
