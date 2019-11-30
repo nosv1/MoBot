@@ -7,6 +7,7 @@ import mysql.connector
 import copy
 import traceback
 import sys
+import random
 
 import SecretStuff
 import MoBotDatabase
@@ -18,6 +19,10 @@ client = None
 moBot = 449247895858970624
 moBotTest = 476974462022189056
 mo = 405944496665133058
+
+# channels
+abeInternal = 458023768418418689
+generalDiscussion = 450985514464706565
 
 # qualifying
 lapSubmissionChannel = 648538018117845002
@@ -95,6 +100,9 @@ async def main(args, message, c):
   if (message.author.id != moBot):
     if (message.channel.id == lapSubmissionChannel):
       await getLinkAndLapTimeFromMsg(message)
+    
+    if ("kifflom" in message.content.lower() and message.channel.id in [abeInternal, generalDiscussion]):
+      await message.channel.send(randomKifflom())
 # end main
 
 async def mainReactionAdd(message, payload, c):
@@ -137,6 +145,18 @@ async def memberJoin(member):
 async def memberRemove(member, client):
   pass
 # end memberRemove
+
+def randomKifflom():
+  moBotDB = connectDatabase()
+  moBotDB.cursor.execute("SELECT * FROM kifflom")
+  kifflom = []
+  for record in moBotDB.cursor:
+    kifflom.append(record[0])
+  moBotDB.connection.close()
+
+  r = random.randint(0, len(kifflom)-1)
+  return kifflom[r]
+# end randomKifflom
 
 # --- PIT MARSHALLS ---
 
