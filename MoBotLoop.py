@@ -138,7 +138,6 @@ async def main(client):
       currentUTC = datetime.utcnow()
       second = currentTime.second
       if (lastSecond is second):
-        await asyncio.sleep(1)
         continue
       else:
         lastSecond = second
