@@ -272,7 +272,7 @@ async def updateCountdownInfo(guild, countdown):
         (channel_id, guild_id, guild_name, end_datetime, time_zone, text, repeating)
       VALUES
         ('%s', '%s', '%s', '%s', '%s', '%s', '%s')
-    """ % (countdown.channelID, guild.id, guild.name, countdown.endDatetime, countdown.timeZone, MoBotDatabase.replaceChars(countdown.text), countdown.repeating))
+    """ % (countdown.channelID, guild.id, MoBotDatabase.replaceChars(guild.name), countdown.endDatetime, countdown.timeZone, MoBotDatabase.replaceChars(countdown.text), countdown.repeating))
   moBotDB.connection.commit()
   moBotDB.connection.close()
 # end updateCountdownInfo
