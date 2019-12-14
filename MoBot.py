@@ -558,10 +558,18 @@ async def on_raw_reaction_add(payload):
           if (role.id == int(roleID)):
             if (msg["RoleID"][1] == "add"):
               await member.add_roles(role)
-              await message.channel.send(content="**" + role.name + " Role Added to " + member.mention + "**", delete_after=5.0)
+              try:
+                await member.send("You have been added to the role: `" + role.name + "`.")
+              except discord.errors.Forbidden:
+                pass
+              #await message.channel.send(content="**" + role.name + " Role Removed from " + member.mention + "**", delete_after=5.0)
             else:
               await member.remove_roles(role)
-              await message.channel.send(content="**" + role.name + " Role Removed from " + member.mention + "**", delete_after=5.0)
+              try:
+                await member.send("You have been removed from the role: `" + role.name + "`.")
+              except discord.errors.Forbidden:
+                pass
+              #await message.channel.send(content="**" + role.name + " Role Added to " + member.mention + "**", delete_after=5.0)
     except KeyError:
       pass
     except discord.errors.Forbidden:
@@ -707,14 +715,14 @@ async def on_raw_reaction_remove(payload):
             if (msg["RoleID"][1] == "add"):
               await member.remove_roles(role)
               try:
-                await member.send("You have been added to the role: `" + role.name + "`.")
+                await member.send("You have been removed to the role: `" + role.name + "`.")
               except discord.errors.Forbidden:
                 pass
               #await message.channel.send(content="**" + role.name + " Role Removed from " + member.mention + "**", delete_after=5.0)
             else:
               await member.add_roles(role)
               try:
-                await member.send("You have been removed from the role: `" + role.name + "`.")
+                await member.send("You have been added from the role: `" + role.name + "`.")
               except discord.errors.Forbidden:
                 pass
               #await message.channel.send(content="**" + role.name + " Role Added to " + member.mention + "**", delete_after=5.0)
