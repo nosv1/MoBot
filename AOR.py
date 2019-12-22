@@ -6,6 +6,7 @@ import requests
 import feedparser
 import os
 import random
+import statistics
 
 import MoBotDatabase
 
@@ -20,10 +21,11 @@ aor = 298938326306521098
 pcF9 = 592086506068377624
 f1GOAT = 291658352336044033
 
-class Race:
+class RaceInput:
   def __init__(
     self,
-    name,
+    driver_name,
+    team,
     date,
     season,
     region,
@@ -45,31 +47,40 @@ class Race:
     dnf,
     fastest_lap,
     got_fastest_lap,
-    pit_stops
+    pit_stops,
+    quali_percent_diff,
+    race_percent_diff,
+    fastest_lap_percent_diff,
+    overtakes
   ):
-    self.nam = name
+    self.driver_name = driver_name
     self.date = date
-    self.season = season
+    self.team = team
+    self.season = int(season)
     self.region = region
     self.platform = platform
     self.game = game
     self.grand_prix = grand_prix
-    self.tier = tier
-    self.assist_tier = assist_tier
+    self.tier = int(tier)
+    self.assist_tier = int(assist_tier)
     self.quali_conditions = quali_conditions
     self.quali_position = quali_position
-    self.quali_seconds = quali_seconds
+    self.quali_seconds = round(float(quali_seconds),3)
     self.quali_tire = quali_tire
     self.race_conditions = race_conditions
     self.race_position = race_position
-    self.race_seconds = race_seconds
+    self.race_seconds = round(float(race_seconds),3)
     self.laps_down = laps_down
     self.penalty_seconds = penalty_seconds
     self.points = points
     self.dnf = dnf
-    self.fastest_lap = fastest_lap
+    self.fastest_lap = round(float(fastest_lap),3)
     self.got_fastest_lap = got_fastest_lap
     self.pit_stops = pit_stops
+    self.quali_percent_diff = quali_percent_diff
+    self.race_percent_diff = race_percent_diff
+    self.fastest_lap_percent_diff = fastest_lap_percent_diff
+    self.overtakes = overtakes
 # end Race
 
 class DriverProfileOverview: # need to add teams raced for
@@ -141,6 +152,148 @@ async def mainReactionRemove(message, payload, client):
 # end mainReactionRemove
 
 # ---- AOR F1 DATABASE -----
+
+#   --- AOR F1 RACE EVALUATION ---
+
+def setPercentDifferences():
+  raceInputs = getRaceInputs()
+  moBotDB = connectDatabase()
+
+  print("Getting Races")
+  races = []
+  for raceInput in raceInputs:
+    race = [raceInput.season, raceInput.region, raceInput.platform, raceInput.grand_prix, raceInput.tier, raceInput.assist_tier]
+    if (race not in races):
+      races.append(race)
+
+  print("Evaluating Races")
+  for race in races:
+    print(str(round((races.index(race) / len(races))*100,2)) + "%")
+    race = getRace(raceInputs, *race)
+
+    qualiEvaluation = []
+    raceEvaluation = []
+    fastestLapEvaluation = []
+    overtakesEvaluation = []
+
+    for raceInput in race:
+      qualiEvaluation.append(evaluateQuali(raceInput, race))
+      raceEvaluation.append(evaluateRace(raceInput, race))
+      fastestLapEvaluation.append(evaluateFastestLap(raceInput, race))
+      overtakesEvaluation.append(raceInput.quali_position - raceInput.race_position)
+    
+    for i in range(len(race)):
+      raceInput = race[i]
+      raceInput.quali_percent_diff = qualiEvaluation[i]*100
+      raceInput.race_percent_diff = raceEvaluation[i]*100
+      raceInput.fastest_lap_percent_diff = fastestLapEvaluation[i]*100
+      raceInput.overtakes = overtakesEvaluation[i]
+      moBotDB.cursor.execute("""
+        UPDATE race_inputs
+        SET 
+          quali_percent_diff = '%s',
+          race_percent_diff = '%s',
+          fastest_lap_percent_diff = '%s',
+          overtakes = '%s'
+        WHERE 
+          driver_name = '%s' AND
+          season = '%s' AND
+          region = '%s' AND
+          platform = '%s' AND
+          grand_prix = '%s' AND
+          tier = '%s' AND
+          assist_tier = '%s'
+      """ % (
+        raceInput.quali_percent_diff, 
+        raceInput.race_percent_diff, 
+        raceInput.fastest_lap_percent_diff, 
+        raceInput.overtakes,
+        raceInput.driver_name, raceInput.season, raceInput.region, raceInput.platform, raceInput.grand_prix, raceInput.tier, raceInput.assist_tier
+      ))
+  
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
+# end setPercentDifferences
+
+def getRace(raceInputs, season, region, platform, grandPrix, tier, assistTier): # assist tier is 0 or 1  
+  race = []
+  for raceInput in raceInputs:
+    if (
+      raceInput.season == season and 
+      raceInput.region == region and
+      raceInput.platform == platform and
+      raceInput.grand_prix == grandPrix and
+      raceInput.tier == tier and
+      raceInput.assist_tier == assistTier
+    ):
+      race.append(raceInput)
+
+  return race
+# end getRace
+
+def evaluateQuali(raceInput, race):
+
+  percentDifferences = []
+  qualiTimes = []
+
+  for aRaceInput in race:
+    if (aRaceInput.quali_seconds > 0):
+      qualiTimes.append(aRaceInput.quali_seconds)
+
+  if (len(qualiTimes) < 5): # no times inputted
+    return 0
+  elif (raceInput.quali_seconds == 0): # no time set
+    return -1
+
+  for qualiTime in qualiTimes:
+    if (qualiTime != raceInput.quali_seconds):
+      percentDifferences.append(getPercentDifference(qualiTime, raceInput.quali_seconds))
+
+  return sum(percentDifferences) / len(percentDifferences)
+# end evaluateQuali
+
+def evaluateRace(raceInput, race):
+
+  percentDifferences = []
+  raceTimes = []
+
+  for aRaceInput in race:
+    if (aRaceInput.race_seconds > 0):
+      raceTimes.append(aRaceInput.race_seconds)
+
+  if (len(raceTimes) < 5):
+    return 0
+  elif (raceInput.race_seconds == 0):
+    return -1
+
+  for raceTime in raceTimes:
+    if (raceTime != raceInput.race_seconds):
+      percentDifferences.append(getPercentDifference(raceTime, raceInput.race_seconds))
+
+  return sum(percentDifferences) / len(percentDifferences)
+# end evaluateRace
+
+def evaluateFastestLap(raceInput, race):
+  percentDifferences = []
+  fastestLaps = []
+
+  for aRaceInput in race:
+    if (aRaceInput.fastest_lap > 0):
+      fastestLaps.append(aRaceInput.fastest_lap)
+
+  if (len(fastestLaps) < 5): # no times inputted
+    return 0
+  elif (raceInput.fastest_lap == 0): # no time set
+    return -1
+
+  for fastestLap in fastestLaps:
+    if (fastestLap != raceInput.fastest_lap):
+      percentDifferences.append(getPercentDifference(fastestLap, raceInput.fastest_lap))
+
+  return sum(percentDifferences) / len(percentDifferences)
+# end evaluateFastestLap
+
+#   --- END AOR F1 RACE EVALUATION ---
 
 #   --- AOR F1 DRIVER PROFILES ---
 
@@ -300,7 +453,7 @@ def getDriverRaces(names):
 
   races = []
   for record in moBotDB.cursor:
-    races.append(Race(*record))
+    races.append(RaceInput(*record))
 
   moBotDB.connection.close()
   return races
@@ -531,7 +684,39 @@ def getAutoUpdateStandings():
 
 #   --- END AOR STANDINGS ---
 
+def getRaceInputs():
+  moBotDB = connectDatabase()
+
+  raceInputs = []
+  moBotDB.cursor.execute("""
+    SELECT * 
+    FROM race_inputs
+  """)
+
+  for record in moBotDB.cursor:
+    raceInputs.append(RaceInput(*record))
+
+  moBotDB.connection.close()
+  return raceInputs
+# end getRaceInputs
+
+def connectDatabase():
+  return MoBotDatabase.connectDatabase("AOR F1")
+# end connectDatabase
+
 # ----- END AOR F1 DATABASE -----
+
+def normalize(arr):
+  minArr = min(arr)
+  maxArr = max(arr)
+  for i in range(len(arr)):
+    arr[i] = (arr[i] - minArr) / (maxArr - minArr)
+  return arr
+# end normalize
+
+def getPercentDifference(a, b):
+  return (a - b) / b
+# end getPercentDifference
 
 async def addGameEmojis(message):
   directory = os.fsencode("C:/Users/Owner/Desktop/AOR Emojis/Games")
@@ -563,3 +748,31 @@ async def udpateRSSChannel(client):
     await channel.send(embed=embed)
     break
 # end udpateRSSChannel
+
+race = getRace(getRaceInputs(), 18, "EU", "PC", "RUSSIAN", 1, 0)
+qualiEvaluation = []
+raceEvaluation = []
+fastestLapEvaluation = []
+overtakesEvaluation = []
+for raceInput in race:
+  qualiEvaluation.append(evaluateQuali(raceInput, race))
+  raceEvaluation.append(evaluateRace(raceInput, race))
+  fastestLapEvaluation.append(evaluateFastestLap(raceInput, race))
+  overtakesEvaluation.append(raceInput.quali_position - raceInput.race_position)
+  print("%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
+    raceInput.driver_name, 
+    raceInput.quali_seconds, raceInput.race_seconds, raceInput.fastest_lap, raceInput.quali_position - raceInput.race_position,
+    qualiEvaluation[-1], raceEvaluation[-1], fastestLapEvaluation[-1], overtakesEvaluation[-1]
+  ))
+
+'''qualiEvaluation = [0.15*(n-.5) for n in normalize(qualiEvaluation)]
+raceEvaluation = [0.7*(n-.5) for n in normalize(raceEvaluation)]
+fastestLapEvaluation = [0.05*(n-.5) for n in normalize(fastestLapEvaluation)]
+overtakesEvaluation = [0.1*(n-.5) for n in normalize(overtakesEvaluation)]
+
+print()
+for i in range(len(race)):
+  race[i].performance_rating = (qualiEvaluation[i] + raceEvaluation[i] + fastestLapEvaluation[i] + overtakesEvaluation[i]) / 4
+  print ("%s: %s" % (race[i].driver_name, race[i].performance_rating))'''
+
+setPercentDifferences()
