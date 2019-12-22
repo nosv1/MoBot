@@ -127,9 +127,8 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        race = AOR.getRace(args[2], args[3], args[4], args[5], args[6], args[7])
-        for raceInput in race:
-          print(raceInput.name)
+        import ClocksAndCountdownsNew
+        await ClocksAndCountdownsNew.prepareClockEditor(message)
           
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "?"):
@@ -380,6 +379,8 @@ async def on_raw_reaction_add(payload):
         elif (payload.emoji.name == "🗑"):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      if ("MoBot Clocks" in embedAuthor):
+        await ClocksAndCountdownsNew.mainReactionAdd(message, payload, client, "clock")
       if ("TEPCOTT - Season 4" in embedAuthor):
         await TEPCOTT.mainReactionAdd(message, payload, client)
       if ("GTA V Weather Forecast" in embedAuthor):

@@ -4,6 +4,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+import pytz
 
 import SecretStuff
 import MoBotDatabase
@@ -87,6 +88,11 @@ async def mainReactionAdd(message, payload, client, clockType):
     elif (payload.emoji.name in arrows):
       await editEditorValue(message, payload, clockType)
     elif (payload.emoji.name == "✅"):
+      embed = discord.Embed().from_dict(embed)
+      nextStep = embed.author.url.split("next=")[1].split("/")[0]
+      if (clockType == "clock"):
+        if ("waitForTimeZone" == nextStep):
+          await waitForTimeZone(message)
       if (isEditor):
         if (clockType == "countdown"):
           await updateCountdownInfo(message.guild, await getCountdownFromOverview(message))
@@ -108,573 +114,61 @@ async def mainReactionRemove(message, payload, client):
   pass
 # end mainReactionRemove
 
+async def waitForTimeZone():
+  # get number from history check against the times in the description, get time, find the timezones that match that time
+  pass
 
+# end waitForTimeZone
 
-'''
-async def delete(clockType, channelID):
-    moBotDB = MoBotDatabase.connectDatabase('MoBot')
-    moBotDB.connection.commit()
-    moBotDB.cursor.execute("""
-      DELETE FROM %ss
-      WHERE %ss.channel_id = '%s'
-    """ % (clockType.lower(), clockType.lower(), channelID))
-    moBotDB.connection.commit()
-    moBotDB.connection.close()
-# end delete
+async def waitForApproxTimeZone(message):
+  # get utc, get -11 to +12, figure out which 
+  moBotMember = message.guild.get_member(moBot)
+  embed = discord.Embed(color=moBotMember.top_role.color)
+  embed.set_author(name="MoBot Clocks", icon_url=moBotMember.avatar_url, url="https://google.com/current=waitForApproxTimeZone/next=waitForTimeZone")
 
-async def getClock(message, guildID, channelID):  
-  clockFormats = {
-    "%I:%M%p %Z" : "12-hour",
-    "%I:%M%p %Z - %b %d" : "12-hour + date",
-    "%H:%M %Z" : "24-hour",
-    "%H:%M %Z - %b %d" : "24-hour + date",
-  }
-  
-  moBotDB = MoBotDatabase.connectDatabase('MoBot')
-  moBotDB.connection.commit()
-  moBotDB.cursor.execute("""
-  SELECT clocks.channel_id, clocks.time_format, clocks.time_zone
-  FROM clocks
-  WHERE 
-    clocks.guild_id = '%s' AND
-    clocks.channel_id = '%s'
-  """ % (guildID, channelID))
-  for record in moBotDB.cursor:
-    return Clock(record[0], clockFormats[record[1]], record[2])
-
-  return None
-# end getClock
-
-async def getCountdown(message, guildID, channelID):  
-  moBotDB = MoBotDatabase.connectDatabase('MoBot')
-  moBotDB.connection.commit()
-  moBotDB.cursor.execute("""
-  SELECT countdowns.channel_id, countdowns.end_datetime, countdowns.time_zone, countdowns.text, countdowns.repeating
-  FROM countdowns
-  WHERE 
-    countdowns.guild_id = '%s' AND
-    countdowns.channel_id = '%s'
-  """ % (guildID, channelID))
-  for record in moBotDB.cursor:
-    return Countdown(record[0], record[1], record[2], record[3], record[4])
-
-  return None
-# end getCountdown
-
-async def getClockFromOverview(message):
-  mc = message.content
-
-  clock = Clock(
-    mc.split("**Channel ID**: ")[1].split("\n")[0].strip(),
-    mc.split("**Format**: ")[1].split("\n")[0].strip(),
-    mc.split("**Time Zone**: ")[1].split("\n")[0].strip()
-  )
-  return clock
-# end getClockFromOverview
-
-async def getCountdownFromOverview(message):
-  mc = message.content
-
-  countdown = Countdown(
-    mc.split("**Channel ID**: ")[1].split("\n")[0].strip(),
-    mc.split("**End Datetime**: ")[1].split("\n")[0].strip(),
-    mc.split("**Time Zone**: ")[1].split("\n")[0].strip(),
-    mc.split("**Text**: ")[1].split("\n")[0].strip(),
-    mc.split("**Repeating**: ")[1].split("\n")[0].strip()
-  )
-
-  return countdown
-# end getCountdownFromOverview
-
-async def getOverviewFromClock(message, clock, channelID):
-  overview = "**Overview**\n"
-  overview += "  **Channel ID**: " + str(channelID) + "\n"
-  overview += "  **Format**: " + clock.timeFormat + "\n"
-  overview += "  **Time Zone**: " + clock.timeZone + "\n"
-
-  return overview
-# end getOverviewFromClock
-
-async def getOverviewFromCountdown(message, countdown, channelID):
-  overview = "**Overview**\n"
-  overview += "  **Channel ID**: " + str(channelID) + "\n"
-  overview += "  **End Datetime**: " + countdown.endDatetime + "\n"
-  overview += "  **Time Zone**: " + countdown.timeZone + "\n"
-  overview += "  **Text**: " + countdown.text + "\n"
-  overview += "  **Repeating**: " + countdown.repeating + "\n"
-
-  return overview
-# end getOverviewFromCountdown
-
-async def updateClockInfo(guild, clock):
-  clockFormats = {
-    "24-hour" : "%H:%M %Z",
-    "24-hour + date" : "%H:%M %Z - %b %d",
-    "12-hour" : "%I:%M%p %Z",
-    "12-hour + date" : "%I:%M%p %Z - %b %d",
-  }
-
-  oldClock = None
-  moBotDB = MoBotDatabase.connectDatabase('MoBot')
-  moBotDB.connection.commit()
-  moBotDB.cursor.execute("""
-    SELECT * 
-    FROM clocks
-    WHERE clocks.channel_id = '%s'
-  """ % clock.channelID)
-  for record in moBotDB.cursor:
-    oldClock = record # just to test if cursor is empty
-
-  if (oldClock is not None):
-    moBotDB.cursor.execute("""
-      UPDATE clocks
-      SET
-        clocks.time_format = '%s',
-        clocks.time_zone = '%s'
-      WHERE
-        clocks.channel_id = '%s'
-    """ % (clockFormats[clock.timeFormat], clock.timeZone, clock.channelID))
-  else:
-    moBotDB.cursor.execute("""
-      INSERT INTO `MoBot`.`clocks` 
-        (`channel_id`, `guild_id`, `guild_name`, `time_format`, `time_zone`)
-      VALUES
-        ('%s', '%s', '%s', '%s', '%s')
-    """ % (clock.channelID, guild.id, guild.name, clockFormats[clock.timeFormat], clock.timeZone))
-  moBotDB.connection.commit()
-  moBotDB.connection.close()
-# end updateClockInfo
-
-async def updateCountdownInfo(guild, countdown):
-  oldCountdown = None
-  moBotDB = MoBotDatabase.connectDatabase('MoBot')
-  moBotDB.connection.commit()
-  moBotDB.cursor.execute("""
-    SELECT *
-    FROM countdowns
-    WHERE countdowns.channel_id = '%s'
-  """ % countdown.channelID)
-  for record in moBotDB.cursor:
-    oldCountdown = record
-
-  if (oldCountdown is not None):
-    moBotDB.cursor.execute("""
-      UPDATE countdowns
-      SET
-        countdowns.end_datetime = '%s',
-        countdowns.time_zone = '%s',
-        countdowns.text = '%s',
-        countdowns.repeating = '%s'
-      WHERE
-        countdowns.channel_id = '%s'
-    """ % (countdown.endDatetime, countdown.timeZone, MoBotDatabase.replaceChars(countdown.text), countdown.repeating, countdown.channelID))
-  else:
-    moBotDB.cursor.execute("""
-      INSERT INTO MoBot.countdowns
-        (channel_id, guild_id, guild_name, end_datetime, time_zone, text, repeating)
-      VALUES
-        ('%s', '%s', '%s', '%s', '%s', '%s', '%s')
-    """ % (countdown.channelID, guild.id, MoBotDatabase.replaceChars(guild.name), countdown.endDatetime, countdown.timeZone, MoBotDatabase.replaceChars(countdown.text), countdown.repeating))
-  moBotDB.connection.commit()
-  moBotDB.connection.close()
-# end updateCountdownInfo
-
-async def editEditorValue(message, payload, clockType):
-  embed = message.embeds[0].to_dict()
-  field = embed["fields"][0]
-  fieldName = field["name"]
-  fieldValue = field["value"]
-  pageNumber = int(embed["footer"]["text"].split("/")[0].split(" ")[1].strip())
-
-  if (clockType == "countdown"):
-    countdown = await getCountdownFromOverview(message)
-
-    endDatetime = datetime.strptime(countdown.endDatetime, "%m/%d/%Y %H:%M")
-    year = endDatetime.year
-    month = endDatetime.month
-    day = endDatetime.day
-    hour = endDatetime.hour
-    minute = endDatetime.minute
-
-    isDouble = (payload.emoji.name == "⏫" or payload.emoji.name == "⏬")
-
-    if (payload.emoji.name == "🔼" or payload.emoji.name == "⏫"):
-      if (fieldName == "Year"):
-        year = int(fieldValue) + 1
-
-      elif (fieldName == "Month"):
-        if (isDouble):
-          month = int(fieldValue) + 2
-        else:
-          month = int(fieldValue) + 1
-        if (month > 12):
-          month = 1
-
-      elif (fieldName == "Day"):
-        if (isDouble):
-          day = int(fieldValue) + 7
-        else:
-          day = int(fieldValue) + 1
-        try:
-          datetime(year, month, day, hour, minute)
-        except ValueError:
-          day = 1
-
-      elif ("Hour" in fieldName):
-        if (isDouble):
-          hour = int(fieldValue) + 4
-        else:
-          hour = int(fieldValue) + 1
-        if (hour > 23):
-          hour = 0
-
-      elif (fieldName == "Minute"):
-        if (isDouble):
-          minute = int(fieldValue) + 10
-        else:
-          minute = int(fieldValue) + 1
-        if (minute > 59):
-          minute = 0
-
-      elif (fieldName == "Time Zone"):
-        countdown.timeZone = timeZones[timeZones.index(fieldValue) - (len(timeZones) - 1)]
-        
-      elif (fieldName == "Repeating"):
-        countdown.repeating = repeatingOptions[repeatingOptions.index(fieldValue) - (len(repeatingOptions) - 1)]
-
-    elif (payload.emoji.name == "🔽" or payload.emoji.name == "⏬"):
-      if (fieldName == "Year"):
-        year = int(fieldValue) - 1
-
-      elif (fieldName == "Month"):
-        if (isDouble):
-          month = int(fieldValue) - 2
-        else:
-          month = int(fieldValue) - 1
-        if (month < 1):
-          month = 12
-
-      elif (fieldName == "Day"):
-        if (isDouble):
-          day = int(fieldValue) - 7
-        else:
-          day = int(fieldValue) - 1
-        try:
-          datetime(year, month, day, hour, minute)
-        except ValueError:
-          day = (datetime(year, month, 1, hour, minute) + relativedelta(months=+1) - timedelta(days=1)).day
-
-      elif ("Hour" in fieldName):
-        if (isDouble):
-          hour = int(fieldValue) - 4
-        else:
-          hour = int(fieldValue) - 1
-        if (hour < 0):
-          hour = 23
-
-      elif (fieldName == "Minute"):
-        if (isDouble):
-          minute = int(fieldValue) - 10
-        else:
-          minute = int(fieldValue) - 1
-        if (minute < 0):
-          minute = 59
-
-      elif (fieldName == "Time Zone"):
-        countdown.timeZone = timeZones[timeZones.index(fieldValue) - 1]
-          
-      elif (fieldName == "Repeating"):
-        countdown.repeating = repeatingOptions[repeatingOptions.index(fieldValue) - 1]
-
-    countdown.endDatetime = datetime(year, month, day, hour, minute).strftime("%m/%d/%Y %H:%M")
-
-    overview = await getOverviewFromCountdown(message, countdown, countdown.channelID)
-    await message.edit(content=overview)
-
-  elif (clockType == "clock"):
-    clock = await getClockFromOverview(message)
-
-    if (payload.emoji.name == "🔼" or payload.emoji.name == "🔽"):
-      if (fieldName == "Format"):
-        if (clock.timeFormat == "24-hour"):
-          clock.timeFormat = "24-hour + date"
-        elif (clock.timeFormat == "24-hour + date"):
-          clock.timeFormat = "12-hour"
-        elif (clock.timeFormat == "12-hour"):
-          clock.timeFormat = "12-hour + date"
-        elif (clock.timeFormat == "12-hour + date"):
-          clock.timeFormat = "24-hour"
-      
-      else:
-        if (payload.emoji.name == "🔽"):
-          clock.timeZone = timeZones[timeZones.index(fieldValue) - 1]
-        else:
-          clock.timeZone = timeZones[timeZones.index(fieldValue) - (len(timeZones) - 1)]
-
-    overview = await getOverviewFromClock(message, clock, clock.channelID)
-    await message.edit(content=overview)
-
-  editorPages["Page " + str(pageNumber)] = {
-    "Header" : fieldName,
-    "Fields" : [
-      [fieldName, fieldValue]
-    ]
-  }
-
-  if (clockType == "countdown"):
-    await prepareEditor(message, clockType, countdown.channelID, pageNumber, message.id)
-  else:
-    await prepareEditor(message, clockType, clock.channelID, pageNumber, message.id)
-# end editEditorValue
-
-async def closeEditor(message, payload, clockType, channelID, isEditor):
-
-  clockType = "C" + clockType[1:]
-  if (isEditor):
-    if (payload.emoji.name == "❌"):
-      embed = discord.Embed(colour=0x36393f)
-      embed.set_author(name=clockType + " Editor")
-      embed.add_field(name="Close Editor", value="Are you sure you want to close the " + clockType + " Editor? All unsaved changes will be lost.", inline=False)
-
-      await message.edit(embed=embed)
-
-      await message.remove_reaction("🗑", message.guild.get_member(moBot))
-      await message.remove_reaction("◀", message.guild.get_member(moBot))
-      await message.remove_reaction("▶", message.guild.get_member(moBot))
-      await message.remove_reaction("🔼", message.guild.get_member(moBot))
-      await message.remove_reaction("⏫", message.guild.get_member(moBot))
-      await message.remove_reaction("⏬", message.guild.get_member(moBot))
-      await message.remove_reaction("🔽", message.guild.get_member(moBot))
-
-    elif (payload.emoji.name == "🗑"):
-      embed = discord.Embed(colour=0x36393f)
-      embed.set_author(name=clockType + " Editor")
-      embed.add_field(name="Delete " + clockType, value="Are you sure you want to delete the " + clockType + "?", inline=False)
-
-      await message.edit(embed=embed)
-
-      await message.remove_reaction("🗑", message.guild.get_member(moBot))
-      await message.remove_reaction("◀", message.guild.get_member(moBot))
-      await message.remove_reaction("▶", message.guild.get_member(moBot))
-      await message.remove_reaction("🔼", message.guild.get_member(moBot))
-      await message.remove_reaction("⏫", message.guild.get_member(moBot))
-      await message.remove_reaction("⏬", message.guild.get_member(moBot))
-      await message.remove_reaction("🔽", message.guild.get_member(moBot))
-  else:
-    if (payload.emoji.name == "✅"):
-      embed = message.embeds[0].to_dict()
-      author = embed["author"]["name"]
-      field = embed["fields"][0]
-      fieldName = field["name"]
-      if ("Editor" in author):
-        if ("Delete" in fieldName):
-          await delete(clockType, channelID)
-
-          try:
-            channel = message.guild.get_channel(int(channelID))
-            await channel.delete()
-          except:
-            pass
-
-        history = message.channel.history(limit=3)
-        async for msg in history:
-          if (str(channelID) in msg.content):
-            await msg.delete()
-
-    elif (payload.emoji.name == "❌"):
-      await prepareEditor(message, clockType, channelID, 1, message.id)
-      await message.add_reaction("🗑")
-      await message.add_reaction("◀")
-      await message.add_reaction("▶")
-
-async def openEditor(message, editorPages, pageNumber, editorID, clockType, countdown, channelID):
-  moBotMessages = []
-
-  if (clockType == "countdown"):
-    overview = await getOverviewFromCountdown(message, countdown, channelID)
-  elif (clockType == "clock"):
-    overview = await getOverviewFromClock(message, countdown, channelID)
-
-  editor = discord.Embed(colour=0x36393f)
-  editor.set_author(name=editorPages["Author"])
-
-  for i in range(0, len(editorPages["Page " + str(pageNumber)]["Fields"])):
-    field = editorPages["Page " + str(pageNumber)]["Fields"][i]
-    editor.add_field(name=field[0], value=field[1], inline=False)
-  
-  editor.set_footer(text="\nPage " + str(pageNumber) + "/" + str(editorPages["Number of Pages"]))
-  editorMsg = None
-  if (editorID == 0):
-    editorMsg = await message.channel.send(content=overview, embed=editor)
-    await editorMsg.add_reaction("✅")
-    await editorMsg.add_reaction("❌")
-    await editorMsg.add_reaction("🗑")
-    await editorMsg.add_reaction("◀")
-    await editorMsg.add_reaction("▶")
-
-  else:
-    editorMsg = await message.channel.fetch_message(editorID)
-    await editorMsg.edit(embed=editor)
-
-  if (pageNumber > 1):
-    await editorMsg.add_reaction("🔼")
-    if (clockType == "countdown"):
-      await message.add_reaction("⏫")
-      await message.add_reaction("⏬")
-    await editorMsg.add_reaction("🔽")
-  else:
-    await editorMsg.remove_reaction("🔼", message.guild.get_member(moBot))
-    if (clockType == "countdown"):
-      await message.remove_reaction("⏫", message.guild.get_member(moBot))
-      await message.remove_reaction("⏬", message.guild.get_member(moBot))
-    await editorMsg.remove_reaction("🔽", message.guild.get_member(moBot))
-# end openEditor
-
-async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
-  moBotMessages = []
-  if (clockType == "countdown"):
-    if (editorID == 0):
-      countdown = await getCountdown(message, str(message.guild.id), channelID)
-
-      if (countdown is None):  
-        channel = message.guild.get_channel(int(channelID))
-        await channel.edit(name="Edit This Text:")
-        now = datetime.now()
-        countdown = Countdown(
-          str(channel.id),
-          now.strftime("%m/%d/%Y %H:%M"),
-          "Europe/London",
-          "Edit This Text:",
-          "None"
+  times = [] # array of all times, no duplicates
+  t = [] # used to check for duplicate times before adding them to array
+  utcnow = datetime.utcnow()
+  for tz in pytz.all_timezones:
+    time = pytz.timezone("UTC").localize(utcnow).astimezone(pytz.timezone(tz)).strftime("%H:%M")
+    if (time not in t):
+      t.append(time)
+      time = [int(a) for a in time.split(":")] # "00:01" -> [0, 1]
+      times.append([time[0]*60+time[1], time]) # times[-1] = [0*60+1, [0, 1]]
+  times.sort(key=lambda x: x[0]) # sort on col 1 ... '0*60+1'
+  t = []
+  for i in range(0, len(times), 2):
+    # times[i] = "` 0. 00:01` - ` 1. 01:01`"
+    t.append("`%s. %s`" % (
+        str(i + 1).rjust(2, " "),
+        "%s:%s" % (
+          str(times[i][1][0]).rjust(2, "0"),
+          str(times[i][1][1]).rjust(2, "0"),
         )
-        await updateCountdownInfo(message.guild, countdown)
-    else:
-      countdown = await getCountdownFromOverview(message)
-
-    editorPages["Author"] = "Countdown Editor"
-
-    # instructions
-    editorPages["Page 1"] = {
-      "Header" : "Instructions",
-      "Fields" : [
-        ["Instructions", "Use the ◀/▶ to maneuver through the editor.\nUse the 🔼/🔽 to adjust the values.\nClick the ✅ to save. (May take up to a minute to update countdown)\nClick the ❌ when you're finished.\nClick the 🗑 to delete the countdown - this will delete the channel too."]
-      ]
-    }
-    editorPages["Number of Pages"] = 1
-
-    # year
-    editorPages["Page 2"] = {
-      "Header" : "Year",
-      "Fields" : [
-        ["Year", countdown.endDatetime.split("/")[2].split(" ")[0].strip()]
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    # month
-    editorPages["Page 3"] = {
-      "Header" : "Month",
-      "Fields" : [
-        ["Month", countdown.endDatetime.split("/")[0].strip()]
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    # day
-    editorPages["Page 4"] = {
-      "Header" : "Day",
-      "Fields" : [
-        ["Day", countdown.endDatetime.split("/")[1].strip()]
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    # hour (24 hour)
-    editorPages["Page 5"] = {
-      "Header" : "Hour (24-Hour)",
-      "Fields" : [
-        ["Hour (24-Hour)", countdown.endDatetime.split(" ")[1].split(":")[0].strip()]
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    # minute
-    editorPages["Page 6"] = {
-      "Header" : "Minute",
-      "Fields" : [
-        ["Minute", countdown.endDatetime.split(":")[1].split("\n")[0].strip()]
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    # time zone
-    editorPages["Page 7"] = {
-      "Header" : "Time Zone",
-      "Fields" : [
-        ["Time Zone", countdown.timeZone]
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    # repeating
-    editorPages["Page 8"] = {
-      "Header" : "Repeating",
-      "Fields" : [
-        ["Repeating", countdown.repeating]
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    await openEditor(message, editorPages, pageNumber, editorID, clockType, countdown, channelID)
-  elif (clockType == "clock"):
-    if (editorID == 0):
-      clock = await getClock(message, str(message.guild.id), channelID)
-
-      if (clock is None):
-        channel = message.guild.get_channel(int(channelID))
-        await channel.edit(name="New Clock Channel")
-        now = datetime.now()
-        clock = Clock(
-          str(channel.id),
-          "24-hour",
-          "Europe/London"
+      )
+    )
+    if (len(times) != i + 1):
+      t[-1] += " - `%s. %s`" % (
+        str(i + 2).rjust(2, " "),
+        "%s:%s" % (
+          str(times[i+1][1][0]).rjust(2, "0"),
+          str(times[i+1][1][1]).rjust(2, "0"),
         )
-        await updateClockInfo(message.guild, clock)
-    else:
-      clock = await getClockFromOverview(message)
+      )
+  times = t
+  for t in times:
+    print(t)
 
-    editorPages["Author"] = "Clock Editor"
+  embed.description = "%s\n%s\n\n%s\n\n%s" % (
+    "**__What time is it?__**",
+    "- To approximately determine which time zone the clock will use, type the number matching a time below.\n- ***Example:** If it's currently `12:00` and #1 says `12:00`, type 1.*\n- If you are using a 12-hour clock and it is currently after noon, take your time +12 hours. There will be options to format the clock after this.",
+    "\n".join(times),
+    "*Type the number that matches the current time, then click the %s to continue to setting the exact time zone.*" % RandomSupport.CHECKMARK_EMOJI,
+  )
+  msg = await message.channel.send(embed=embed)
+  await msg.add_reaction(RandomSupport.CHECKMARK_EMOJI)
+# end waitForApproxTimeZone
 
-    # instructions
-    editorPages["Page 1"] = {
-      "Header" : "Instructions",
-      "Fields" : [
-        ["Instructions", "Use the ◀/▶ to maneuver through the editor.\nUse the 🔼/🔽 to adjust the values.\nClick the ✅ to save. (May take up to a minute to update clock)\nClick the ❌ when you're finished.\nClick the 🗑 to delete the clock - this will delete the channel too."]
-      ]
-    }
-    editorPages["Number of Pages"] = 1
-
-    # format
-    editorPages["Page 2"] = {
-      "Header" : "Format",
-      "Fields" : [
-        ["Format", clock.timeFormat],
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    # time zone
-    editorPages["Page 3"] = {
-      "Header" : "Time Zone",
-      "Fields" : [
-        ["Time Zone", clock.timeZone]
-      ]
-    }
-    editorPages["Number of Pages"] += 1
-
-    await openEditor(message, editorPages, pageNumber, editorID, clockType, clock, channelID)
-# end prepareEditor
-'''
 async def createChannel(message, clockType):
   guild = message.guild
   channelName = "Edit This Text:" if clockType.lower() == "countdown" else "New Clock Channel"

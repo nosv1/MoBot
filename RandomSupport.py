@@ -8,6 +8,7 @@ moBotSupport = 467239192007671818
 randomStorage = 649014730622763019
 
 numberEmojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+CHECKMARK_EMOJI = "✅"
 
 def numberToEmojiNumbers(number):
   emojiNumbers = ""
