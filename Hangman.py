@@ -44,7 +44,7 @@ async def newGame(message, client):
   for i in range(len(word)):
     wordLocation += "_ "
 
-  embed.add_field(name=spaceChar, value="```" + await getHangMan(False, "", hangmanBoard) + wordLocation + "```", inline=False)
+  embed.add_field(name=spaceChar, value="```\n" + await getHangMan(False, "", hangmanBoard) + wordLocation + "```", inline=False)
   embed.add_field(name=spaceChar, value="When you want to pick a letter, simply type the letter.\nFor every pick, you get 60 seconds.", inline=False)
   msg = await message.channel.send(embed=embed)
 
