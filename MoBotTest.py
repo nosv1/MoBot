@@ -127,8 +127,10 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await AOR.newStandings(message, client)
-
+        race = AOR.getRace(args[2], args[3], args[4], args[5], args[6], args[7])
+        for raceInput in race:
+          print(raceInput.name)
+          
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "?"):
         await Help.main(args, message, client)
