@@ -748,7 +748,7 @@ async def udpateRSSChannel(client):
     await channel.send(embed=embed)
     break
 # end udpateRSSChannel
-
+'''
 race = getRace(getRaceInputs(), 18, "EU", "PC", "RUSSIAN", 1, 0)
 qualiEvaluation = []
 raceEvaluation = []
@@ -765,7 +765,9 @@ for raceInput in race:
     qualiEvaluation[-1], raceEvaluation[-1], fastestLapEvaluation[-1], overtakesEvaluation[-1]
   ))
 
-'''qualiEvaluation = [0.15*(n-.5) for n in normalize(qualiEvaluation)]
+'''
+'''
+qualiEvaluation = [0.15*(n-.5) for n in normalize(qualiEvaluation)]
 raceEvaluation = [0.7*(n-.5) for n in normalize(raceEvaluation)]
 fastestLapEvaluation = [0.05*(n-.5) for n in normalize(fastestLapEvaluation)]
 overtakesEvaluation = [0.1*(n-.5) for n in normalize(overtakesEvaluation)]
@@ -773,6 +775,6 @@ overtakesEvaluation = [0.1*(n-.5) for n in normalize(overtakesEvaluation)]
 print()
 for i in range(len(race)):
   race[i].performance_rating = (qualiEvaluation[i] + raceEvaluation[i] + fastestLapEvaluation[i] + overtakesEvaluation[i]) / 4
-  print ("%s: %s" % (race[i].driver_name, race[i].performance_rating))'''
-
-setPercentDifferences()
+  print ("%s: %s" % (race[i].driver_name, race[i].performance_rating))
+'''
+#setPercentDifferences()
