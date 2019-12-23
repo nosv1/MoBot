@@ -79,7 +79,7 @@ async def newGame(message, client):
         wordLocation += "_ "
 
     embed = embed.to_dict()
-    embed["fields"][0]["value"] = "```" + await getHangMan(winner, trashLetters, hangmanBoard) + wordLocation + trashLetters + "```"
+    embed["fields"][0]["value"] = "```\n" + await getHangMan(winner, trashLetters, hangmanBoard) + wordLocation + trashLetters + "```"
     if (winner):
       embed["color"] = int("0x008000", 16)
       embed["fields"][1]["value"] = "**Winner**"
