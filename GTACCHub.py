@@ -146,7 +146,7 @@ async def getJob(message, args):
       for i in range(0, returnAmount):
         for j in range(0, len(jobs)):
           if (jobs[j].value == potentialJobs[i][0]):
-            if (len(value) < 800):
+            if (len(value) < 600):
               value += "\n[__**%s**__](%s)" % (jobs[j].value, catalogueLink)
               try:
                 value = value.replace(catalogueLink, platSheet.cell(jobs[j].row, jobs[j].col, value_render_option='FORMULA').value.split('"')[1])
@@ -154,7 +154,7 @@ async def getJob(message, args):
                 value += " - *Link Not Available*"
             break
 
-  if (len(value) >= 800):
+  if (len(value) >= 600):
     value += "\n*There are more jobs than what are shown. Either view the spreadsheet, or to narrow your search, be more specific in the inputted job name.*"
 
   embed.add_field(name="**Result(s):**", value=value)
