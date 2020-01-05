@@ -6,6 +6,9 @@ import gspread
 from requests_html import AsyncHTMLSession
 import math
 import sys
+from bs4 import BeautifulSoup as bsoup
+import requests
+import re
 
 import SecretStuff
 
@@ -39,6 +42,66 @@ async def mainReactionAdd(message, payload, client):
 async def mainReactionRemove(message, payload, client):
   pass
 # end mainReactionRemove
+
+def getMMRs(platform, id):
+
+  urlID = id.lower().replace(" ", "%20")
+  url = 'https://rocketleague.tracker.network/profile/' + platform + '/' + urlID
+
+  html = str(bsoup(requests.get(url).text, "html.parser"))
+  seasons = [x for x in range(13, 0, -1)] # current season first
+
+  mmrs = {}
+  ''' for example
+  13: { // season
+    2: mmr // twos
+  }'''
+
+  for season in seasons:
+
+    urlID = id.lower().replace(" ", "%20")
+    url = 'https://rocketleague.tracker.network/profile/' + platform + '/' + urlID
+
+    html = str(bsoup(requests.get(url).text, "html.parser"))
+    seasons = [x for x in range(13, 0, -1)] # current season first
+
+    mmrs = {}
+    ''' for example
+    13: { // season
+      2: mmr // twos
+    }'''
+
+    for season in seasons:
+      
+      mmrs[season] = {2 : 0, 3 : 0} # 2v2s : mmr, 3v3s : mmr
+
+      splitOnTwos = "<td>\nRanked Doubles 2v2"
+      splitOnThrees = "<td>\nRanked Standard 3v3"
+
+      reg1 = r"(\n\d,\d\d\d)|(\n\d\d\d\d)|(\n\d\d\d)|(\n\d\d)|(\n\d)" 
+      mmrsAboveThis = "<img"
+
+      # get the text where the mmr is, not quite on its own yet
+      try:
+        seasonRanks = html.split("id=\"season-%s\"" % season)[1]
+      except IndexError: # when season isn't available for the player
+        continue
+
+      def getMMR(splitOn):
+        return re.sub(r"\n|,", "", "".join(x for x in re.findall(reg1, seasonRanks.split(splitOn)[1].split(mmrsAboveThis)[0].replace(" ", ""))[0]))
+
+      try:
+        mmrs[season][2] = int(getMMR(splitOnTwos))
+      except IndexError: # if player has no mmr
+        pass
+
+      try:
+        mmrs[season][3] = int(getMMR(splitOnThrees))
+      except IndexError: # if player has no mmr
+        pass
+
+  return mmrs
+# end getMMRs
 
 async def updateUserRoles(guild, rankMMR, member, platform, profile, highest):
   print(member)

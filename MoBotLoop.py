@@ -16,6 +16,7 @@ import httplib2
 import feedparser
 import SecretStuff
 import RandomSupport
+import GeneralCommands
 
 import ClocksAndCountdowns
 import EventScheduler
@@ -57,10 +58,14 @@ class Countdown:
 
 spaceChar = "⠀"
 
-donations = {
+donations = { # donation / 2 = months providing service
   "TE Garrett#9569" : {
     "Date" : datetime(2019, 6, 12),
-    "Donation" : 26 # 2 on 6/12, 15 on 7/9
+    "Donation" : 26 # $2 on 6/12, $15 on 7/9
+  },
+  "CASE#2606" : {
+    "Date" : datetime(2020, 1, 3),
+    "Donation" : 24 # $15 on 1/3
   }
 }
 
@@ -136,6 +141,7 @@ async def main(client):
     try:
       currentTime = datetime.now() + timedelta(seconds=5)
       currentUTC = datetime.utcnow()
+      hour = currentTime.hour
       second = currentTime.second
       if (lastSecond is second):
         await asyncio.sleep(1)
@@ -176,10 +182,15 @@ async def main(client):
           if (reminderTime < currentUTC):
             reminders = await EventScheduler.sendReminder(reminder, client)
 
-        if (currentTime < donations["TE Garrett#9569"]["Date"] + relativedelta(months=int(donations["TE Garrett#9569"]["Donation"] / 2))):
+        if (currentTime < donationDateCorrection("TE Garrett#9569")):
           await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
         else:
           await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+
+        if (currentTime < donationDateCorrection("CASE#2606") and hour == 4):
+          await clearCASEWelcomeMessages()
+        else:
+          await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
 
         '''
         if ((await convertTime(currentTime, "Europe/London", "to")).hour % 6 == 0 or currentTime.minute >= 32):
@@ -218,6 +229,11 @@ async def main(client):
 
   # end infinte loop
 # end main
+
+async def clearCASEWelcomeMessages():
+  channel = client.get_channel(593584457982803971)
+  await GeneralCommands.clearWelcomeMessages(channel)
+# end clearCASEWelcomeMessages
 
 async def checkTEGarrettPointApplications(nowPacificTime, client):
   guild = client.get_guild(237064972583174144)
@@ -293,10 +309,11 @@ async def updateMoBotStatus(client):
   elif (rand < 30): # 10%
     serverCount = discord.Activity(type=discord.ActivityType.watching, name=str(len(client.guilds)) + " servers")
     await client.change_presence(activity=serverCount)
-  elif (rand < 40): # 10%
+    '''elif (rand < 40): # 10%
     msgRate = discord.Activity(type=discord.ActivityType.watching, name="Msg/Sec: %.2f" % messageRate)
-    await client.change_presence(activity=msgRate)
-  elif (rand >= 40):
+    await client.change_presence(activity=msgRate)'''
+  elif (rand >= 30): #40):
+    rand = int(random.random() * 100)
     if (rand >= 50): 
       await client.change_presence(activity=moBotHelp)
     else:
@@ -484,6 +501,10 @@ async def convertTime(currentTime, tz, toFrom):
     convertedTime = timezone(timeZones[tz]).localize(currentTime).astimezone(timezone("US/Central"))
   return convertedTime
 # end convertTime
+
+def donationDateCorrection(donator):
+  return donations[donator]["Date"] + relativedelta(months=int(donations[donator]["Donation"] / 2))
+#end donationDateCorrection
 
 async def openGuildClocksSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']

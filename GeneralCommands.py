@@ -298,13 +298,7 @@ async def clearMessages(message, args):
   try:
     if (args[2] == "welcome" and args[3] == "messages"):
       await message.channel.trigger_typing()
-      count = 0
-      history = message.channel.history(before=message)
-      async for msg in history:
-        if (msg.type == discord.MessageType.new_member):
-          count += 1
-          await msg.delete()
-      msg = await message.channel.send("Deleted " + str(count) + " messages.", delete_after=3)
+      msg = await message.channel.send("Deleted " + str(clearWelcomeMessages(message.channel)) + " messages.", delete_after=3)
       await message.delete()
     else:
       count = int(args[2]) + 1
@@ -442,3 +436,13 @@ async def findMessageInGuild(message, messageID):
         pass
   return msg
 # end findMessageInGuild
+
+async def clearWelcomeMessages(channel):
+  history = channel.history()
+  count = 0
+  async for msg in history:
+    if (msg.type == discord.MessageType.new_member):
+      count += 1
+      await msg.delete()
+  return count
+# end clearWelcomeMessages

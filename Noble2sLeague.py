@@ -181,6 +181,50 @@ async def memberRoleAdd(member, role):
     await activityLog.send("<@209584832030834688>, " + member.mention + " has been added to `Verified`.")
 # end memberRoleAdd
 
+def getNRT(mmrs):
+  class NRT:
+    def __init__(self,):
+      latestSeason = 0
+      previousSeason = 0
+
+      latMMR2 = 0
+      latMMR3 = 0
+
+      prevMMR2 = 0
+      prevMMR3 = 0
+
+      nrt = 0
+  # end NRT
+  
+  nrt = NRT()
+  seasons = list(mmrs.keys())
+  seasons.sort()
+  nrt.latestSeason = seasons[-1]
+  nrt.previousSeason = seasons[-2]
+  nrt.latMMR2 = mmrs[nrt.latestSeason][2]
+  nrt.latMMR3 = mmrs[nrt.latestSeason][3]
+  nrt.prevMMR2 = mmrs[nrt.previousSeason][2]
+  nrt.prevMMR3 = mmrs[nrt.previousSeason][3]
+
+  highestPreviousSeason = nrt.prevMMR3 if nrt.prevMMR2 < nrt.prevMMR3 else nrt.prevMMR2
+  highest2s = nrt.prevMMR2 if nrt.latMMR2 < nrt.prevMMR2 else nrt.latMMR2
+  highest3s = nrt.prevMMR3 if nrt.latMMR3 < nrt.prevMMR3 else nrt.latMMR3
+
+  nrt.nrt = "Cannot Calculate NRT`\nMMR(s) Not Found:"
+  if (nrt.latMMR2 == 0):
+    nrt.nrt += "\n  Season %s 2s" % nrt.latestSeason
+  elif (nrt.latMMR3 == 0):
+    nrt.nrt += "\n  Season %s 3s" % nrt.latestSeason
+  elif (nrt.prevMMR2 == 0):
+    nrt.nrt += "\n  Season %s 2s" % nrt.previousSeason  
+  elif (nrt.prevMMR3 == 0):
+    nrt.nrt += "\n  Season %s 3s" % nrt.previousSeason
+  else:
+    nrt.nrt = ((0.5*highest2s) + (0.25*highest3s) + (0.25*highestPreviousSeason) - 1000) / 10
+
+  return nrt
+# end getNRT
+
 async def clearStreamScheduler(message, client):
   embed = message.embeds[0]
   embed = embed.to_dict()

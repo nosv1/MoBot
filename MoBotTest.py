@@ -15,7 +15,6 @@ import traceback
 import mysql.connector
 
 import SecretStuff
-
 import ClocksAndCountdowns
 import DiscordSheets
 import ReactionRole
@@ -108,9 +107,11 @@ async def on_message(message):
   except:
     pass
 
-  args = message.content.split(" ")
-  for i in range(len(args)):
-    args[i] = args[i].split("\n")[0].strip()
+  message.content = message.content.translate({ord(c) : '"' for c in ['“', '”']})
+  mc = message.content.translate({ord(c) : " " for c in ["\n", "\t", "\r"]}) # that was beautiful
+  while ("  " in mc):
+    mc = mc.replace("  ", " ")
+  args = mc.split(" ")
 
   if (args[0] == "test" or "476974462022189056" in args[0]):
 
@@ -127,11 +128,13 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        race = AOR.getRace(args[2], args[3], args[4], args[5], args[6], args[7])
-        for raceInput in race:
-          print(raceInput.name)
-          
         await message.channel.send("done", delete_after=3)
+      elif (args[1] == "nrt"):
+        await message.channel.trigger_typing()
+        platform = args[2]
+        id = " ".join(args[3:])
+        nrt = Noble2sLeague.getNRT(RLRanks.getMMRs(platform, id))
+        await message.channel.send("ID: `%s`\nPlatform: `%s`\nSeasons Used: `%s & %s`\nNRT: `%s`" % (id, platform, nrt.latestSeason, nrt.previousSeason, nrt.nrt))
       elif (args[1] == "?"):
         await Help.main(args, message, client)
       elif (args[1] == "maze"):
