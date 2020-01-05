@@ -78,7 +78,7 @@ def getMMRs(platform, id):
       splitOnTwos = "<td>\nRanked Doubles 2v2"
       splitOnThrees = "<td>\nRanked Standard 3v3"
 
-      reg1 = r"(\n\d,\d\d\d)|(\n\d\d\d\d)|(\n\d\d\d)|(\n\d\d)|(\n\d)" 
+      reg1 = r"(\n\d,\d\d\d)|(\n\d\d\d\d)|(\n\d\d\d)" 
       mmrsAboveThis = "<img"
 
       # get the text where the mmr is, not quite on its own yet
