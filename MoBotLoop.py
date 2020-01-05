@@ -187,8 +187,9 @@ async def main(client):
         else:
           await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
 
-        if (currentTime < donationDateCorrection("CASE#2606") and hour == 3): # 4:00am Eastern
-          await clearCASEWelcomeMessages()
+        if (currentTime < donationDateCorrection("CASE#2606")):
+          if (hour == 3): # 4:00am Eastern
+            await clearCASEWelcomeMessages()
         else:
           await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
 
