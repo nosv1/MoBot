@@ -58,47 +58,33 @@ def getMMRs(platform, id):
   }'''
 
   for season in seasons:
+    
+    mmrs[season] = {2 : 0, 3 : 0} # 2v2s : mmr, 3v3s : mmr
 
-    urlID = id.lower().replace(" ", "%20")
-    url = 'https://rocketleague.tracker.network/profile/' + platform + '/' + urlID
+    splitOnTwos = "<td>\nRanked Doubles 2v2"
+    splitOnThrees = "<td>\nRanked Standard 3v3"
 
-    html = str(bsoup(requests.get(url).text, "html.parser"))
-    seasons = [x for x in range(13, 0, -1)] # current season first
+    reg1 = r"(\n\d,\d\d\d)|(\n\d\d\d\d)|(\n\d\d\d)" 
+    mmrsAboveThis = "<img"
 
-    mmrs = {}
-    ''' for example
-    13: { // season
-      2: mmr // twos
-    }'''
+    # get the text where the mmr is, not quite on its own yet
+    try:
+      seasonRanks = html.split("id=\"season-%s\"" % season)[1]
+    except IndexError: # when season isn't available for the player
+      continue
 
-    for season in seasons:
-      
-      mmrs[season] = {2 : 0, 3 : 0} # 2v2s : mmr, 3v3s : mmr
+    def getMMR(splitOn):
+      return re.sub(r"\n|,", "", "".join(x for x in re.findall(reg1, seasonRanks.split(splitOn)[1].split(mmrsAboveThis)[0].replace(" ", ""))[0]))
 
-      splitOnTwos = "<td>\nRanked Doubles 2v2"
-      splitOnThrees = "<td>\nRanked Standard 3v3"
+    try:
+      mmrs[season][2] = int(getMMR(splitOnTwos))
+    except IndexError: # if player has no mmr
+      pass
 
-      reg1 = r"(\n\d,\d\d\d)|(\n\d\d\d\d)|(\n\d\d\d)" 
-      mmrsAboveThis = "<img"
-
-      # get the text where the mmr is, not quite on its own yet
-      try:
-        seasonRanks = html.split("id=\"season-%s\"" % season)[1]
-      except IndexError: # when season isn't available for the player
-        continue
-
-      def getMMR(splitOn):
-        return re.sub(r"\n|,", "", "".join(x for x in re.findall(reg1, seasonRanks.split(splitOn)[1].split(mmrsAboveThis)[0].replace(" ", ""))[0]))
-
-      try:
-        mmrs[season][2] = int(getMMR(splitOnTwos))
-      except IndexError: # if player has no mmr
-        pass
-
-      try:
-        mmrs[season][3] = int(getMMR(splitOnThrees))
-      except IndexError: # if player has no mmr
-        pass
+    try:
+      mmrs[season][3] = int(getMMR(splitOnThrees))
+    except IndexError: # if player has no mmr
+      pass
 
   return mmrs
 # end getMMRs
