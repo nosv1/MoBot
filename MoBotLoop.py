@@ -14,8 +14,11 @@ import traceback
 import websockets
 import httplib2
 import feedparser
+import json
+
 import SecretStuff
 import RandomSupport
+from RandomSupport import getRandomCondition
 import GeneralCommands
 
 import ClocksAndCountdowns
@@ -142,8 +145,9 @@ async def main(client):
       currentTime = datetime.now() + timedelta(seconds=5)
       currentUTC = datetime.utcnow()
       hour = currentTime.hour
+      minute = currentTime.minute
       second = currentTime.second
-      if (lastSecond is second):
+      if (lastSecond is second): # skip iteration if within same second
         await asyncio.sleep(1)
         continue
       else:
@@ -163,7 +167,7 @@ async def main(client):
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
 
-        if (currentTime.minute % 5 is 0): # check every 5 minutes
+        if (minute % 5 is 0): # check every 5 minutes
           try:
             workbook = await EventScheduler.openSpreadsheet()
             eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
@@ -172,6 +176,7 @@ async def main(client):
             reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
           except gspread.exceptions.APIError:
             pass
+        # end if minute % 5 == 0
           
         for event in scheduledEvents:
           eventTime = await EventScheduler.getEventTime(event)
@@ -181,17 +186,19 @@ async def main(client):
           reminderTime = reminder.date
           if (reminderTime < currentUTC):
             reminders = await EventScheduler.sendReminder(reminder, client)
+      # end if second == 0
 
-        if (currentTime < donationDateCorrection("TE Garrett#9569")):
-          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
-        else:
-          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+      # update randomly every minute 1/60 every second
+      if (currentTime < donationDateCorrection("TE Garrett#9569") and getRandomCondition(1/60)):
+        await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
+      else:
+        await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
 
-        if (currentTime < donationDateCorrection("CASE#2606")):
-          if (hour == 3): # 4:00am Eastern
-            await clearCASEWelcomeMessages()
-        else:
-          await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
+      if (currentTime < donationDateCorrection("CASE#2606") and getRandomCondition(1/60)):
+        if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
+          await clearCASEWelcomeMessages()
+      else:
+        await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
 
         '''
         if ((await convertTime(currentTime, "Europe/London", "to")).hour % 6 == 0 or currentTime.minute >= 32):
@@ -214,12 +221,10 @@ async def main(client):
         await AOR.updateStandings(client)
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
-      try:
-        if (str(value("error")("code"))[0] == "5"):
-          pass
-        else:
-          await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
-      except TypeError: 
+      errorStatus = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
+      if (code == "5"):
+        pass
+      else:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
     except:
       try:
@@ -302,20 +307,18 @@ async def checkTEGarrettPointApplications(nowPacificTime, client):
 
 async def updateMoBotStatus(client):
   # changing bot status based on rand gen
-  rand = int(random.random() * 100)
-  if (rand < 10): # 10%
+  if (getRandomCondition(0.1)): # 10%
     await client.change_presence(activity=botsByMo)
-  elif (rand < 20): # 10%
+  elif (getRandomCondition(0.1)): # 10%
     await client.change_presence(activity=server)
-  elif (rand < 30): # 10%
+  elif (getRandomCondition(0.1)): # 10%
     serverCount = discord.Activity(type=discord.ActivityType.watching, name=str(len(client.guilds)) + " servers")
     await client.change_presence(activity=serverCount)
     '''elif (rand < 40): # 10%
     msgRate = discord.Activity(type=discord.ActivityType.watching, name="Msg/Sec: %.2f" % messageRate)
     await client.change_presence(activity=msgRate)'''
-  elif (rand >= 30): #40):
-    rand = int(random.random() * 100)
-    if (rand >= 50): 
+  else:
+    if (getRandomCondition(0.5)): # 50%
       await client.change_presence(activity=moBotHelp)
     else:
       await client.change_presence(activity=donate)
