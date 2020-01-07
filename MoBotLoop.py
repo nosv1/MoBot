@@ -142,7 +142,7 @@ async def main(client):
   lastSecond = 0
   while (True):
     try:
-      currentTime = datetime.now() + timedelta(seconds=5)
+      currentTime = getCurrentTime()
       currentUTC = datetime.utcnow()
       hour = currentTime.hour
       minute = currentTime.minute
@@ -156,7 +156,24 @@ async def main(client):
       sys.stdout.write("\rCurrent Time: " + str(currentTime))
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
-      if (second is 0): # check for every 60 seconds
+      newTime = currentTime
+      # update randomly every minute 1/30 every second, 30 not 60 because update clocks is slow
+      if (getRandomCondition(1/30)):
+        if (currentTime < donationDateCorrection("TE Garrett#9569")):
+          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
+        else:
+          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+        newTime = getCurrentTime()
+
+      if (getRandomCondition(1/30)):
+        if (currentTime < donationDateCorrection("CASE#2606")):
+          if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
+            await clearCASEWelcomeMessages()
+        else:
+          await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
+        newTime = getCurrentTime()
+
+      if (second is 0 or newTime.second < second): # check for every 60 seconds - incase we miss the 0 tick because of slowness
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
 
@@ -190,21 +207,6 @@ async def main(client):
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
       # end if second == 0
-
-      # update randomly every minute 1/60 every second
-      if (getRandomCondition(1/60)):
-        print('yes')
-        if (currentTime < donationDateCorrection("TE Garrett#9569")):
-          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
-        else:
-          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
-
-      if (getRandomCondition(1/60)):
-        if (currentTime < donationDateCorrection("CASE#2606")):
-          if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
-            await clearCASEWelcomeMessages()
-        else:
-          await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
 
         '''
         if ((await convertTime(currentTime, "Europe/London", "to")).hour % 6 == 0 or currentTime.minute >= 32):
@@ -508,6 +510,10 @@ async def convertTime(currentTime, tz, toFrom):
     convertedTime = timezone(timeZones[tz]).localize(currentTime).astimezone(timezone("US/Central"))
   return convertedTime
 # end convertTime
+
+def getCurrentTime():
+  return datetime.now() + timedelta(seconds=5)
+# end getCurrentTime
 
 def donationDateCorrection(donator):
   return donations[donator]["Date"] + relativedelta(months=int(donations[donator]["Donation"] / 2))
