@@ -186,19 +186,25 @@ async def main(client):
           reminderTime = reminder.date
           if (reminderTime < currentUTC):
             reminders = await EventScheduler.sendReminder(reminder, client)
+        
+        await updateTimeZoneList(currentTime)
+        await AOR.updateStandings(client)
       # end if second == 0
 
       # update randomly every minute 1/60 every second
-      if (currentTime < donationDateCorrection("TE Garrett#9569") and getRandomCondition(1/60)):
-        await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
-      else:
-        await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+      if (getRandomCondition(1/60)):
+        print('yes')
+        if (currentTime < donationDateCorrection("TE Garrett#9569")):
+          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
+        else:
+          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
 
-      if (currentTime < donationDateCorrection("CASE#2606") and getRandomCondition(1/60)):
-        if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
-          await clearCASEWelcomeMessages()
-      else:
-        await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
+      if (getRandomCondition(1/60)):
+        if (currentTime < donationDateCorrection("CASE#2606")):
+          if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
+            await clearCASEWelcomeMessages()
+        else:
+          await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
 
         '''
         if ((await convertTime(currentTime, "Europe/London", "to")).hour % 6 == 0 or currentTime.minute >= 32):
@@ -216,9 +222,6 @@ async def main(client):
             fieldValue = entry.summary
             embed.add_field(name=fieldName, value=fieldValue, inline=False)
           await nobleLeaugesDestination.send(embed=embed)'''
-        
-        await updateTimeZoneList(currentTime)
-        await AOR.updateStandings(client)
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
       errorStatus = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
