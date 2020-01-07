@@ -3,11 +3,14 @@ import asyncio
 import traceback
 from datetime import datetime
 import os
+import random
 
 moBotSupport = 467239192007671818
 randomStorage = 649014730622763019
 
 numberEmojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+CHECKMARK_EMOJI = "✅"
+spaceChar = "⠀"
 
 def numberToEmojiNumbers(number):
   emojiNumbers = ""
@@ -17,7 +20,7 @@ def numberToEmojiNumbers(number):
       if (int(c) == i):
         emojiNumbers += numberEmojis[i]
   return emojiNumbers
-# end emojiCounter
+# end numberToEmojiNumbers
 
 def emojiNumbertoNumber(emoji):
   return numberEmojis.index(emoji)
@@ -54,3 +57,7 @@ def getRole(guild, roleID):
   else:
     return False
 # end getRole
+
+def getRandomCondition(x):
+  return random.triangular(0, 100) < x
+# end getRandom
