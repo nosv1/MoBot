@@ -38,6 +38,7 @@ moBotHelp = discord.Activity(type=discord.ActivityType.watching, name="@MoBot he
 
 moBotSupport = 467239192007671818
 mo = 405944496665133058
+moBot = 449247895858970624
 
 class Clock:
   def __init__(self, channelID, guildID, guildName, timeFormat, timeZone):
@@ -173,16 +174,24 @@ async def main(client):
           await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
         newTime = getCurrentTime()
 
-      if (second is 0 or newTime.second < second): # check for every 60 seconds - incase we miss the 0 tick because of slowness
+      if (second is 0 or newTime.second < second): # check for every 60 seconds or incase we miss the 0 tick because of slowness
+
+        # update clocks and countdowns
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
-
         try:
           await updateGuildCountdowns(client, currentTime, countdowns)
           await updateGuildClocks(client, currentTime, clocks)
           await updateMoBotStatus(client)
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
+
+        # user requests
+        if (currentTime < donationDateCorrection("CASE#2606")):
+          pass
+          #await checkCASEStreamers()
+        else:
+          await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
 
         if (minute % 5 is 0): # check every 5 minutes
           try:
@@ -240,6 +249,37 @@ async def main(client):
 
   # end infinte loop
 # end main
+
+async def checkCASEStreamers(): # not in use for now
+  guild = client.get_guild(427103715678355476)
+  streamerRole = guild.get_role(664574500708548629)
+  streamerChannel = guild.get_channel(473619943431208972) 
+  
+  isStreaming = False
+  hasRole = False
+  for member in guild.members: # loop members
+    for activity in member.activities: # loop activities
+      isStreaming = activity.type == discord.ActivityType.streaming
+      hasRole = any(role.id == streamerRole.id for role in member.roles)
+      if (isStreaming and not hasRole): # member is streaming without role, add role
+        try:
+          await member.add_roles(streamerRole)
+          await streamerChannel.send(
+            "Hey, %s is playing %s at %s !" % (
+              member.display_name,
+              activity.game,
+              activity.url
+          )) # send channel post only if role was added, preventing spam
+        except discord.errors.Forbidden: # no perms to add this role
+          pass        
+        break # break out of activity loop
+
+    if (not isStreaming and hasRole): # member not streaming but has role, remove role 
+      try:
+        await member.remove_roles(streamerRole)
+      except discord.errors.Forbidden: # no perms to remove this role
+        pass
+# end checkCASEStreamers
 
 async def clearCASEWelcomeMessages():
   channel = client.get_channel(593584457982803971)
