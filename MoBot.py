@@ -159,19 +159,15 @@ async def on_ready():
 @client.event
 async def on_raw_message_edit(payload):
   pd = payload.data
-  try:
-    guild = client.get_guild(int(pd["guild_id"]))
-    channel = guild.get_channel(int(pd["channel_id"]))
-    message = await channel.fetch_message(int(pd["id"]))
-  except:
-    try:
-      channel = client.get_channel(int(pd["channel_id"]))
-      message = await channel.fetch_message(int(pd["id"]))
-    except:
-      return
+  message = await client.get_channel(int(pd["channel_id"])).fetch_message(int(pd["id"]))
   
   if (not message.author.bot and isConnected):
-    await on_message(message)
+    try:
+      pd["content"]
+      await on_message(message)
+    except KeyError: # when content was not updated
+      pass
+# end on_raw_message_edit
 
 @client.event
 async def on_message(message):
