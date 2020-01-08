@@ -352,19 +352,44 @@ async def deleteMessages(message):
 
 async def addRemoveRole(message, args):
   r = args[3]
-  member = message.guild.get_member(int(args[4]))
+  try:
+    member = message.guild.get_member(int(args[4]))
+  except ValueError:
+    member = None
   
   roles = message.guild.roles
-  if (args[2] == "add"):
-    for role in roles:
-      if (role.id == int(r)):
-        await member.add_roles(role)
-        await message.channel.send("**%s added to %s.**" % (role.name, member.display_name), delete_after=3)
-  elif (args[2] == "remove"):
-    for role in roles:
-      if (role.id == int(r)):
-        await member.remove_roles(role)
-        await message.channel.send("**%s remvoed from %s.**" % (role.name, member.display_name), delete_after=3)
+  for role in roles:
+    if (role.id == int(r)):
+      if (member is None): # add role to everyone
+
+        msg = None
+        if (args[2] == "add"):
+          msg = await message.channel.send("**Adding `%s` to `everyone`. It may take a moment.**" % role.name)
+          for member in message.guild.members:
+            try:
+              await member.add_roles(role)
+            except discord.errors.Forbidden:
+              await message.channel.send("Could not add role to %s." % member.mention)
+
+        if (args[2] == "remove"):
+          msg = await message.channel.send("**Removing `%s` from `everyone`. It may take a moment.**" % role.name)
+          for member in message.guild.members:
+            try:
+              await member.remove_roles(role)
+            except discord.errors.Forbidden:
+              await message.channel.send("Could not add role to %s." % member.mention)
+        await message.channel.send("Done.", delete_after=5)
+        if (msg is not None):
+          await msg.delete()
+
+      else:
+        if (args[2] == "add"):
+          await member.add_roles(role)
+          await message.channel.send("**`%s` added to %s.**" % (role.name, member.display_name), delete_after=3)
+        if (args[2] == "remove"):
+          await member.remove_roles(role)
+          await message.channel.send("**`%s` removed from %s.**" % (role.name, member.display_name), delete_after=3)
+      break
 # end addRemoveRole
 
 async def copyMessage(message, args):
