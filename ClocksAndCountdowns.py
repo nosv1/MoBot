@@ -48,12 +48,8 @@ async def main(args, message, client):
     await message.channel.trigger_typing()
     await prepareEditor(message, args[1], args[2], 1, 0)
   elif (len(args) == 2):
-    print('yes')
     await message.channel.trigger_typing()
-    msg = await message.channel.send("A channel has been created for you. It should be found near the top on the left side.")
     await prepareEditor(message, args[1], await createChannel(message, args[1]), 1, 0)
-    await asyncio.sleep(10)
-    await msg.delete()
 # end main
 
 async def memberJoin(member):
@@ -681,10 +677,11 @@ async def createChannel(message, clockType):
   channelName = "Edit This Text:" if clockType.lower() == "countdown" else "New Clock Channel"
   try:
     channel = await guild.create_voice_channel(channelName)
+    await message.channel.send("**Channel Created**\nIt should be near the top of the channel list.", delete_after=10)
+    return channel.id
   except discord.errors.Forbidden:
     await message.channel.send("**Not Enough Permissions**\n%s does not have permissions to create/edit channels." % moBot)
     return None
-  return channel.id
 # end createChannel
 
 async def checkClockAccuracy(client):
