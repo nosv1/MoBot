@@ -190,10 +190,10 @@ async def sendNRT(message, args):
 
   platform = args[2].replace("pc", "steam")
   id = " ".join(args[3:]).strip()
-  mmrs = RLRanks.getMMRs(platform, id)
+  mmrs, url = RLRanks.getMMRs(platform, id)
   nrt = getNRT(mmrs)
   if (nrt is None):
-    await message.channel.send("Not enough MMRs to calculate NRT.")
+    await message.channel.send("Not enough MMRs to calculate NRT.\n%s" % url)
 
   moBotMember = message.guild.get_member(moBot)
   embed = discord.Embed(color=moBotMember.roles[-1].color)
@@ -205,7 +205,8 @@ async def sendNRT(message, args):
   description += "Season %s 3s: `%s`\n" % (nrt.last3.season, nrt.last3.mmr)
   description += "Season %s 2s (Peak): `%s`\n" % (nrt.peak2.season, nrt.peak2.mmr)
   description += "Season %s 3s (Peak): `%s`\n\n" % (nrt.peak3.season, nrt.peak3.mmr)
-  description += "**NRT: `%s`**" % (nrt.nrt)
+  description += "**NRT: `%s`**\n" % nrt.nrt
+  description += "[__Tracker__](%s)" % url
   embed.description = description
 
   await message.channel.send(embed=embed)
@@ -213,15 +214,15 @@ async def sendNRT(message, args):
 
 def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   class NRT:
-    def __init__(self,):
-      peak2 = MMR(0, 0, 0) # starting with current season, otherwise get past season
-      peak3 = MMR(0, 0, 0)
+    def __init__(self):
+      self.peak2 = MMR(0, 0, 0) # starting with current season, otherwise get past season
+      self.peak3 = MMR(0, 0, 0)
 
-      last2 = MMR(0, 0, 0) # starting from last season
-      last3 = MMR(0, 0, 0)
+      self.last2 = MMR(0, 0, 0) # starting from last season
+      self.last3 = MMR(0, 0, 0)
 
-      avg = 0
-      nrt = 0
+      self.avg = 0
+      self.nrt = 0
   # end NRT
 
   class MMR:
@@ -1792,5 +1793,3 @@ async def openSpreadsheet(ssKey):
   workbook = clientSS.open_by_key(ssKey)    
   return workbook
 # end openSpreadsheet
-
-getNRT(RLRanks.getMMRs("xbox", "mo v0"))
