@@ -103,7 +103,7 @@ def getMMRs(platform, id):
     except IndexError: # if player has no mmr
       pass
 
-  return mmrs
+  return mmrs, url1
 # end getMMRs
 
 async def updateUserRoles(guild, rankMMR, member, platform, profile, highest):
