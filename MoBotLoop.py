@@ -419,6 +419,8 @@ async def updateGuildClocks(client, currentTime, clocks):
       #await ClocksAndCountdowns.delete("clock", clock.channelID)
       #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, clock.channelID))
       pass
+    except discord.errors.Forbidden:
+      pass
 # end guildClocks
 
 async def updateRepeatingCountdown(guild, endDatetime, countdown):
@@ -511,6 +513,8 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
     except AttributeError: # when channel doesn't exist
       #await ClocksAndCountdowns.delete("countdown", countdown.channelID)
       #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, countdown.channelID))
+      pass
+    except discord.errors.Forbidden:
       pass
 # end updateGuildCountdowns
 
