@@ -539,6 +539,7 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
           await channel.edit(name="Edit This Text:")
         except discord.errors.Forbidden:
           await message.channel.send("**Not Enough Permissions**\n<@%s> does not have permissions to edit channels." % moBot)
+          return
         now = datetime.now()
         countdown = Countdown(
           str(channel.id),
