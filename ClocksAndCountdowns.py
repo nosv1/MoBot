@@ -535,7 +535,10 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
 
       if (countdown is None):  
         channel = message.guild.get_channel(int(channelID))
-        await channel.edit(name="Edit This Text:")
+        try:
+          await channel.edit(name="Edit This Text:")
+        except discord.errors.Forbidden:
+          await message.channel.send("**Not Enough Permissions**\n<@%s> does not have permissions to edit channels." % moBot)
         now = datetime.now()
         countdown = Countdown(
           str(channel.id),
@@ -680,7 +683,7 @@ async def createChannel(message, clockType):
     await message.channel.send("**Channel Created**\nIt should be near the top of the channel list.", delete_after=10)
     return channel.id
   except discord.errors.Forbidden:
-    await message.channel.send("**Not Enough Permissions**\n%s does not have permissions to create/edit channels." % moBot)
+    await message.channel.send("**Not Enough Permissions**\n<@%s> does not have permissions to create channels." % moBot)
     return None
 # end createChannel
 
