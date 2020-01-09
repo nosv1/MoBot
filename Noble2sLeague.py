@@ -191,7 +191,12 @@ async def sendNRT(message, args):
   platform = args[2].replace("pc", "steam")
   id = " ".join(args[3:]).strip()
   mmrs, url = RLRanks.getMMRs(platform, id)
-  nrt = getNRT(mmrs)
+  try:
+    nrt = getNRT(mmrs)
+  except: # any errors should mean the id doesn't exist
+    await message.channel.send("Something went wrong... Is the ID correct?")
+    return
+
   if (nrt is None):
     await message.channel.send("Not enough MMRs to calculate NRT.\n%s" % url)
 
