@@ -51,7 +51,7 @@ async def main(args, message, client):
     print('yes')
     await message.channel.trigger_typing()
     msg = await message.channel.send("A channel has been created for you. It should be found near the top on the left side.")
-    await prepareEditor(message, args[1], await createChannel(message, args[1]), 1, 0)
+      await prepareEditor(message, args[1], await createChannel(message, args[1]), 1, 0)
     await asyncio.sleep(10)
     await msg.delete()
 # end main
@@ -529,6 +529,9 @@ async def openEditor(message, editorPages, pageNumber, editorID, clockType, coun
 # end openEditor
 
 async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
+  if (channelID is None): # when a channel couldn't be created
+    return
+
   moBotMessages = []
   if (clockType == "countdown"):
     if (editorID == 0):
@@ -676,7 +679,11 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
 async def createChannel(message, clockType):
   guild = message.guild
   channelName = "Edit This Text:" if clockType.lower() == "countdown" else "New Clock Channel"
-  channel = await guild.create_voice_channel(channelName)
+  try:
+    channel = await guild.create_voice_channel(channelName)
+  except discord.errors.Forbidden:
+    await message.channel.send("**Not Enough Permissions**\n%s does not have permissions to create/edit channels." % moBot)
+    return None
   return channel.id
 # end createChannel
 
