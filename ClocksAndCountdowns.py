@@ -633,7 +633,11 @@ async def prepareEditor(message, clockType, channelID, pageNumber, editorID):
 
       if (clock is None):
         channel = message.guild.get_channel(int(channelID))
-        await channel.edit(name="New Clock Channel")
+        try:
+          await channel.edit(name="New Clock Channel")
+        except discord.errors.Forbidden:
+          await message.channel.send("**Not Enough Permissions**\n<@%s> does not have permissions to edit channels." % moBot)
+          return
         now = datetime.now()
         clock = Clock(
           str(channel.id),
