@@ -51,7 +51,7 @@ async def main(args, message, client):
     print('yes')
     await message.channel.trigger_typing()
     msg = await message.channel.send("A channel has been created for you. It should be found near the top on the left side.")
-      await prepareEditor(message, args[1], await createChannel(message, args[1]), 1, 0)
+    await prepareEditor(message, args[1], await createChannel(message, args[1]), 1, 0)
     await asyncio.sleep(10)
     await msg.delete()
 # end main
