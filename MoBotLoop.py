@@ -164,15 +164,7 @@ async def main(client):
           await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
         else:
           await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
-        newTime = getCurrentTime()
-
-      if (getRandomCondition(1/30)):
-        if (currentTime < donationDateCorrection("CASE#2606")):
-          if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
-            await clearCASEWelcomeMessages()
-        else:
-          await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
-        newTime = getCurrentTime()
+        newTime = getCurrentTime() # this needs to be after every 'random' update condition
 
       if (second is 0 or newTime.second < second): # check for every 60 seconds or incase we miss the 0 tick because of slowness
 
@@ -188,7 +180,8 @@ async def main(client):
 
         # user requests
         if (currentTime < donationDateCorrection("CASE#2606")):
-          pass
+          if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
+            await clearCASEWelcomeMessages()
           #await checkCASEStreamers()
         else:
           await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")

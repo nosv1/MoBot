@@ -7,12 +7,14 @@ from oauth2client.service_account import ServiceAccountCredentials
 import math
 import random
 from pytz import timezone
+import json
 
 import SecretStuff
-
 import Collections
+import RLRanks
 
-moBot = "449247895858970624"
+
+moBot = 449247895858970624
 ssIDs = {
   "2s League [XB1/PC]" : "1qzDGDOzgaqR7Mmsda-tE1tYn71oU52Gt1okEHqScEnU",
   "Noble Leagues Off-Season" : "1M8wij5yJXNplkRdrhIj-sMqfHBC8KmKHlFqyOCMaARw",
@@ -47,13 +49,15 @@ async def main(args, message, client):
   if (message.channel.id in rlrankChannels and message.author.id == 424398041043435520): # if in #mmr-post and rl rank tracker
     await getMMR(message, None, tCommandLog)
 
-  if (args[0][-19:-1] == moBot):
+  if (str(moBot) in args[0]):
     if (args[1] == "info"):
       await getTeamInfo(message, args)
     elif (args[1] == "submit"):
       await submitResultConfirm(message, client)
     elif (args[1].lower() == "registerid" or args[1].lower() == "changeid"):
       await registerID(None, message, args)
+    elif (args[1].lower() == "nrt"):
+      await sendNRT(message, args)
 
   if (args[0] == "!t"):
     if (args[1] == "delete"):
@@ -181,47 +185,94 @@ async def memberRoleAdd(member, role):
     await activityLog.send("<@209584832030834688>, " + member.mention + " has been added to `Verified`.")
 # end memberRoleAdd
 
-def getNRT(mmrs):
+async def sendNRT(message, args):
+  await message.channel.trigger_typing()
+
+  platform = args[2].replace("pc", "steam")
+  id = " ".join(args[3:]).strip()
+  mmrs = RLRanks.getMMRs(platform, id)
+  nrt = getNRT(mmrs)
+  if (nrt is None):
+    await message.channel.send("Not enough MMRs to calculate NRT.")
+
+  moBotMember = message.guild.get_member(moBot)
+  embed = discord.Embed(color=moBotMember.roles[-1].color)
+  embed.set_author(name="Noble Rank Tracker", icon_url=message.guild.icon_url)
+
+  description = "ID: `%s`\n" % id
+  description += "Platform: `%s`\n\n" % platform
+  description += "Season %s 2s: `%s`\n" % (nrt.last2.season, nrt.last2.mmr)
+  description += "Season %s 3s: `%s`\n" % (nrt.last3.season, nrt.last3.mmr)
+  description += "Season %s 2s (Peak): `%s`\n" % (nrt.peak2.season, nrt.peak2.mmr)
+  description += "Season %s 3s (Peak): `%s`\n\n" % (nrt.peak3.season, nrt.peak3.mmr)
+  description += "**NRT: `%s`**" % (nrt.nrt)
+  embed.description = description
+
+  await message.channel.send(embed=embed)
+# end sendNRT
+
+def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   class NRT:
     def __init__(self,):
-      latestSeason = 0
-      previousSeason = 0
+      peak2 = MMR(0, 0, 0) # starting with current season, otherwise get past season
+      peak3 = MMR(0, 0, 0)
 
-      latMMR2 = 0
-      latMMR3 = 0
+      last2 = MMR(0, 0, 0) # starting from last season
+      last3 = MMR(0, 0, 0)
 
-      prevMMR2 = 0
-      prevMMR3 = 0
-
+      avg = 0
       nrt = 0
   # end NRT
+
+  class MMR:
+    def __init__(self, mmr, season, mode):
+      self.mmr = mmr
+      self.season = season
+      self.mode = mode
+  # end MMR
   
   nrt = NRT()
   seasons = list(mmrs.keys())
-  seasons.sort()
-  nrt.latestSeason = seasons[-1]
-  nrt.previousSeason = seasons[-2]
-  nrt.latMMR2 = mmrs[nrt.latestSeason][2]
-  nrt.latMMR3 = mmrs[nrt.latestSeason][3]
-  nrt.prevMMR2 = mmrs[nrt.previousSeason][2]
-  nrt.prevMMR3 = mmrs[nrt.previousSeason][3]
 
-  highestPreviousSeason = nrt.prevMMR3 if nrt.prevMMR2 < nrt.prevMMR3 else nrt.prevMMR2
-  highest2s = nrt.prevMMR2 if nrt.latMMR2 < nrt.prevMMR2 else nrt.latMMR2
-  highest3s = nrt.prevMMR3 if nrt.latMMR3 < nrt.prevMMR3 else nrt.latMMR3
+  '''
+  nrt = 
+  50% of peak 2s MMR current season OR 2s final MMR last season.
+  25% of peak 3s MMR current season OR 3s final MMR last season.
+  25% of highest final MMR from last season in 2s OR 3s
+  '''
 
-  nrt.nrt = "Cannot Calculate NRT`\nMMR(s) Not Found:"
-  if (nrt.latMMR2 == 0):
-    nrt.nrt += "\n  Season %s 2s" % nrt.latestSeason
-  elif (nrt.latMMR3 == 0):
-    nrt.nrt += "\n  Season %s 3s" % nrt.latestSeason
-  elif (nrt.prevMMR2 == 0):
-    nrt.nrt += "\n  Season %s 2s" % nrt.previousSeason  
-  elif (nrt.prevMMR3 == 0):
-    nrt.nrt += "\n  Season %s 3s" % nrt.previousSeason
-  else:
-    nrt.nrt = ((0.5*highest2s) + (0.25*highest3s) + (0.25*highestPreviousSeason) - 1000) / 10
+  # get first and second bit
+  def getPeak(mode):
+    if (mmrs[seasons[0]][mode]["peak"] != 0):
+      return MMR(mmrs[seasons[0]][mode]["peak"], seasons[0], mode)
+    else:
+      for season in seasons[1:]:
+        if (mmrs[season][mode]["current"] != 0):
+          return MMR(mmrs[season][mode]["current"], season, mode)
+  # end getPeakCurrent
 
+  nrt.peak2 = getPeak(2)
+  nrt.peak3 = getPeak(3)
+
+  # get second bit
+  def getLast(season, mode):  
+    for season in seasons[seasons.index(season)+1:]:
+      if (mmrs[season][mode]["current"] != 0):
+        return MMR(mmrs[season][mode]["current"], season, mode)
+  # end getLast
+
+  nrt.last2 = getLast(nrt.peak2.season, 2)
+  nrt.last3 = getLast(nrt.peak3.season, 3)
+
+  try:
+    twos = nrt.peak2.mmr if nrt.peak2.mmr > nrt.last2.mmr else nrt.last2.mmr
+    threes = nrt.peak3.mmr if nrt.peak3.mmr > nrt.last3.mmr else nrt.last3.mmr
+    last = nrt.last2.mmr if nrt.last2.mmr > nrt.last3.mmr else nrt.last3.mmr
+  except AttributeError: # when mmrs don't exist
+    return None
+
+  nrt.avg = .5 * twos + .25 * threes + .25 * last
+  nrt.nrt = (nrt.avg-1000)/10
   return nrt
 # end getNRT
 
@@ -1741,3 +1792,5 @@ async def openSpreadsheet(ssKey):
   workbook = clientSS.open_by_key(ssKey)    
   return workbook
 # end openSpreadsheet
+
+getNRT(RLRanks.getMMRs("xbox", "mo v0"))

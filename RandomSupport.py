@@ -4,6 +4,8 @@ import traceback
 from datetime import datetime
 import os
 import random
+import requests
+import re
 
 moBotSupport = 467239192007671818
 randomStorage = 649014730622763019
@@ -61,3 +63,11 @@ def getRole(guild, roleID):
 def getRandomCondition(x):
   return random.triangular(0, 1) < x
 # end getRandom
+
+def steamIDToSteam64(steamID):
+  url = "https://steamid.io/lookup/" + steamID
+  site = requests.get(url)
+  body = site.text
+
+  return body.split("<a href=\"https://steamid.io/lookup/")[1].split("\"")[0]
+# end steamIDToSteam64

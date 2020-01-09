@@ -11,6 +11,7 @@ import requests
 import re
 
 import SecretStuff
+import RandomSupport
 
 moBot = "449247895858970624"
 
@@ -46,10 +47,13 @@ async def mainReactionRemove(message, payload, client):
 def getMMRs(platform, id):
 
   urlID = id.lower().replace(" ", "%20")
-  url = 'https://rocketleague.tracker.network/profile/' + platform + '/' + urlID
+  url1 = 'https://rocketleague.tracker.network/profile/' + platform + '/' + urlID
+  url2 = 'https://rocketleague.tracker.network/profile/mmr/' + platform + '/' + (urlID.replace("%20", "-") if platform != "steam" else RandomSupport.steamIDToSteam64(urlID))
 
-  html = str(bsoup(requests.get(url).text, "html.parser"))
-  seasons = [x for x in range(13, 0, -1)] # current season first
+  currentMMRHtml = str(bsoup(requests.get(url1).text, "html.parser"))
+  peaksMMRHtml = str(bsoup(requests.get(url2).text, "html.parser"))
+
+  seasons = [x for x in range(getCurrentRocketLeagueSeason(), 0, -1)] # current season first
 
   mmrs = {}
   ''' for example
@@ -59,30 +63,43 @@ def getMMRs(platform, id):
 
   for season in seasons:
     
-    mmrs[season] = {2 : 0, 3 : 0} # 2v2s : mmr, 3v3s : mmr
+    mmrs[season] = {2 : {"current" : 0, "peak" : 0}, 3 : {"current" : 0, "peak" : 0}} # 2v2s : mmr, 3v3s : mmr
 
-    splitOnTwos = "<td>\nRanked Doubles 2v2"
-    splitOnThrees = "<td>\nRanked Standard 3v3"
+    splitOnTwos = "Ranked Doubles 2v2"
+    splitOnThrees = "Ranked Standard 3v3"
 
     reg1 = r"(\n\d,\d\d\d)|(\n\d\d\d\d)|(\n\d\d\d)" 
     mmrsAboveThis = "<img"
 
     # get the text where the mmr is, not quite on its own yet
     try:
-      seasonRanks = html.split("id=\"season-%s\"" % season)[1]
+      seasonRanks = currentMMRHtml.split("id=\"season-%s\"" % season)[1]
     except IndexError: # when season isn't available for the player
       continue
 
     def getMMR(splitOn):
-      return re.sub(r"\n|,", "", "".join(x for x in re.findall(reg1, seasonRanks.split(splitOn)[1].split(mmrsAboveThis)[0].replace(" ", ""))[0]))
+      return re.sub(r"\n|,", "", "".join(x for x in re.findall(reg1, seasonRanks.split("<td>\n" + splitOn)[1].split(mmrsAboveThis)[0].replace(" ", ""))[0]))
+    # end getMMR
+
+    def getPeak(splitOn):
+      data = peaksMMRHtml.split("name: '%s'," % splitOn)[1].split("};")[0]
+      mmrs = data.split("rating: [")[1].split("]")[0].split(",")
+      tiers = data.split("tier: [")[1].split("]")[0].split(",")
+      for tier in tiers:
+        if (tier != "0"):
+          return max([int(mmr) for mmr in mmrs[tiers.index(tier)+1:]]) # peak baby
+      return 0
+    # end getPeak()
 
     try:
-      mmrs[season][2] = int(getMMR(splitOnTwos))
+      mmrs[season][2]["peak"] = getPeak(splitOnTwos) # shouldn't ever give error
+      mmrs[season][2]["current"] = int(getMMR(splitOnTwos))
     except IndexError: # if player has no mmr
       pass
 
     try:
-      mmrs[season][3] = int(getMMR(splitOnThrees))
+      mmrs[season][3]["peak"] = getPeak(splitOnThrees) # shouldn't ever give error
+      mmrs[season][3]["current"] = int(getMMR(splitOnThrees))
     except IndexError: # if player has no mmr
       pass
 
@@ -454,6 +471,13 @@ async def enableServer(message, client):
         await message.channel.send("**GUILD DISABLED**")
         break
 # end enableServer
+
+def getCurrentRocketLeagueSeason():
+  url = "https://rocketleague.tracker.network/"
+  site = requests.get(url)
+  body = site.text
+  return int(re.findall(r'Season \d\d Leaderboards', body)[0].split(" ")[1])
+# end getCurrentRocketLeagueSeason
 
 async def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
