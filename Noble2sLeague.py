@@ -210,7 +210,7 @@ async def sendNRT(message, args):
   description += "Season %s 3s: `%s`\n" % (nrt.last3.season, nrt.last3.mmr)
   description += "Season %s 2s (Peak): `%s`\n" % (nrt.peak2.season, nrt.peak2.mmr)
   description += "Season %s 3s (Peak): `%s`\n\n" % (nrt.peak3.season, nrt.peak3.mmr)
-  description += "**NRT: `%s`**\n" % nrt.nrt
+  description += "**NRT: `%s`**\n" % (nrt.nrt if nrt.nrt >= 0 else "Invalid")
   description += "[__Tracker__](%s)" % url
   embed.description = description
 
@@ -277,11 +277,22 @@ def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   except AttributeError: # when mmrs don't exist
     return None
 
-  if (min([nrt.peak2.mmr, nrt.peak3.mmr, nrt.last2.mmr, nrt.last3.mmr]) >= 1000):
-    nrt.avg = .5 * twos + .25 * threes + .25 * last
+  mmrs = [nrt.peak2.mmr, nrt.peak3.mmr, nrt.last2.mmr, nrt.last3.mmr]
+  allGt1000 = not any(mmr < 1000 for mmr in mmrs) # all > 1000
+  oneLastLt1000 = (mmrs[-2] >= 1000 and mmrs[-1] < 1000) or (mmrs[-1] >= 1000 and mmrs[-1] < 1000) # ONLY one last season < 1000
+  bothLastLt1000 = not any(mmr >= 1000 for mmr in mmrs[-2:]) # both last season < 1000
+  onePeakLt1000 = any(mmr < 1000 for mmr in mmrs[:-2]) # one this sesaon < 1000
+  bothPeakGt1000 = not onePeakLt1000
+
+  nrt.avg = .5 * twos + .25 * threes + .25 * last
+
+  if (allGt1000 or (oneLastLt1000 and bothPeakGt1000)):
     nrt.nrt = (nrt.avg-1000)/10
-  else:
+  elif (bothLastLt1000):
     nrt.nrt = 0
+  elif (onePeakLt1000):
+    nrt.nrt = -1
+
   return nrt
 # end getNRT
 
