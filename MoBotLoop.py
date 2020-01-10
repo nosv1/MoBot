@@ -513,6 +513,8 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
 
 async def updateTimeZoneList(currentTime):
   timeZonesChannel = client.get_channel(607323514042712074)
+  if (timeZonesChannel is None):
+    return
   timeZonesListMessage = await timeZonesChannel.fetch_message(607323599925149706)
 
   timeZones = MoBotTimeZones.timeZones
