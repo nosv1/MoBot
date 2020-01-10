@@ -277,8 +277,11 @@ def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   except AttributeError: # when mmrs don't exist
     return None
 
-  nrt.avg = .5 * twos + .25 * threes + .25 * last
-  nrt.nrt = (nrt.avg-1000)/10
+  if (min([nrt.peak2.mmr, nrt.peak3.mmr, nrt.last2.mmr, nrt.last3.mmr]) >= 1000):
+    nrt.avg = .5 * twos + .25 * threes + .25 * last
+    nrt.nrt = (nrt.avg-1000)/10
+  else:
+    nrt.nrt = 0
   return nrt
 # end getNRT
 
