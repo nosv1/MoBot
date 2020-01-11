@@ -12,6 +12,8 @@ randomStorage = 649014730622763019
 
 numberEmojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 CHECKMARK_EMOJI = "✅"
+X_EMOJI = "❌"
+COUNTER_CLOCKWISE_ARROWS_EMOJI = "🔄"
 spaceChar = "⠀"
 
 def numberToEmojiNumbers(number):
@@ -71,3 +73,30 @@ def steamIDToSteam64(steamID):
 
   return body.split("<a href=\"https://steamid.io/lookup/")[1].split("\"")[0]
 # end steamIDToSteam64
+
+def arrayFromRange(tableRange): # google sheets / gspread range
+  table = [[tableRange[0]]] # table[row][col]
+  for i in range(1, len(tableRange)):
+    cell = tableRange[i]
+    if (cell.row == table[-1][-1].row):
+      table[-1].append(cell)
+    else:
+      table.append([cell])
+  return table
+# end arrayFromRange
+
+def getDetailFromURL(url, detail):
+  return url.split(detail + "=")[1].split("/")[0]
+# end splitOnDetail
+
+def getValueFromField(embed, fieldName):
+  embed = embed.to_dict() if type(embed) != dict else embed
+  for i in range(len(embed["fields"])):
+    if (fieldName in embed["fields"][i]):
+      return embed["fields"][i]["value"]
+# end getValueFromField
+
+def updateDetailInURL(url, detail, new):
+  old = url.split(detail + "=")[1].split('/')[0]
+  return url.replace("%s=%s" % (detail, old), "%s=%s" % (detail, new))
+# end updateDetailInURL 
