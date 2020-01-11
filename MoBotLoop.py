@@ -228,8 +228,8 @@ async def main(client):
           await nobleLeaugesDestination.send(embed=embed)'''
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
-      errorStatus = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
-      if (code == "5"):
+      errorCode = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
+      if (errorCode[0] == "5"):
         pass
       else:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
