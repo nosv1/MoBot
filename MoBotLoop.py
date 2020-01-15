@@ -229,7 +229,7 @@ async def main(client):
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
       errorCode = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
-      if (errorCode[0] == "5"):
+      if (str(errorCode[0]) == "5"):
         pass
       else:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
