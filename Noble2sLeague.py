@@ -8,10 +8,12 @@ import math
 import random
 from pytz import timezone
 import json
+import re
 
 import SecretStuff
 import Collections
 import RLRanks
+import RandomSupport
 
 
 moBot = 449247895858970624
@@ -20,13 +22,24 @@ ssIDs = {
   "Noble Leagues Off-Season" : "1M8wij5yJXNplkRdrhIj-sMqfHBC8KmKHlFqyOCMaARw",
   "Noble Leagues Qualifiers" : "1Ut8QSZ48uB-H1wpE3-NxpPwBKLybkK-uo6Jb5LOSIxY",
   "Noble Leagues MoBot" : "1w-cme_ZtMIU3nesgGajc-5Y3eJX22Htwl_UIefG3E1Q",
+  "Season 4 League Play" : "1GGEx2UMN6KJmeAte0s7XIxsU2-AUNt8Nlr2GZUhA7VM",
 }
 
 ## roles
 registeredRole = 569198468472766475
 
 ## common channels
-REGISTER_ID = 519317465604554772
+REGISTER_ID_CHNL = 519317465604554772
+SERIES_REPORT_CHNL = 533689609830531092
+LEAGUE_MATCH_RESULTS_CHNL = 666863321290637313
+
+## common messages
+SERIES_REPORT_MSG = 666793704698150928
+LEAGUE_TABLE_MSG = 533690254029357056
+FIXTURES_MSG = 533699441572708353
+NOBLE_STANDINGS_MSG = 565576417664958464
+SEEDING_TABLE_MSG = 601174317933264917
+TEAMS_LIST_MSG = 580202716635201556
 
 async def main(args, message, client):
   now = datetime.now()
@@ -112,30 +125,31 @@ async def main(args, message, client):
 # end main
 
 async def mainReactionAdd(message, payload, client):
-  leagueTableMessageId = 533690254029357056
-  fixturesMessageId = 533699441572708353
-  nobleStandingsMessageId = 565576417664958464
-  seedingTableMessageId = 601174317933264917
-  teamsListMessageId = 580202716635201556
+  member = message.guild.get_member(payload.user_id)
   
   if (payload.emoji.name == "🔄"): # if update button is clicked
     workbook2sLeague = await openSpreadsheet(ssIDs["2s League [XB1/PC]"]) 
     workbookNobleOffSeason = await openSpreadsheet(ssIDs["Noble Leagues Off-Season"])
-    if (message.id == leagueTableMessageId):
-      await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-      await getLeagueTable(message, leagueTableMessageId, workbook2sLeague)
-    elif (message.id == fixturesMessageId):
-      await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-      await getFixtures(message, fixturesMessageId, workbook2sLeague)
-    elif (message.id == nobleStandingsMessageId):
-      await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
-      await getNobleScore(message, nobleStandingsMessageId, workbookNobleOffSeason)
-    elif (message.id == seedingTableMessageId):
-      await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
+    if (message.id == LEAGUE_TABLE_MSG):
+      await message.remove_reaction(payload.emoji, member)
+      await getLeagueTable(message, LEAGUE_TABLE_MSG, workbook2sLeague)
+    elif (message.id == FIXTURES_MSG):
+      await message.remove_reaction(payload.emoji, member)
+      await getFixtures(message, FIXTURES_MSG, workbook2sLeague)
+    elif (message.id == NOBLE_STANDINGS_MSG):
+      await message.remove_reaction(payload.emoji, member)
+      await getNobleScore(message, NOBLE_STANDINGS_MSG, workbookNobleOffSeason)
+    elif (message.id == SEEDING_TABLE_MSG):
+      await message.remove_reaction(payload.emoji, member)
       await getSeeding(message, workbookNobleOffSeason)
-    elif (message.id == teamsListMessageId):
-      await message.remove_reaction(payload.emoji, message.guild.get_member(payload.user_id))
+    elif (message.id == TEAMS_LIST_MSG):
+      await message.remove_reaction(payload.emoji, member)
       await tTeams(message, payload)
+
+  elif (message.id == SERIES_REPORT_MSG): 
+    if (payload.emoji.name == RandomSupport.CHECKMARK_EMOJI):
+      await startSubmission(message, member) # open score submission 
+      await message.remove_reaction(payload.emoji.name, member)
 
   elif (message.id == 640568528453369856): # Registration Verification
     if (payload.emoji.name == "✅"):
@@ -144,15 +158,29 @@ async def mainReactionAdd(message, payload, client):
   elif (message.id == 600812373212921866): # Stream Scheduler
     if (payload.emoji.name == "✅" or payload.emoji.name == "❌"):
       await streamScheduler(message, payload, client)
-      await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      await message.remove_reaction(payload.emoji.name, member)
     elif (payload.emoji.name == "🗑"):
-      member = message.guild.get_member(payload.user_id)
       if (message.channel.permissions_for(member).administrator):
         await clearStreamScheduler(message, client)
-      await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      await message.remove_reaction(payload.emoji.name, member)
   elif (message.author.id == 424398041043435520 and str(payload.user_id) != moBot): #Quantum Tracker aka RL STat Tracker
     tCommandLog = message.guild.get_channel(578955177478848523) # team log
     await getMMR(message, payload, tCommandLog)
+
+  if (message.embeds): # message has embed
+    embed = message.embeds[0]
+    embedAuthor = embed.author.name
+    
+    try:
+      if ("Score Submission" in embedAuthor):
+        if (str(member.id) in RandomSupport.getDetailFromURL(embed.author.url, "userID")):
+          if (payload.emoji.name == RandomSupport.CHECKMARK_EMOJI):
+            await scoreSubmission(message, payload, client)
+          elif (payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI):
+            await resetScoreSubmission(message, member)
+    except TypeError: # no author name
+      pass
+
 #end mainReactionAdd
       
 async def mainReactionRemove(message, payload, client):
@@ -184,6 +212,281 @@ async def memberRoleAdd(member, role):
     activityLog = member.guild.get_channel(445265120549928962)
     await activityLog.send("<@209584832030834688>, " + member.mention + " has been added to `Verified`.")
 # end memberRoleAdd
+
+
+### Score Submission ###
+
+def startScoreSubmissionEmbed(message, user):
+  moBotMember = message.guild.get_member(moBot)
+  
+  embed = discord.Embed(color = moBotMember.roles[-1].color)
+  embed.set_footer(text="| %s Reset Submission |" % RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
+  embed.set_author(
+    name="Noble Leagues - Season 4\nScore Submission", 
+    icon_url=message.guild.icon_url,
+    url="https://google.com/userID=%s/state=getDivision/team1=-1/team2=-1/divSheetTitle=-1/scoreRange=-1" % user.id
+  )
+  embed.description = "**Which `Division` are you in?**\nClick a number, then click the %s." % RandomSupport.CHECKMARK_EMOJI
+  return embed
+# end startScoreSubmissionEmbed
+
+async def startSubmission(message, member):
+  await message.channel.trigger_typing()
+
+  embed = startScoreSubmissionEmbed(message, member)
+
+  channel = await message.guild.create_text_channel(
+    "submit %s" % member.display_name,
+    overwrites={
+      message.guild.get_role(437936224402014208) : discord.PermissionOverwrite(read_messages=False), # everyone role, no one can read
+      member : discord.PermissionOverwrite(read_messages=True) # member can read
+    },
+    category=message.channel.category,
+    position=1 # put it at the bottom
+  )
+
+  msg = await channel.send(content=member.mention, embed=embed)
+  await addScoreSubmitReactions(msg, RandomSupport.getDetailFromURL(embed.author.url, "state"))
+# end startSubmission
+
+async def resetScoreSubmission(message, member):
+  await message.channel.trigger_typing()
+
+  await message.channel.purge(after=message)
+  embed = startScoreSubmissionEmbed(message, member)
+  await message.edit(embed=embed)
+  await addScoreSubmitReactions(message, RandomSupport.getDetailFromURL(embed.author.url, "state"))
+# end resetScoreSubmission
+
+async def scoreSubmission(message, payload, client):
+  await message.channel.trigger_typing()
+  moBotMember = message.guild.get_member(moBot)
+
+  embed = message.embeds[0]
+  url = embed.author.url
+  userID = int(RandomSupport.getDetailFromURL(url, "userID"))
+  state = RandomSupport.getDetailFromURL(url, "state")
+
+  async def getScoreFromEmojis(): # used for scores and getting division
+    for reaction in message.reactions:
+      async for user in reaction.users():
+        if (reaction.emoji in RandomSupport.numberEmojis and user.id == userID):
+          return RandomSupport.numberEmojis.index(reaction.emoji)        
+  # end getScoreFromEmojis
+
+  if (state == "getDivision"):
+    div = await getScoreFromEmojis()
+    if (div is not None):
+      embed.add_field(name="**Division:**", value=str(div), inline=False)
+      url = RandomSupport.updateDetailInURL(url, "state", "getMatchID")
+      embed.description = "**What is the `Match ID`?**\nType your response, then click the %s." % RandomSupport.CHECKMARK_EMOJI
+
+  elif (state == "getMatchID"):
+    matchID = None
+    div = None
+
+    history = await message.channel.history(after=message, oldest_first=False).flatten()
+    for msg in history:
+      if (msg.author.id == userID):
+        matchID = "".join([str(x) for x in re.findall(r'\d|\d\d|\d\d\d|\d\d\d\d', msg.content)]).rjust(4, "0")
+        div = RandomSupport.getValueFromField(embed, "Division")
+
+    if (matchID is not None and div is not None):
+      game = getTeamsFromDivMatchID(await openSpreadsheet(ssIDs["Season 4 League Play"]), div, matchID)
+
+      if (game is not None):
+        if (game.team1Score == "" and game.team2Score == ""):
+          embed.add_field(name="**Match ID:**", value=matchID, inline=False)
+          url = RandomSupport.updateDetailInURL(url, "team1", game.team1) 
+          url = RandomSupport.updateDetailInURL(url, "team2", game.team2) 
+          url = RandomSupport.updateDetailInURL(url, "divSheetTitle", game.divSheetTitle)
+          url = RandomSupport.updateDetailInURL(url, "scoreRange", game.scoreRange)
+          url = RandomSupport.updateDetailInURL(url, "state", "getTeam1Score")
+          embed.description = "**How many games did `%s` win?**" % game.team1
+        else:
+          await message.channel.send("**Game Already Submitted**\nDivision: `%s`\nMatch ID: `%s`\n%s: `%s`\n%s: `%s`\n\nIf this is not your game, contact a staff member for help." % (game.division, game.matchID, game.team1, game.team1Score, game.team2, game.team2Score))
+      else:
+        await message.channel.send("**Invalid Match ID**\n<@%s>, the `Match ID`, `%s`, was not found. Please edit your message or send a new one containing a valid `Match ID`." % (userID, matchID))
+
+    else:
+      await message.channel.send("**Match ID Not Given**\n<@%s>, a message could not be found in this channel with a valid `Match ID`. Please type the `Match ID` and click the %s." % (userID, RandomSupport.CHECKMARK_EMOJI))
+
+  elif (state == "getTeam1Score"):
+    score = await getScoreFromEmojis()
+    if (score is not None):
+      embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team1").replace("%20", " "), value=str(score), inline=False)
+      url = RandomSupport.updateDetailInURL(url, "state", "getTeam2Score")
+      embed.description = "**How many games did `%s` win?**" % RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+    else:
+      await message.channel.send("**No Score Clicked**")
+
+  elif (state == "getTeam2Score"):
+    score = await getScoreFromEmojis()
+    if (score is not None):
+      embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team2").replace("%20", " "), value=str(score), inline=False)
+      url = RandomSupport.updateDetailInURL(url, "state", "getProof")
+      embed.description = "**Provide any links or screenshots, then click the %s.**\nIf you do not have a https://ballchasing.com/ link, make sure you provide a screenshot of each game." % RandomSupport.CHECKMARK_EMOJI
+    else:
+      await message.channel.send("**No Score Clicked**")
+
+  elif (state == "getProof"):
+    links = []
+
+    ballChasing = False
+    history = await message.channel.history(after=message, oldest_first=False).flatten()
+    for msg in history:
+      if (msg.author.id == userID):
+        if (not ballChasing):
+          for word in msg.content.split(" "):
+            ballChasing = "https://ballchasing.com/" in word
+            if (ballChasing):
+              links.append(word)
+              break
+
+        if (msg.attachments):
+          for attachment in msg.attachments:
+            links.append(await RandomSupport.saveImageReturnURL(attachment, client))
+
+    hasProof = True
+    if (not ballChasing):
+      team1Score = int(RandomSupport.getValueFromField(embed, RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")))
+      team2Score = int(RandomSupport.getValueFromField(embed, RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")))
+      numGames = sum([team1Score, team2Score])
+
+      hasProof = len(links) >= numGames
+      if (not hasProof):
+        await message.channel.send("**Not Enough Proof**\nIf you do not have a <https://ballchasing.com> link, the number of screenshots needs to at least equal the number of games played. Only `%s` screenshot(s) have been detected for the `%s` games." % (len(links), numGames))
+    
+    if (hasProof):
+      embedValue = ""
+      for link in links:
+        embedValue += "[:frame_photo:](%s) " % link
+      embedValue += "\n*Click the picture icon(s) to view the proof.*"
+      embed.add_field(name="**Proof**:", value=embedValue)
+      url = RandomSupport.updateDetailInURL(url, "state", "confirm")
+      embed.description = "**If all the details below are correct, please click the %s to confirm and submit. The details will be confirmed by the staff and then updated in the spreadsheet.**" % RandomSupport.CHECKMARK_EMOJI
+
+  elif (state == "confirm"):
+    state = "verify"
+    url = RandomSupport.updateDetailInURL(url, "state", state)
+    embed.description = "**Once this match is verified, click the %s to submit.**" % RandomSupport.CHECKMARK_EMOJI
+    await message.channel.send("**Thank you for submitting. The results will be reviewed and then submitted by the staff.**")
+
+    await asyncio.sleep(5)
+    await message.channel.send("**Deleting Channel...**")
+    await asyncio.sleep(3)
+    await message.channel.delete()
+
+    channel = client.get_channel(LEAGUE_MATCH_RESULTS_CHNL)
+    embed = embed.to_dict()
+    embed["author"]["url"] = url
+    del embed["footer"]
+    embed = discord.Embed.from_dict(embed)
+    message = await channel.send(embed=embed)
+
+
+  elif (state == "verify"):
+    workbook = await openSpreadsheet(ssIDs["Season 4 League Play"])
+    worksheet = workbook.worksheet(RandomSupport.getDetailFromURL(url, "divSheetTitle").replace("%20", " "))
+
+    r = worksheet.range(RandomSupport.getDetailFromURL(url, "scoreRange"))
+    r[0].value = int(RandomSupport.getValueFromField(
+      embed, 
+      RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
+    )) # set team 1 score
+    r[1].value = int(RandomSupport.getValueFromField(
+      embed, 
+      RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+    )) # set team 2 score
+    worksheet.update_cells(r, value_input_option="USER_ENTERED") # update
+
+    state = "closed"
+    url = RandomSupport.updateDetailInURL(url, "state", state)
+    embed.description = "**Match Verified by %s**" % message.guild.get_member(userID).mention
+  
+  await addScoreSubmitReactions(message, RandomSupport.getDetailFromURL(url, "state"))
+
+  if (state not in ["verify", "closed"]): # has not been submitted by user or verified by staff
+    embed = embed.to_dict()
+    embed["author"]["url"] = url
+    embed = discord.Embed.from_dict(embed)
+    await message.edit(embed=embed)
+# end scoreSubmission
+
+def getTeamsFromDivMatchID(workbook, div, matchID):
+  class Game:
+    def __init__(self, division, matchID, divSheetTitle, scoreRange, team1, team2, team1Score, team2Score):
+      self.division = division
+      self.matchID = matchID
+      self.divSheetTitle = divSheetTitle
+      self.scoreRange = scoreRange
+      self.team1 = team1
+      self.team2 = team2
+      self.team1Score = team1Score
+      self.team2Score = team2Score
+  # end Game
+
+  divSheet = None
+  for sheet in workbook.worksheets():
+    if (sheet.title == "D%s Results" % div):
+      divSheet = sheet
+      break
+
+  if (divSheet is None):
+    return
+
+  gamesRange = divSheet.range("B4:AJ27")
+  gamesRange = RandomSupport.arrayFromRange(gamesRange)
+
+  matchID = matchID.rjust(4, "0")
+  for i in range(len(gamesRange)): # loop rows
+    for j in range(len(gamesRange[i])): # loop cols
+      if (gamesRange[i][j].value == matchID): # matchID cell
+        return Game(
+          div,
+          matchID,
+          divSheet.title, # sheet name
+          "%s:%s" % (
+            gspread.utils.rowcol_to_a1(gamesRange[i+1][j].row, gamesRange[i+1][j].col),
+            gspread.utils.rowcol_to_a1(gamesRange[i+2][j].row, gamesRange[i+2][j].col)
+          ), # score range as A1
+          gamesRange[i+1][j-2].value, # team 1
+          gamesRange[i+2][j-2].value, # tame 2
+          gamesRange[i+1][j].value, # team 1 score, likely blank
+          gamesRange[i+2][j].value, # team 2 score, likely blank
+        )
+# end getTeamsFromDivMatchID
+
+async def addScoreSubmitReactions(msg, state):
+  await msg.clear_reactions()
+
+  async def addNumberEmojis(msg, min, max):
+    for i in range(min, max+1):
+      await msg.add_reaction(RandomSupport.numberEmojis[i])
+  # end addNumberEmojis 
+
+  if (state == "getDivision"):
+    await addNumberEmojis(msg, 1, 5)
+  elif (state == "getMatchID"):
+    pass
+  elif (re.search(r'getTeam\dScore', state)):
+    await addNumberEmojis(msg, 0, 3)
+  elif (state == "getProof"):
+    pass
+  elif (state == "confirm"):
+    pass
+  elif (state == "verify"):
+    await msg.add_reaction(RandomSupport.CHECKMARK_EMOJI)
+    return
+  elif (state == "closed"):
+    return
+
+  await msg.add_reaction(RandomSupport.CHECKMARK_EMOJI)
+  await msg.add_reaction(RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
+# end addScoreSubmitReactions
+
+
+### Noble Rank Tracker NRT ###
 
 async def sendNRT(message, args):
   await message.channel.trigger_typing()
@@ -296,6 +599,9 @@ def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   return nrt
 # end getNRT
 
+
+### Stream Scheduler ###
+
 async def clearStreamScheduler(message, client):
   embed = message.embeds[0]
   embed = embed.to_dict()
@@ -386,6 +692,8 @@ async def streamScheduler(message, payload, client):
   await message.edit(embed=embed)
   await Collections.replaceCollectionEmbed(message, message.id, message.id, client)
 # end streamScheduler
+
+
 
 async def setnick(message):
   await message.channel.trigger_typing()
@@ -501,6 +809,10 @@ async def getMMR(message, payload, tCommandLog):
   elif (payload.emoji.name == "❌"):
     await message.clear_reactions()
 # end getMMR
+
+
+
+### Team Stuff
 
 async def updatePrefix(user, registerees, index, prefix, manualChange):
   if (not manualChange):
@@ -1176,31 +1488,8 @@ def getLeagueSheet(workbook):
   return teamRange, leagueSheet, teamRangeCols
 # end getLeagueSheet
 
-async def testing(message):
-  await message.channel.trigger_typing()
 
-  workbook = await openSpreadsheet(ssIDs["Noble Leagues Off-Season"])
-  registerIDSheet = workbook.worksheet("RegisterID")
-
-  activityLog = message.guild.get_channel(445265120549928962)
-  history = await activityLog.history(limit=100000).flatten()
-  dates = []
-  for message in history:
-      try:
-        if (message.author.name == "Dyno"):
-          embed = message.embeds[0].to_dict()
-          if (embed["author"]["name"] == "Member Left"):
-            dates.append(str(message.created_at))
-            print(message.created_at)
-      except IndexError:
-        continue
-
-  print(len(dates))
-  r = registerIDSheet.range("R1:R" + str(len(dates)))
-  for i in range(len(r)):
-    r[i].value = dates[i]
-  registerIDSheet.update_cells(r, value_input_option="USER_ENTERED")
-# end testing
+### Register IDs ###
 
 async def registerID(payload, message, args):
   moBotMessages = [message] if payload == None else []
@@ -1296,6 +1585,9 @@ def getUserName(memberID, registeredIDsRange):
     if (str(memberID) in registeredIDsRange[i].value):
       return registeredIDsRange[i-1].value
 # end getUserName
+
+
+### Tournaments
 
 async def tournamentCheckin(message):
   await message.channel.trigger_typing()
@@ -1548,7 +1840,7 @@ async def getSeeding(message, workbook):
     await msg.delete()
 # end getSeeding
 
-async def getNobleScore(message, nobleStandingsMessageId, workbook):
+async def getNobleScore(message, NOBLE_STANDINGS_MSG, workbook):
   moBotMessages = []
   moBotMessages.append(await message.channel.send("```Updating Table```"))
   standingsSheet = workbook.worksheet("Standings")
@@ -1600,6 +1892,9 @@ async def getNobleScore(message, nobleStandingsMessageId, workbook):
     await msg.delete()
 # end getNobleScore
 
+
+### OLD SCORE SUBMISSION ###
+
 async def submitResult(message):
   matchResultsChannel = message.guild.get_channel(538429198608498729) # match results
   
@@ -1637,6 +1932,9 @@ async def submitResultConfirm(message, client):
   await msg.delete()
 # end submitResult
 
+
+
+
 async def getLeagueTable(message, leagueTableMessageId, workbook):
   leagueTableMessageId = 533691725042941979
   r = workbook.worksheet("Table").range("B2:D13")
@@ -1663,8 +1961,8 @@ async def getLeagueTable(message, leagueTableMessageId, workbook):
   await msg.edit(content=("```League Table (Updated: " + currentTime + "):" + table + "\nPosition 9 - Play-Offs\nPosition 10 - Relegation```"))
 # end getLeagueTable
 
-async def getFixtures(message, fixturesMessageId, workbook):
-  fixturesMessageId = 533699713078263819
+async def getFixtures(message, FIXTURES_MSG, workbook):
+  FIXTURES_MSG = 533699713078263819
   weekNum = int(workbook.worksheet("Calculations").acell("P26").value)
   
   if (weekNum < 6):
@@ -1710,7 +2008,7 @@ async def getFixtures(message, fixturesMessageId, workbook):
       table += horizontalBoarder
     else:
       table += "\nNo Game 2 in the first week!"
-    msg = await message.channel.fetch_message(fixturesMessageId)
+    msg = await message.channel.fetch_message(FIXTURES_MSG)
     await msg.edit(content=("```Fixtures (Updated: " + currentTime + "):" + table + "```"))
 # end getFixtures
 
