@@ -92,11 +92,54 @@ def getDetailFromURL(url, detail):
 def getValueFromField(embed, fieldName):
   embed = embed.to_dict() if type(embed) != dict else embed
   for i in range(len(embed["fields"])):
-    if (fieldName in embed["fields"][i]):
+    if (fieldName in embed["fields"][i]["name"]):
       return embed["fields"][i]["value"]
 # end getValueFromField
 
 def updateDetailInURL(url, detail, new):
   old = url.split(detail + "=")[1].split('/')[0]
-  return url.replace("%s=%s" % (detail, old), "%s=%s" % (detail, new))
+  return url.replace("%s=%s" % (detail, old), "%s=%s" % (detail, new.replace(" ", "%20")))
 # end updateDetailInURL 
+
+def a1ToNumeric(a1): # "A1:B10" -> [[1, 2], [1, 10]]
+  a1 = (a1.upper() + ":").split(":")[0:2] # adding : to make sure no error
+  cols = []
+  rows = []
+  for x in a1: # where x is A1 or B10 in A1:B10
+    digits = [(ord(c)-ord("A")+1) for c in re.findall(r'[A-Z]', x)] # col = 0 if blank
+    digits.reverse()
+    for i in range(len(digits)):
+      digits[i] = 26 ** i * digits[i]
+    cols.append(sum(digits))
+    rows.append("".join(re.findall(r'\d', x)))
+
+  # handle blanks 1:B -> cols [1, 2], rows [1, 0] where 0 is max or A1:2 -> cols [1, 0], rows [1,]
+  cols[0] = 1 if (cols[0] is 0) else int(cols[0])
+  cols[1] = 0 if (cols[1] is 0) else int(cols[1]) # max cols
+  rows[0] = 1 if (rows[0] == "") else int(rows[0])
+  rows[1] = 0 if (rows[1] == "") else int(rows[1]) # max rows
+  if (cols[0] > cols[1] and cols[1] != 0): # big column after small column
+    col0= cols[0]
+    cols[0] = cols[1]
+    cols[1] = col0
+  return [cols, rows]
+# end a1ToNumeric
+
+def numericToA1(numeric): # [[1, 2], [1, 10]] -> A1:B10
+  def colNumToLetters(colNum): # idk how it works, it just does
+    letters = []
+    while True: # work backwards, get remainder, get letter from remainder, subtract remainder, repeat
+      letter = round(((colNum / 26) - (colNum // 26)) * 26) # remainder * 26 is the letter
+      letter = 26 if letter == 0 else letter # 26 is Z not 0
+      letters.append(chr(letter - 1 + ord('A'))) # get letter
+      colNum = (colNum - 1) // 26 # colNum - 1 to avoid 26 / 26
+      if (colNum <= 26): # we've reached the last (first) 'digit' letter A if ABC
+        if (colNum > 0): # if 0 then ignore
+          letters.append(chr(colNum - 1 + ord('A')))
+        letters.reverse()
+        return "".join(letters)
+  # end colNumToLetters
+
+  numeric[0] = [colNumToLetters(x) for x in numeric[0]]
+  return "%s%s:%s%s" % (numeric[0][0], numeric[1][0], numeric[0][1], numeric[1][1])
+# end numericToA1
