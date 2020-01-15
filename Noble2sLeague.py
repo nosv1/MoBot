@@ -173,11 +173,10 @@ async def mainReactionAdd(message, payload, client):
     
     try:
       if ("Score Submission" in embedAuthor):
-        if (str(member.id) in RandomSupport.getDetailFromURL(embed.author.url, "userID")):
-          if (payload.emoji.name == RandomSupport.CHECKMARK_EMOJI):
-            await scoreSubmission(message, payload, client)
-          elif (payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI):
-            await resetScoreSubmission(message, member)
+        if (payload.emoji.name == RandomSupport.CHECKMARK_EMOJI):
+          await scoreSubmission(message, payload, client)
+        elif (payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI):
+          await resetScoreSubmission(message, member)
     except TypeError: # no author name
       pass
 
@@ -266,6 +265,7 @@ async def scoreSubmission(message, payload, client):
   url = embed.author.url
   userID = int(RandomSupport.getDetailFromURL(url, "userID"))
   state = RandomSupport.getDetailFromURL(url, "state")
+  isUser = payload.user_id == userID
 
   async def getScoreFromEmojis(): # used for scores and getting division
     for reaction in message.reactions:
@@ -274,14 +274,14 @@ async def scoreSubmission(message, payload, client):
           return RandomSupport.numberEmojis.index(reaction.emoji)        
   # end getScoreFromEmojis
 
-  if (state == "getDivision"):
+  if (state == "getDivision" and isUser):
     div = await getScoreFromEmojis()
     if (div is not None):
       embed.add_field(name="**Division:**", value=str(div), inline=False)
       url = RandomSupport.updateDetailInURL(url, "state", "getMatchID")
       embed.description = "**What is the `Match ID`?**\nType your response, then click the %s." % RandomSupport.CHECKMARK_EMOJI
 
-  elif (state == "getMatchID"):
+  elif (state == "getMatchID" and isUser):
     matchID = None
     div = None
 
@@ -311,7 +311,7 @@ async def scoreSubmission(message, payload, client):
     else:
       await message.channel.send("**Match ID Not Given**\n<@%s>, a message could not be found in this channel with a valid `Match ID`. Please type the `Match ID` and click the %s." % (userID, RandomSupport.CHECKMARK_EMOJI))
 
-  elif (state == "getTeam1Score"):
+  elif (state == "getTeam1Score" and isUser):
     score = await getScoreFromEmojis()
     if (score is not None):
       embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team1").replace("%20", " "), value=str(score), inline=False)
@@ -320,7 +320,7 @@ async def scoreSubmission(message, payload, client):
     else:
       await message.channel.send("**No Score Clicked**")
 
-  elif (state == "getTeam2Score"):
+  elif (state == "getTeam2Score" and isUser):
     score = await getScoreFromEmojis()
     if (score is not None):
       embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team2").replace("%20", " "), value=str(score), inline=False)
@@ -329,7 +329,7 @@ async def scoreSubmission(message, payload, client):
     else:
       await message.channel.send("**No Score Clicked**")
 
-  elif (state == "getProof"):
+  elif (state == "getProof" and isUser):
     links = []
 
     ballChasing = False
@@ -366,7 +366,7 @@ async def scoreSubmission(message, payload, client):
       url = RandomSupport.updateDetailInURL(url, "state", "confirm")
       embed.description = "**If all the details below are correct, please click the %s to confirm and submit. The details will be confirmed by the staff and then updated in the spreadsheet.**" % RandomSupport.CHECKMARK_EMOJI
 
-  elif (state == "confirm"):
+  elif (state == "confirm" and isUser):
     state = "verify"
     url = RandomSupport.updateDetailInURL(url, "state", state)
     embed.description = "**Once this match is verified, click the %s to submit.**" % RandomSupport.CHECKMARK_EMOJI
@@ -402,11 +402,11 @@ async def scoreSubmission(message, payload, client):
 
     state = "closed"
     url = RandomSupport.updateDetailInURL(url, "state", state)
-    embed.description = "**Match Verified by %s**" % message.guild.get_member(userID).mention
+    embed.description = "**Match Verified by %s**" % message.guild.get_member(payload.user_id).mention
   
   await addScoreSubmitReactions(message, RandomSupport.getDetailFromURL(url, "state"))
 
-  if (state not in ["verify", "closed"]): # has not been submitted by user or verified by staff
+  if (state not in ["verify"]): # has not been submitted by user or verified by staff
     embed = embed.to_dict()
     embed["author"]["url"] = url
     embed = discord.Embed.from_dict(embed)
@@ -2105,7 +2105,7 @@ async def deleteMoBotMessages(moBotMessages):
 
 async def openSpreadsheet(ssKey):
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('Noble Leagues Off-Season_client_secret.json'), scope)
+  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
   clientSS = gspread.authorize(creds)  
   workbook = clientSS.open_by_key(ssKey)    
   return workbook
