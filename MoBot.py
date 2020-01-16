@@ -274,7 +274,7 @@ async def on_message(message):
             except discord.errors.Forbidden:
               pass
         elif ("monick" in args[1] and isMo):
-          await message.get_member.edit(nick=message.content.split(args[1])[1].strip())
+          await messaage.guild.get_member(mobot).edit(nick=nick=message.content.split(args[1])[1].strip())
         elif ("add" in args[1]):
           if ("reaction" in args[2]):
             if (len(args) > 2):
@@ -837,7 +837,7 @@ async def bugReport(message):
   for i in message.attachments:
     bug += i.url + "\n" 
   await bugReportChannel.send(bug)
-  await message.channel.send("Thank you for reporting a bug!\nJoin `@MoBot#0697 server` to stay updated on udpates and patches.")
+  await message.channel.send("Thank you for reporting a bug!\nJoin `@MoBot#0697 server` to stay updated on updates and patches.")
 
 def getServers():
   global servers
