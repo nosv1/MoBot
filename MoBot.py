@@ -264,6 +264,16 @@ async def on_message(message):
             await message.delete()
           except discord.errors.Forbidden:
             pass
+        elif ("monick" in args[1] and isMo):
+          await message.guild.get_member(moBot).edit(nick=message.content.split(args[1])[1].strip())
+        elif ("add" in args[1]):
+          if ("reaction" in args[2]):
+            if (len(args) > 2):
+              try:
+                await message.delete()
+              except discord.errors.Forbidden:
+                pass
+              await ReactionRole.addReactionToMessage(await message.channel.fetch_message(int(args[-1])), args[3:-1])
         elif ("nick" in args[1] and authorPerms.changeNicknames):
           if (message.guild.id == noble2sLeauge):
             await Noble2sLeague.setnick(message)
@@ -273,16 +283,6 @@ async def on_message(message):
               await message.delete()
             except discord.errors.Forbidden:
               pass
-        elif ("monick" in args[1] and isMo):
-          await messaage.guild.get_member(mobot).edit(nick=message.content.split(args[1])[1].strip())
-        elif ("add" in args[1]):
-          if ("reaction" in args[2]):
-            if (len(args) > 2):
-              try:
-                await message.delete()
-              except discord.errors.Forbidden:
-                pass
-              await ReactionRole.addReactionToMessage(await message.channel.fetch_message(int(args[-1])), args[3:-1])
         elif ("clear" in args[1] and authorPerms.manageMessages):
           await GeneralCommands.clearMessages(message, args)
         elif ("delete" in args[1] and authorPerms.manageMessages):
