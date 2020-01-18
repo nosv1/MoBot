@@ -607,7 +607,7 @@ def getStandings(url, league, client):
     )
   
   embed.description += "\n[__Results Spreadsheet__](%s)"  % url.replace("_", "\\_")
-  embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Last Refresh: %H:%M UTC - %d %b %a |"))
+  embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Refreshed: %b %a %d %H:%M UTC -  |"))
   return embed
 # end getStandings
 

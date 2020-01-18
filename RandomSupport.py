@@ -16,6 +16,8 @@ X_EMOJI = "❌"
 COUNTER_CLOCKWISE_ARROWS_EMOJI = "🔄"
 spaceChar = "⠀"
 
+### --- EMOJI NUMBERS ---
+
 def numberToEmojiNumbers(number):
   emojiNumbers = ""
   digits = str(number)
@@ -30,6 +32,9 @@ def emojiNumbertoNumber(emoji):
   return numberEmojis.index(emoji)
 # end emojiNumbertoNumber
 
+
+### --- MESSAGE MO --- ###
+
 async def sendErrorToMo(fileName, client, moID):
   await client.get_user(int(moID)).send("%s Error!```%s```" % (fileName, str(traceback.format_exc())))
 # end sendErrorToMo
@@ -37,6 +42,116 @@ async def sendErrorToMo(fileName, client, moID):
 async def sendMessageToMo(message, client, moID):
   await client.get_user(int(moID)).send(message)
 # end sendMessageToMo
+
+
+### --- EMBED STUFF --- ###
+
+def getDetailFromURL(url, detail):
+  return url.split(detail + "=")[1].split("/")[0]
+# end splitOnDetail
+
+def getValueFromField(embed, fieldName):
+  embed = embed.to_dict() if type(embed) != dict else embed
+  for i in range(len(embed["fields"])):
+    if (fieldName in embed["fields"][i]["name"]):
+      return embed["fields"][i]["value"]
+# end getValueFromField
+
+def updateDetailInURL(embed, detail, new):
+  embed = embed.to_dict() if type(embed) != dict else embed
+  url = embed["author"]["url"]
+  old = url.split(detail + "=")[1].split('/')[0]
+  embed["author"]["url"] = url.replace("%s=%s" % (detail, old), "%s=%s" % (detail, str(new).replace(" ", "%20")))
+  return discord.Embed().from_dict(embed)
+# end updateDetailInURL 
+
+def updateFieldValue(embed, fieldName, fieldValue):
+  embed = embed.to_dict() if type(embed) != dict else embed
+  for i in range(len(embed["fields"])):
+    if (fieldName in embed["fields"][i]["name"]):
+      embed["fields"][i]["value"] = fieldValue
+      return discord.Embed().from_dict(embed)
+# end updateFieldValue
+
+
+### --- SPREADSHEET RANGES --- ###
+
+def arrayFromRange(tableRange): # google sheets / gspread range
+  table = [[tableRange[0]]] # table[row][col]
+  for i in range(1, len(tableRange)):
+    cell = tableRange[i]
+    if (cell.row == table[-1][-1].row):
+      table[-1].append(cell)
+    else:
+      table.append([cell])
+  return table
+# end arrayFromRange
+
+def a1ToNumeric(a1): # "A1:B10" -> [[1, 2], [1, 10]]
+  if (a1.lower() == "all"):
+    a1 = "1" # everything
+  elif (a1.lower() == "none"):
+    return None
+
+  a1 = (a1.upper() + ":").split(":")[0:2] # adding : to make sure no error
+  cols = []
+  rows = []
+  for x in a1: # where x is A1 or B10 in A1:B10
+    digits = [(ord(c)-ord("A")+1) for c in re.findall(r'[A-Z]', x)] # col = 0 if blank
+    digits.reverse()
+    for i in range(len(digits)):
+      digits[i] = 26 ** i * digits[i]
+    cols.append(sum(digits))
+    rows.append("".join(re.findall(r'\d', x)))
+
+  # handle blanks 1:B -> cols [1, 2], rows [1, 0] where 0 is max or A1:2 -> cols [1, 0], rows [1,]
+  cols[0] = 1 if (cols[0] is 0) else int(cols[0])
+  cols[1] = 0 if (cols[1] is 0) else int(cols[1]) # max cols
+  rows[0] = 1 if (rows[0] == "") else int(rows[0])
+  rows[1] = 0 if (rows[1] == "") else int(rows[1]) # max rows
+  if (cols[0] > cols[1] and cols[1] != 0): # big column after small column
+    col0= cols[0]
+    cols[0] = cols[1]
+    cols[1] = col0
+  return [cols, rows]
+# end a1ToNumeric
+
+def numericToA1(numeric): # [[1, 2], [1, 10]] -> A1:B10
+  if (numeric is None):
+    return None
+
+  def colNumToLetters(colNum): # idk how it works, it just does
+    letters = []
+    while True: # work backwards, get remainder, get letter from remainder, subtract remainder, repeat
+      if (colNum > 0):
+        letter = round(((colNum / 26) - (colNum // 26)) * 26) # remainder * 26 is the letter
+        letter = 26 if letter == 0 else letter # 26 is Z not 0
+        letters.append(chr(letter - 1 + ord('A'))) # get letter
+        colNum = (colNum - 1) // 26 # colNum - 1 to avoid 26 / 26
+      if (colNum <= 26): # we've reached the last (first) 'digit' letter A if ABC
+        if (colNum > 0): # if 0 then ignore
+          letters.append(chr(colNum - 1 + ord('A')))
+        letters.reverse()
+        return "".join(letters)
+  # end colNumToLetters
+
+  numeric[0] = [colNumToLetters(x) for x in numeric[0]]
+  return "%s%s:%s%s" % (numeric[0][0], numeric[1][0], numeric[0][1], numeric[1][1])
+# end numericToA1
+
+def cellInRange(cell, r): # r is numericRange [[col1, col2] [row1, row2]]
+  if (r is None):
+    return None
+  
+  toTheRight = cell.col >= r[0][0]
+  toTheLeft = True if r[0][1] == 0 else cell.col <= r[0][1]
+  below = cell.row >= r[1][0]
+  above = True if r[1][1] == 0 else cell.row <= r[1][1]
+
+  return toTheRight and toTheLeft and below and above
+# end cellInRange
+
+
 
 async def saveImageReturnURL(attachment, client):
   guild = client.get_guild(moBotSupport)
@@ -73,73 +188,3 @@ def steamIDToSteam64(steamID):
 
   return body.split("<a href=\"https://steamid.io/lookup/")[1].split("\"")[0]
 # end steamIDToSteam64
-
-def arrayFromRange(tableRange): # google sheets / gspread range
-  table = [[tableRange[0]]] # table[row][col]
-  for i in range(1, len(tableRange)):
-    cell = tableRange[i]
-    if (cell.row == table[-1][-1].row):
-      table[-1].append(cell)
-    else:
-      table.append([cell])
-  return table
-# end arrayFromRange
-
-def getDetailFromURL(url, detail):
-  return url.split(detail + "=")[1].split("/")[0]
-# end splitOnDetail
-
-def getValueFromField(embed, fieldName):
-  embed = embed.to_dict() if type(embed) != dict else embed
-  for i in range(len(embed["fields"])):
-    if (fieldName in embed["fields"][i]["name"]):
-      return embed["fields"][i]["value"]
-# end getValueFromField
-
-def updateDetailInURL(url, detail, new):
-  old = url.split(detail + "=")[1].split('/')[0]
-  return url.replace("%s=%s" % (detail, old), "%s=%s" % (detail, new.replace(" ", "%20")))
-# end updateDetailInURL 
-
-def a1ToNumeric(a1): # "A1:B10" -> [[1, 2], [1, 10]]
-  a1 = (a1.upper() + ":").split(":")[0:2] # adding : to make sure no error
-  cols = []
-  rows = []
-  for x in a1: # where x is A1 or B10 in A1:B10
-    digits = [(ord(c)-ord("A")+1) for c in re.findall(r'[A-Z]', x)] # col = 0 if blank
-    digits.reverse()
-    for i in range(len(digits)):
-      digits[i] = 26 ** i * digits[i]
-    cols.append(sum(digits))
-    rows.append("".join(re.findall(r'\d', x)))
-
-  # handle blanks 1:B -> cols [1, 2], rows [1, 0] where 0 is max or A1:2 -> cols [1, 0], rows [1,]
-  cols[0] = 1 if (cols[0] is 0) else int(cols[0])
-  cols[1] = 0 if (cols[1] is 0) else int(cols[1]) # max cols
-  rows[0] = 1 if (rows[0] == "") else int(rows[0])
-  rows[1] = 0 if (rows[1] == "") else int(rows[1]) # max rows
-  if (cols[0] > cols[1] and cols[1] != 0): # big column after small column
-    col0= cols[0]
-    cols[0] = cols[1]
-    cols[1] = col0
-  return [cols, rows]
-# end a1ToNumeric
-
-def numericToA1(numeric): # [[1, 2], [1, 10]] -> A1:B10
-  def colNumToLetters(colNum): # idk how it works, it just does
-    letters = []
-    while True: # work backwards, get remainder, get letter from remainder, subtract remainder, repeat
-      letter = round(((colNum / 26) - (colNum // 26)) * 26) # remainder * 26 is the letter
-      letter = 26 if letter == 0 else letter # 26 is Z not 0
-      letters.append(chr(letter - 1 + ord('A'))) # get letter
-      colNum = (colNum - 1) // 26 # colNum - 1 to avoid 26 / 26
-      if (colNum <= 26): # we've reached the last (first) 'digit' letter A if ABC
-        if (colNum > 0): # if 0 then ignore
-          letters.append(chr(colNum - 1 + ord('A')))
-        letters.reverse()
-        return "".join(letters)
-  # end colNumToLetters
-
-  numeric[0] = [colNumToLetters(x) for x in numeric[0]]
-  return "%s%s:%s%s" % (numeric[0][0], numeric[1][0], numeric[0][1], numeric[1][1])
-# end numericToA1

@@ -27,6 +27,9 @@ ssIDs = {
 
 ## roles
 registeredRole = 569198468472766475
+everyoneRole = 437936224402014208
+leagueTeamRole = 647052103667417088
+adminRole = 661997809884594177
 
 ## common channels
 REGISTER_ID_CHNL = 519317465604554772
@@ -237,8 +240,9 @@ async def startSubmission(message, member):
   channel = await message.guild.create_text_channel(
     "submit %s" % member.display_name,
     overwrites={
-      message.guild.get_role(437936224402014208) : discord.PermissionOverwrite(read_messages=False), # everyone role, no one can read
-      member : discord.PermissionOverwrite(read_messages=True) # member can read
+      message.guild.get_role(everyoneRole) : discord.PermissionOverwrite(read_messages=False),
+      message.guild.get_role(leagueTeamRole): discord.PermissionOverwrite(read_messages=True),
+      member : discord.PermissionOverwrite(read_messages=True)
     },
     category=message.channel.category,
     position=1 # put it at the bottom
@@ -278,8 +282,9 @@ async def scoreSubmission(message, payload, client):
     div = await getScoreFromEmojis()
     if (div is not None):
       embed.add_field(name="**Division:**", value=str(div), inline=False)
-      url = RandomSupport.updateDetailInURL(url, "state", "getMatchID")
+      embed = RandomSupport.updateDetailInURL(embed, "state", "getMatchID")
       embed.description = "**What is the `Match ID`?**\nType your response, then click the %s." % RandomSupport.CHECKMARK_EMOJI
+      await message.channel.purge(after=message)
 
   elif (state == "getMatchID" and isUser):
     matchID = None
@@ -297,12 +302,13 @@ async def scoreSubmission(message, payload, client):
       if (game is not None):
         if (game.team1Score == "" and game.team2Score == ""):
           embed.add_field(name="**Match ID:**", value=matchID, inline=False)
-          url = RandomSupport.updateDetailInURL(url, "team1", game.team1) 
-          url = RandomSupport.updateDetailInURL(url, "team2", game.team2) 
-          url = RandomSupport.updateDetailInURL(url, "divSheetTitle", game.divSheetTitle)
-          url = RandomSupport.updateDetailInURL(url, "scoreRange", game.scoreRange)
-          url = RandomSupport.updateDetailInURL(url, "state", "getTeam1Score")
+          embed = RandomSupport.updateDetailInURL(embed, "team1", game.team1) 
+          embed = RandomSupport.updateDetailInURL(embed, "team2", game.team2) 
+          embed = RandomSupport.updateDetailInURL(embed, "divSheetTitle", game.divSheetTitle)
+          embed = RandomSupport.updateDetailInURL(embed, "scoreRange", game.scoreRange)
+          embed = RandomSupport.updateDetailInURL(embed, "state", "getTeam1Score")
           embed.description = "**How many games did `%s` win?**" % game.team1
+          await message.channel.purge(after=message)
         else:
           await message.channel.send("**Game Already Submitted**\nDivision: `%s`\nMatch ID: `%s`\n%s: `%s`\n%s: `%s`\n\nIf this is not your game, contact a staff member for help." % (game.division, game.matchID, game.team1, game.team1Score, game.team2, game.team2Score))
       else:
@@ -315,8 +321,9 @@ async def scoreSubmission(message, payload, client):
     score = await getScoreFromEmojis()
     if (score is not None):
       embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team1").replace("%20", " "), value=str(score), inline=False)
-      url = RandomSupport.updateDetailInURL(url, "state", "getTeam2Score")
+      embed = RandomSupport.updateDetailInURL(embed, "state", "getTeam2Score")
       embed.description = "**How many games did `%s` win?**" % RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+      await message.channel.purge(after=message)
     else:
       await message.channel.send("**No Score Clicked**")
 
@@ -324,8 +331,9 @@ async def scoreSubmission(message, payload, client):
     score = await getScoreFromEmojis()
     if (score is not None):
       embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team2").replace("%20", " "), value=str(score), inline=False)
-      url = RandomSupport.updateDetailInURL(url, "state", "getProof")
+      embed = RandomSupport.updateDetailInURL(embed, "state", "getProof")
       embed.description = "**Provide any links or screenshots, then click the %s.**\nIf you do not have a https://ballchasing.com/ link, make sure you provide a screenshot of each game." % RandomSupport.CHECKMARK_EMOJI
+      await message.channel.purge(after=message)
     else:
       await message.channel.send("**No Score Clicked**")
 
@@ -344,6 +352,7 @@ async def scoreSubmission(message, payload, client):
               break
 
         if (msg.attachments):
+          msg.attachments.reverse()
           for attachment in msg.attachments:
             links.append(await RandomSupport.saveImageReturnURL(attachment, client))
 
@@ -359,16 +368,18 @@ async def scoreSubmission(message, payload, client):
     
     if (hasProof):
       embedValue = ""
+      links.reverse()
       for link in links:
         embedValue += "[:frame_photo:](%s) " % link
       embedValue += "\n*Click the picture icon(s) to view the proof.*"
       embed.add_field(name="**Proof**:", value=embedValue)
-      url = RandomSupport.updateDetailInURL(url, "state", "confirm")
+      embed = RandomSupport.updateDetailInURL(embed, "state", "confirm")
       embed.description = "**If all the details below are correct, please click the %s to confirm and submit. The details will be confirmed by the staff and then updated in the spreadsheet.**" % RandomSupport.CHECKMARK_EMOJI
+      await message.channel.purge(after=message)
 
   elif (state == "confirm" and isUser):
     state = "verify"
-    url = RandomSupport.updateDetailInURL(url, "state", state)
+    embed = RandomSupport.updateDetailInURL(embed, "state", state)
     embed.description = "**Once this match is verified, click the %s to submit.**" % RandomSupport.CHECKMARK_EMOJI
     await message.channel.send("**Thank you for submitting. The results will be reviewed and then submitted by the staff.**")
 
@@ -379,39 +390,39 @@ async def scoreSubmission(message, payload, client):
 
     channel = client.get_channel(LEAGUE_MATCH_RESULTS_CHNL)
     embed = embed.to_dict()
-    embed["author"]["url"] = url
     del embed["footer"]
     embed = discord.Embed.from_dict(embed)
-    message = await channel.send(embed=embed)
+    message = await channel.send(content="<@&%s>" % leagueTeamRole, embed=embed)
 
 
   elif (state == "verify"):
-    workbook = await openSpreadsheet(ssIDs["Season 4 League Play"])
-    worksheet = workbook.worksheet(RandomSupport.getDetailFromURL(url, "divSheetTitle").replace("%20", " "))
+    member = message.guild.get_member(payload.user_id)
+    if (any(role.id in [leagueTeamRole, adminRole] for role in member.roles)):
+      workbook = await openSpreadsheet(ssIDs["Season 4 League Play"])
+      worksheet = workbook.worksheet(RandomSupport.getDetailFromURL(url, "divSheetTitle").replace("%20", " "))
 
-    r = worksheet.range(RandomSupport.getDetailFromURL(url, "scoreRange"))
-    r[0].value = int(RandomSupport.getValueFromField(
-      embed, 
-      RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
-    )) # set team 1 score
-    r[1].value = int(RandomSupport.getValueFromField(
-      embed, 
-      RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
-    )) # set team 2 score
-    worksheet.update_cells(r, value_input_option="USER_ENTERED") # update
+      r = worksheet.range(RandomSupport.getDetailFromURL(url, "scoreRange"))
+      r[0].value = int(RandomSupport.getValueFromField(
+        embed, 
+        RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
+      )) # set team 1 score
+      r[1].value = int(RandomSupport.getValueFromField(
+        embed, 
+        RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+      )) # set team 2 score
+      worksheet.update_cells(r, value_input_option="USER_ENTERED") # update
 
-    state = "closed"
-    url = RandomSupport.updateDetailInURL(url, "state", state)
-    embed.description = "**Match Verified by %s**" % message.guild.get_member(payload.user_id).mention
-  
-  await addScoreSubmitReactions(message, RandomSupport.getDetailFromURL(url, "state"))
+      state = "closed"
+      embed = RandomSupport.updateDetailInURL(embed, "state", state)
+      embed.description = "**Match Verified by %s**" % member.mention
+    else:
+      await message.channel.send("**Not Enough Permissions**\n%s, you do not have the *authority* to verify this match - League Team and Admins only." % member.mention)
+    
+  await addScoreSubmitReactions(message, RandomSupport.getDetailFromURL(embed.author.url, "state"))
 
-  if (state not in ["verify"]): # has not been submitted by user or verified by staff
-    embed = embed.to_dict()
-    embed["author"]["url"] = url
-    embed = discord.Embed.from_dict(embed)
+  if (state != "verify"): # has not been submitted by user or verified by staff
     await message.edit(embed=embed)
-# end scoreSubmission
+# end startSubmission
 
 def getTeamsFromDivMatchID(workbook, div, matchID):
   class Game:
@@ -450,10 +461,10 @@ def getTeamsFromDivMatchID(workbook, div, matchID):
             gspread.utils.rowcol_to_a1(gamesRange[i+1][j].row, gamesRange[i+1][j].col),
             gspread.utils.rowcol_to_a1(gamesRange[i+2][j].row, gamesRange[i+2][j].col)
           ), # score range as A1
-          gamesRange[i+1][j-2].value, # team 1
-          gamesRange[i+2][j-2].value, # tame 2
-          gamesRange[i+1][j].value, # team 1 score, likely blank
-          gamesRange[i+2][j].value, # team 2 score, likely blank
+          gamesRange[i+1][j-2].value.strip(), # team 1
+          gamesRange[i+2][j-2].value.strip(), # tame 2
+          gamesRange[i+1][j].value.strip(), # team 1 score, likely blank
+          gamesRange[i+2][j].value.strip(), # team 2 score, likely blank
         )
 # end getTeamsFromDivMatchID
 
