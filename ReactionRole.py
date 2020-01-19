@@ -8,7 +8,7 @@ import SecretStuff
 import MoBotDatabase
 
 moBot = 449247895858970624
-reactionRoleCommand = "`@MoBot#0697 watch [emoji] [message_id] [#channel] [add/remove] [@Role @Role...]`\n`@MoBot#0697 watch :100: 592137813814804522 add @Subscribers @Verfied`"
+reactionRoleCommand = "`@MoBot#0697 watch [emoji] [message_id] [#channel] [add/remove] [@Role @Role...]`\n`@MoBot#0697 watch :100: 592137813814804522 add @Subscribers @Verfied`\n`#channel` is only needed if you're using this command in a different channel"
 
 class ReactionMessage:
   def __init__(self, guildName, guildID, channelID, messageID, emoji, roleIDs, addRemove):
