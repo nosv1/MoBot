@@ -128,14 +128,8 @@ class UserPerms:
 async def on_ready():
   print("MoBot is online - " + str(datetime.now()))
 
-  workbook = await ReactionRole.openReactionRoleSpreadsheet()
-
-  global reactionMessages
-  reactionMessages = await ReactionRole.updateReactionMessages(reactionMessages, workbook)
-  print("Reaction Messages Received")
-
   global autoRoles
-  autoRoles = await ReactionRole.updateAutoRoles(autoRoles, workbook)
+  autoRoles = await ReactionRole.updateAutoRoles(autoRoles, await ReactionRole.openReactionRoleSpreadsheet())
   print("AutoRoles Received")
   
   global moBotDB
@@ -215,9 +209,7 @@ async def on_message(message):
         elif ("scrims" in args[1]):
           await RLScrims.main(args, message, client)
         elif ("watch" in args[1] and authorPerms.manageRoles):
-          global reactionMessages 
-          reactionMessages = await ReactionRole.addReactionRoleMessage(message, args, reactionMessages)
-          reactionMessages = await ReactionRole.clearDeletedMessages(reactionMessages, client)
+          await ReactionRole.addReactionRoleMessage(message, args, reactionMessages)
         elif ("autorole" in args[1] and authorPerms.manageRoles):
           global autoRoles
           if (args[2] == "add"):
@@ -545,32 +537,7 @@ async def on_raw_reaction_add(payload):
     except IndexError:
       embedAuthorURL = "None"
 
-    try:
-      pName = payload.emoji.name if (payload.emoji.id == None) else "<:" + payload.emoji.name + ":" + str(payload.emoji.id) + ">"
-      msg = reactionMessages[pName][message.id]
-      roles = message.guild.roles
-      for role in roles:
-        for roleID in msg["RoleID"][0]:
-          if (role.id == int(roleID)):
-            if (msg["RoleID"][1] == "add"):
-              await member.add_roles(role)
-              try:
-                await member.send("You have been added to the role: `" + role.name + "`.")
-              except discord.errors.Forbidden:
-                pass
-              #await message.channel.send(content="**" + role.name + " Role Removed from " + member.mention + "**", delete_after=5.0)
-            else:
-              await member.remove_roles(role)
-              try:
-                await member.send("You have been removed from the role: `" + role.name + "`.")
-              except discord.errors.Forbidden:
-                pass
-              #await message.channel.send(content="**" + role.name + " Role Added to " + member.mention + "**", delete_after=5.0)
-    except KeyError:
-      pass
-    except discord.errors.Forbidden:
-      await message.channel.send("Cannot add role, <@449247895858970624> does not have permission...")
-      await message.remove_reaction(payload.emoji, client.get_user(payload.user_id))
+    await ReactionRole.reactionRole(message, payload, member, "click")
 
     if (not member.bot):
       logActionToConsole(message, member, "reactionAdd")
@@ -701,31 +668,7 @@ async def on_raw_reaction_remove(payload):
       embedAuthorURL = "None"
     # end embed stuff
 
-    try:
-      pName = payload.emoji.name if (payload.emoji.id == None) else "<:" + payload.emoji.name + ":" + str(payload.emoji.id) + ">"
-      msg = reactionMessages[pName][message.id]
-      roles = message.guild.roles
-      for role in roles:
-        for roleID in msg["RoleID"][0]:
-          if (role.id == int(roleID)):
-            if (msg["RoleID"][1] == "add"):
-              await member.remove_roles(role)
-              try:
-                await member.send("You have been removed to the role: `" + role.name + "`.")
-              except discord.errors.Forbidden:
-                pass
-              #await message.channel.send(content="**" + role.name + " Role Removed from " + member.mention + "**", delete_after=5.0)
-            else:
-              await member.add_roles(role)
-              try:
-                await member.send("You have been added from the role: `" + role.name + "`.")
-              except discord.errors.Forbidden:
-                pass
-              #await message.channel.send(content="**" + role.name + " Role Added to " + member.mention + "**", delete_after=5.0)
-    except KeyError:
-      pass
-    except discord.errors.Forbidden:
-      pass
+    await ReactionRole.reactionRole(message, payload, member, "unclick")
 
     if (not member.bot or member.id == 476974462022189056):
       logActionToConsole(message, member, "reactionRemove")

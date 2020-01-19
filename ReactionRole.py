@@ -5,8 +5,21 @@ from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 
 import SecretStuff
+import MoBotDatabase
 
-moBot = "449247895858970624"
+moBot = 449247895858970624
+reactionRoleCommand = "`@MoBot#0697 watch [emoji] [message_id] [#channel] [add/remove] [@Role @Role...]`\n`@MoBot#0697 watch :100: 592137813814804522 add @Subscribers @Verfied`"
+
+class ReactionMessage:
+  def __init__(self, guildName, guildID, channelID, messageID, emoji, roleIDs, addRemove):
+    self.guildName = guildName
+    self.guildID = guildID
+    self.channelID = channelID
+    self.messageID = messageID
+    self.emoji = emoji
+    self.roleIDs = roleIDs.split(",")
+    self.addRemove = addRemove
+# end ReactionMessage
 
 async def main(args, message, client):
   now = datetime.now()
@@ -30,18 +43,64 @@ async def mainReactionRemove(message, payload, client):
   pass
 # end mainReactionRemove
 
+
+### --- Reaction Role --- ### 
+
+async def reactionRole(message, payload, member, clickUnclick):
+  emoji = payload.emoji.name if (payload.emoji.id == None) else "<:" + payload.emoji.name + ":" + str(payload.emoji.id) + ">"
+  moBotDB = connectDatabase()
+  moBotDB.connection.commit()
+  
+  reactionMessages = getReactionMessages(moBotDB)
+
+  for reactionMessage in reactionMessages:
+    if (reactionMessage.emoji == emoji and reactionMessage.messageID == str(message.id)):
+      try:
+        for role in reactionMessage.roleIDs:
+          try:
+            role = message.guild.get_role(int(role))
+          except ValueError:
+            await message.channel.send("**Could Not Add/Remove Role**\nIt doesn't look like there is a role_id for this reaction...\n\n")
+          
+          if (reactionMessage.addRemove == "add"):
+            await member.add_roles(role)
+            try:
+              await member.send("In `%s`, you been %s the role, `%s`" % (
+                message.guild.name,
+                "added to" if clickUnclick == "click" else "removed from",
+                role.name
+              ))
+            except discord.errors.Forbidden:
+              pass
+          else:
+            await member.remove_roles(role)
+            try:
+              await member.send("In `%s`, you been %s the role, `%s`" % (
+                message.guild.name,
+                "added to" if clickUnclick == "unclick" else "removed from",
+                role.name
+              ))
+            except discord.errors.Forbidden:
+              pass
+      except discord.errors.Forbidden:
+        await message.channel.send("**Cannot Add/Remove Role**\n<@%s> does not have permission." % moBot, delete_after=7)
+        await message.remove_reaction(payload.emoji, member)
+      break
+  moBotDB.connection.close()
+# end reactionRole
+
 async def addReactionToMessage(msg, emojis):
   for emoji in emojis:
     await msg.add_reaction(emoji)
 # end addReactionToMessage
 
-async def addReactionRoleMessage(message, args, reactionMessages):
+async def addReactionRoleMessage(message, args):
   await message.channel.trigger_typing()
 
-  workbook = await openReactionRoleSpreadsheet()
-  sheet = workbook.worksheet("Reaction Messages")
-  messages = sheet.range("A2:G" + str(sheet.row_count))
+  moBotDB = connectDatabase()
+  moBotDB.connection.commit()
 
+  reactionMessages = getReactionMessages(moBotDB)
 
   if ("#" in message.content):
     channel = message.guild.get_channel(int(message.content.split("#")[1].split(">")[0].strip()))
@@ -52,43 +111,94 @@ async def addReactionRoleMessage(message, args, reactionMessages):
   
   roleIDs = message.content.split(addRemove)[1].strip().split(">")
 
-  roles = ""
+  roles = []
   for role in roleIDs:
     if ("&" in role):
-      roles += role[-18:] + ","
-  roles = roles[:-1]
+      roles.append(role.split("&")[1])
+  roles = ",".join(roles)
 
-  for i in range(0, len(messages), 7):
-    if (messages[i].value == ""):
-      messages[i].value = message.guild.name
-      messages[i+1].value = str(message.guild.id)
-      messages[i+2].value = str(channel.id)
-      messages[i+3].value = args[3]
-      messages[i+4].value = args[2]
-      messages[i+5].value = str(roles)
-      messages[i+6].value = addRemove
-      msg = await message.channel.send("**Now watching message for reaction.**")
+  newReactionMessage = ReactionMessage(
+    message.guild.name,
+    message.guild.id,
+    channel.id,
+    args[3], # messageID
+    args[2], # emoji
+    roles,
+    addRemove
+  )
+
+  messageExists = False
+  for reactionMessage in reactionMessages:
+    if (reactionMessage.emoji == newReactionMessage.emoji and reactionMessage.messageID == newReactionMessage.messageID):
+      messageExists = True
+      moBotDB.cursor.execute("""
+        UPDATE reaction_roles
+        SET 
+          guild_name = '%s',
+          guild_id = '%s',
+          channel_id = '%s',
+          message_id = '%s',
+          emoji = '%s',
+          role_ids = '%s',
+          add_remove = '%s'
+        WHERE
+          message_id = '%s' AND
+          emoji = '%s'
+      """ % (
+        newReactionMessage.guildName,
+        newReactionMessage.guildID,
+        newReactionMessage.channelID,
+        newReactionMessage.messageID,
+        newReactionMessage.emoji,
+        ",".join(newReactionMessage.roleIDs),
+        newReactionMessage.addRemove,
+        newReactionMessage.messageID,
+        newReactionMessage.emoji
+      ))
       break
-    elif (messages[i+4].value == args[2] and messages[i+3].value == args[3]):
-      messages[i].value = message.guild.name
-      messages[i+1].value = str(message.guild.id)
-      messages[i+2].value = str(channel.id)
-      messages[i+3].value = args[3]
-      messages[i+4].value = args[2]
-      messages[i+5].value = str(roles)
-      messages[i+6].value = addRemove
-      msg = await message.channel.send("**Role updated.**")
-      break
-      
+
+  if (not messageExists):
+    moBotDB.cursor.execute("""
+      INSERT INTO `MoBot`.reaction_roles
+        (`guild_name`, `guild_id`, `channel_id`, `message_id`, `emoji`, `role_ids`, `add_remove`)
+      VALUES
+        ('%s', '%s', '%s', '%s', '%s', '%s', '%s')
+    """ % (
+      newReactionMessage.guildName,
+      newReactionMessage.guildID,
+      newReactionMessage.channelID,
+      newReactionMessage.messageID,
+      newReactionMessage.emoji,
+      ",".join(newReactionMessage.roleIDs),
+      newReactionMessage.addRemove
+    ))
+
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
+
   try:
-    await addReactionToMessage(await channel.fetch_message(int(args[3])), [args[2]])
-    sheet.update_cells(messages, value_input_option="USER_ENTERED")
+    await addReactionToMessage(await channel.fetch_message(int(newReactionMessage.messageID)), [newReactionMessage.emoji])
+    await message.channel.send("**Now %s `%s` upon click of %s.**\n\nIf this looks wrong, makes sure your command is correct.\n%s" % (
+      "adding" if addRemove == "add" else "removing",
+      ", ".join([role.name for role in [message.guild.get_role(int(role)) for role in newReactionMessage.roleIDs]]), # convert [roleid, roleid] to Role.name, Role.name
+      newReactionMessage.emoji,
+      reactionRoleCommand
+    ))
   except:
-    await msg.delete()
-    await message.channel.send("Looks like something didn't go quite right... Double check there aren't any double spaces, and your command looks like this \n`@MoBot#0697 watch [insert_emoji] [Message_ID] [#channel] [add/remove] [@Roles to Add]`\n`@MoBot#0697 watch :100: 592137813814804522 @Subscribers @Verfied`\n\nNote the #channel is only needed if you are not using the command in the same channel as the message you are adding reactions to.")
-
-  return await updateReactionMessages(reactionMessages, workbook)
+    await message.channel.send("**Error**\n%s, it looks like something didn't go quite right... my guess is there was something missing in the command.\n\n%s" % (message.author.mention, reactionRoleCommand))
 # end addReactionRoleMessage
+
+def getReactionMessages(moBotDB):
+  moBotDB.cursor.execute("SELECT * FROM reaction_roles")
+  
+  reactionMessages = []
+  for record in moBotDB.cursor:
+    reactionMessages.append(ReactionMessage(*record[1:]))
+  return reactionMessages
+# end getReactionMessages
+
+
+### --- Auto Roles --- ###
 
 async def clearAutoRole(message, autoRoles):
   await message.channel.trigger_typing()
@@ -189,51 +299,6 @@ async def updateAutoRoles(autoRoles, workbook):
   return autoRoles
 # end updateAutoRoles
 
-async def updateReactionMessages(reactionMessages, workbook):
-  sheet = workbook.worksheet("Reaction Messages")
-  messages = sheet.range("A2:G" + str(sheet.row_count))
-  for i in range(0, len(messages), 7):
-    if (messages[i].value == ""):
-      break
-    else:
-      if (messages[i+4].value not in reactionMessages):
-        reactionMessages[messages[i+4].value] = {
-          int(messages[i+3].value) : {
-            "RoleID" : [messages[i+5].value.split(","), messages[i+6].value],
-          }
-        }
-      else:
-        reactionMessages[messages[i+4].value][int(messages[i+3].value)] = {
-          "RoleID" : [messages[i+5].value.split(","), messages[i+6].value],
-        }
-  return reactionMessages
-# end updateReactionMessages
-
-async def clearDeletedMessages(reactionMessages, client):
-  workbook = await openReactionRoleSpreadsheet()
-  sheet = workbook.worksheet("Reaction Messages")
-  messages = sheet.range("A2:G" + str(sheet.row_count))
-  for i in range(len(messages)-7, -1, -7):
-    if (messages[i].value != ""):
-      error = False
-      try:
-        guild = client.get_guild(int(messages[i+1].value))
-        channel = guild.get_channel(int(messages[i+2].value))
-        message = await channel.fetch_message(int(messages[i+3].value))
-      except discord.errors.NotFound:
-        error = True
-      except AttributeError:
-        error = True
-
-      if (error):
-        for j in range(i, len(messages), 7):
-          for k in range(j, j+7):
-            if (messages[k].value != ""):
-              messages[k].value = messages[k+7].value
-  sheet.update_cells(messages, value_input_option="USER_ENTERED")
-
-  return await updateReactionMessages(reactionMessages, workbook)
-# end clearDeletedMessages
 
 async def openReactionRoleSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -242,3 +307,7 @@ async def openReactionRoleSpreadsheet():
   workbook = clientSS.open_by_key("1z09wBDnfvEFRivmbq-w2fkYCgUX5KWXGP7zbC0UShmI")
   return workbook
 # end openSpreadsheet
+
+def connectDatabase():
+  return MoBotDatabase.connectDatabase('MoBot')
+# end connectDatabase
