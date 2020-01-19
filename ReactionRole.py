@@ -63,7 +63,10 @@ async def reactionRole(message, payload, member, clickUnclick):
             await message.channel.send("**Could Not Add/Remove Role**\nIt doesn't look like there is a role_id for this reaction...\n\n")
           
           if (reactionMessage.addRemove == "add"):
-            await member.add_roles(role)
+            if (clickUnclick == "click"):
+              await member.add_roles(role)
+            else:
+              await member.remove_roles(role)
             try:
               await member.send("In `%s`, you have been %s the role, `%s`" % (
                 message.guild.name,
@@ -73,7 +76,10 @@ async def reactionRole(message, payload, member, clickUnclick):
             except discord.errors.Forbidden:
               pass
           else:
-            await member.remove_roles(role)
+            if (clickUnclick == "unclick"):
+              await member.add_roles(role)
+            else:
+              await member.remove_roles(role)
             try:
               await member.send("In `%s`, you have been %s the role, `%s`" % (
                 message.guild.name,
