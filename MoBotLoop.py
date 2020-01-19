@@ -70,6 +70,10 @@ donations = { # donation / 2 = months providing service
   "CASE#2606" : {
     "Date" : datetime(2020, 1, 3),
     "Donation" : 24 # $15 on 1/3
+  },
+  "Danio#3260" : {
+    "Date" : datetime(2020, 1, 19),
+    "Donation" : 34 # 20 on 1/19
   }
 }
 
@@ -185,6 +189,12 @@ async def main(client):
           #await checkCASEStreamers()
         else:
           await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
+        
+        if (currentTime < donationDateCorrection("Danio#3260")):
+          await updateDanioTables()
+        else:
+          await client.get_user(int(mo)).send("<@547053137551163432>'s donation has expired.")
+
 
         if (minute % 5 is 0): # check every 5 minutes
           try:
@@ -208,6 +218,7 @@ async def main(client):
         
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
+        await updateDanioTables()
       # end if second == 0
 
         '''
@@ -229,7 +240,7 @@ async def main(client):
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
       errorCode = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
-      if (str(errorCode[0]) == "5"):
+      if (str(errorCode)[0] == "5"):
         pass
       else:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
@@ -242,6 +253,69 @@ async def main(client):
 
   # end infinte loop
 # end main
+
+
+async def updateDanioTables():
+  channel = client.get_channel(668312033397309440)
+  class Table:
+    def __init__(self, title, key, messageID):
+      self.title = title
+      self.key = key.split("d/")[1].split("/")[0]
+      self.messageID = messageID
+  # end Table
+  tables = [
+    Table("S6 F1 PC",
+      "https://docs.google.com/spreadsheets/d/1xBxPBN1bU9aHakzte4XpzhCZrhLw0yk9HGUqdy6q_zc/edit#gid=70",
+      668326002598084620),
+    Table("S6 PC F2",
+      "https://docs.google.com/spreadsheets/d/1nm_jHpJwzNs7eZAMy1pDUIth04aMdgyNI6ML_9bLvjw/edit#gid=118",
+      668326016929759233),
+    Table("S6 PS4 F1",
+      "https://docs.google.com/spreadsheets/d/1pkQzfRiRjXYdBFFDzqX-zskudrOta5ViI6PsXrpUQTk/edit#gid=118",
+      668326026635509787),
+    Table("S6 PS4 F2",
+      "https://docs.google.com/spreadsheets/d/12O4hvzO0kmGVJ-qNMi5J67ElL6TKVhon8mQfus5eSdY/edit?usp=sharing",
+      668326030892728330),
+    Table("S6 PS4 F3",
+      "https://docs.google.com/spreadsheets/d/1J6O0XpH07IjzwHirQ4sR4dfC0lHwWkPSrhHqSQfAqFE/edit?usp=sharing",
+      668326045182722048),
+    Table("S6 PS4 F4",
+      "https://docs.google.com/spreadsheets/d/1ehG4d5B7VsiXNfoRjldfWyqSBbmtgc21QBvakvUxii0/edit?usp=sharing",
+      668326050710683658),
+    Table("S6 PS4 F5",
+      "https://docs.google.com/spreadsheets/d/1ZOQEYO_8dSIx30Uq-y1x4hSigzyW5nhNDH7lC0AsYRA/edit?usp=sharing",
+      668326105735757824),
+  ]
+
+  for table in tables:
+    r = random.random()
+    if (r < 1/50): # once an hour
+      message = await channel.fetch_message(table.messageID)
+      moBotMember = message.guild.get_member(moBot)
+      embed = discord.Embed(color=moBotMember.roles[-1].color)
+      embed.set_author(name=table.title, icon_url=message.guild.icon_url)
+      workbook = RandomSupport.openSpreadsheet(table.key)
+      sheet = workbook.worksheet("Discord Table")
+      r = sheet.range("A1:D22")
+      widths = {
+        "names" : int(r[2].value),
+        "points" : int(r[3].value)
+      }
+      flags = AOR.getFlags()
+      des = "**__%s__**\n" % r[4].value
+      for i in range(8, len(r), 4):
+        if (r[i].value != ""):
+          des += "`%s` %s `%s` `%s`\n" % (
+            r[i].value.rjust(3," "), 
+            flags[r[i+1].value],
+            r[i+2].value.ljust(widths["names"], " "),
+            r[i+3].value.rjust(widths["points"], " "))
+      des += "[__Results Spreadsheet__](https://docs.google.com/spreadsheets/d/%s/)" % table.key
+      embed.description = des
+      embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Refreshed: %b %d %H:%M UTC |"))
+      await message.edit(embed=embed)
+# end danioTables 
+
 
 async def checkCASEStreamers(): # not in use for now
   guild = client.get_guild(427103715678355476)
@@ -278,6 +352,8 @@ async def clearCASEWelcomeMessages():
   channel = client.get_channel(593584457982803971)
   await GeneralCommands.clearWelcomeMessages(channel)
 # end clearCASEWelcomeMessages
+
+
 
 async def checkTEGarrettPointApplications(nowPacificTime, client):
   guild = client.get_guild(237064972583174144)
@@ -342,6 +418,8 @@ async def checkTEGarrettPointApplications(nowPacificTime, client):
   if (logUpdated):
     pointApplicationsLogSheet.update_cells(pointApplicationsLogRange, value_input_option="USER_ENTERED")
     pointApplicationsLogSheet.resize(rows=pointApplicationsLogSheet.row_count + 1)
+# end checkTEGarrettPointApplications
+
 
 async def updateMoBotStatus(client):
   # changing bot status based on rand gen
@@ -361,6 +439,8 @@ async def updateMoBotStatus(client):
     else:
       await client.change_presence(activity=donate)
 # end updateMoBotStatus
+
+
 
 async def getGuildCountdowns():
   moBotDB = MoBotDatabase.connectDatabase('MoBot')
@@ -553,9 +633,13 @@ def getCurrentTime():
   return datetime.now() + timedelta(seconds=5)
 # end getCurrentTime
 
+
+
 def donationDateCorrection(donator):
   return donations[donator]["Date"] + relativedelta(months=int(donations[donator]["Donation"] / 2))
 #end donationDateCorrection
+
+
 
 async def openGuildClocksSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']

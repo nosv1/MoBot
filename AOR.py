@@ -151,7 +151,6 @@ async def mainReactionRemove(message, payload, client):
   pass
 # end mainReactionRemove
 
-# ---- AOR F1 DATABASE -----
 
 #   --- AOR F1 RACE EVALUATION ---
 
@@ -293,7 +292,6 @@ def evaluateFastestLap(raceInput, race):
   return sum(percentDifferences) / len(percentDifferences)
 # end evaluateFastestLap
 
-#   --- END AOR F1 RACE EVALUATION ---
 
 #   --- AOR F1 DRIVER PROFILES ---
 
@@ -483,7 +481,6 @@ def getSimilarDriverNames(names):
   return names
 # end getSimilarDriverNames
 
-#   --- END AOR F1 DRIVER PROFILES ---
 
 #   --- AOR STANDINGS ---
 
@@ -682,7 +679,7 @@ def getAutoUpdateStandings():
   return messages
 # end getAutoUpdateStandings
 
-#   --- END AOR STANDINGS ---
+
 
 def getRaceInputs():
   moBotDB = connectDatabase()
@@ -704,7 +701,7 @@ def connectDatabase():
   return MoBotDatabase.connectDatabase("AOR F1")
 # end connectDatabase
 
-# ----- END AOR F1 DATABASE -----
+
 
 def normalize(arr):
   minArr = min(arr)

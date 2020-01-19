@@ -6,6 +6,10 @@ import os
 import random
 import requests
 import re
+from oauth2client.service_account import ServiceAccountCredentials
+import gspread
+
+import SecretStuff
 
 moBotSupport = 467239192007671818
 randomStorage = 649014730622763019
@@ -74,7 +78,7 @@ def updateFieldValue(embed, fieldName, fieldValue):
 # end updateFieldValue
 
 
-### --- SPREADSHEET RANGES --- ###
+### --- SPREADSHEET STUFF --- ###
 
 def arrayFromRange(tableRange): # google sheets / gspread range
   table = [[tableRange[0]]] # table[row][col]
@@ -150,6 +154,14 @@ def cellInRange(cell, r): # r is numericRange [[col1, col2] [row1, row2]]
 
   return toTheRight and toTheLeft and below and above
 # end cellInRange
+
+def openSpreadsheet(spreadsheetKey):
+  scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
+  clientSS = gspread.authorize(creds)  
+  workbook = clientSS.open_by_key(spreadsheetKey)
+  return workbook
+# end openSpreadsheet
 
 
 
