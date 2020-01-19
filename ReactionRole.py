@@ -65,7 +65,7 @@ async def reactionRole(message, payload, member, clickUnclick):
           if (reactionMessage.addRemove == "add"):
             await member.add_roles(role)
             try:
-              await member.send("In `%s`, you been %s the role, `%s`" % (
+              await member.send("In `%s`, you have been %s the role, `%s`" % (
                 message.guild.name,
                 "added to" if clickUnclick == "click" else "removed from",
                 role.name
@@ -75,7 +75,7 @@ async def reactionRole(message, payload, member, clickUnclick):
           else:
             await member.remove_roles(role)
             try:
-              await member.send("In `%s`, you been %s the role, `%s`" % (
+              await member.send("In `%s`, you have been %s the role, `%s`" % (
                 message.guild.name,
                 "added to" if clickUnclick == "unclick" else "removed from",
                 role.name
