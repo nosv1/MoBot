@@ -209,7 +209,7 @@ async def on_message(message):
         elif ("scrims" in args[1]):
           await RLScrims.main(args, message, client)
         elif ("watch" in args[1] and authorPerms.manageRoles):
-          await ReactionRole.addReactionRoleMessage(message, args, reactionMessages)
+          await ReactionRole.addReactionRoleMessage(message, args)
         elif ("autorole" in args[1] and authorPerms.manageRoles):
           global autoRoles
           if (args[2] == "add"):
