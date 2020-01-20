@@ -116,12 +116,13 @@ autoRoles = {}
 isConnected = False
 
 class UserPerms:
-  def __init__(self, administrator, manageMessages, manageRoles, manageChannels, changeNicknames):
+  def __init__(self, administrator, manageMessages, manageRoles, manageChannels, changeNicknames, addReactions):
     self.administrator = administrator
     self.manageMessages = manageMessages
     self.manageRoles = manageRoles
     self.manageChannels = manageChannels
     self.changeNicknames = changeNicknames
+    self.addReactions = addReactions
 # end UserPerms
 
 @client.event
@@ -192,6 +193,7 @@ async def on_message(message):
           isNos or isMo or authorPerms.manage_roles or isBotSpam,
           isNos or isMo or authorPerms.manage_channels or isBotSpam,
           isNos or isMo or authorPerms.change_nickname or isBotSpam,
+          isNos or isMo or authorPerms.add_reactions or isBotSpam,
         )
 
         if (len(args) is 1):
@@ -259,7 +261,7 @@ async def on_message(message):
         elif ("monick" in args[1] and isMo):
           await message.guild.get_member(moBot).edit(nick=message.content.split(args[1])[1].strip())
         elif ("add" in args[1]):
-          if ("reaction" in args[2]):
+          if ("reaction" in args[2] and authorPerms.addReactions):
             if (len(args) > 2):
               try:
                 await message.delete()

@@ -88,6 +88,10 @@ async def updateTable(message, tableDetails):
   numCols = lastColumn - firstColumn + 1
   numRows = lastRow - firstRow + 1
 
+  if (numCols < 1 or numRows < 1):
+    await message.channel.send("**Invalid Rows/Columns**\nMake sure the last column and last row is greater than the first column and first row...")
+    return
+
   tableRange = userWorksheet.range(firstRow, firstColumn, lastRow, lastColumn)
 
   table = [""] # header, body -- in array to add more 'body' elements if needed
