@@ -222,7 +222,7 @@ async def main(client):
         
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
-        await updateDiscordTables() # only updates once every 5 minutes, random in function
+        #await updateDiscordTables() # only updates once every 5 minutes, random in function
       # end if second == 0
 
         '''
