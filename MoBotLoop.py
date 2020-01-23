@@ -25,6 +25,8 @@ import ClocksAndCountdowns
 import EventScheduler
 import MoBotDatabase
 import AOR
+import MoBotTables
+import MessageScheduler
 
 import MoBotTimeZones
   
@@ -191,7 +193,7 @@ async def main(client):
           await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
         
         if (currentTime < donationDateCorrection("Danio#3260")):
-          await updateDanioTables()
+          await updateDanioTables() # once an hour (random in function)
         else:
           await client.get_user(int(mo)).send("<@547053137551163432>'s donation has expired.")
 
@@ -203,6 +205,8 @@ async def main(client):
             scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
             remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
             reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
+
+            await MessageScheduler.sendScheduledMessages(client)
           except gspread.exceptions.APIError:
             pass
         # end if minute % 5 == 0
@@ -218,7 +222,7 @@ async def main(client):
         
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
-        await updateDanioTables()
+        await updateDiscordTables() # only updates once every 5 minutes, random in function
       # end if second == 0
 
         '''
@@ -355,7 +359,7 @@ async def clearCASEWelcomeMessages():
 
 
 
-async def checkTEGarrettPointApplications(nowPacificTime, client):
+async def checkTEGarrettPointApplications(nowPacificTime):
   guild = client.get_guild(237064972583174144)
   pointsTest = 588443266383347742
   points = 338844984725995522
@@ -421,6 +425,16 @@ async def checkTEGarrettPointApplications(nowPacificTime, client):
 # end checkTEGarrettPointApplications
 
 
+async def updateDiscordTables():
+  moBotDB = MoBotTables.connectDatabase()
+  tables = MoBotTables.getSavedTables(moBotDB)
+  for table in tables:
+    r = random.random()
+    if (r < 2/10 or True): # 20% chance every minute = update 12 times per hour = 1 time every 5 minutes
+      await MoBotTables.sendTable(table, None, client)
+# end updateDiscordTables
+
+
 async def updateMoBotStatus(client):
   # changing bot status based on rand gen
   if (getRandomCondition(0.1)): # 10%
@@ -439,7 +453,7 @@ async def updateMoBotStatus(client):
     else:
       await client.change_presence(activity=donate)
 # end updateMoBotStatus
-
+ 
 
 
 async def getGuildCountdowns():

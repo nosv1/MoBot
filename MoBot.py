@@ -59,6 +59,7 @@ import SimpleCommands
 import MoBotDatabase
 import GeneralCommands
 import RandomSupport
+import MoBotTables
 
 import Hangman
 import DKGetPicks
@@ -200,6 +201,8 @@ async def on_message(message):
           await message.channel.send(":eyes: Use `@MoBot#0697 help` for help...")
 
         # --- SPECALIZED COMMANDS ---
+        elif ("table" in args[1]):
+          await MoBotTables.main(args, message, client)
         elif ("ticket" in args[1]):
           await ticketManager.main(args, message, client)
         elif ("schedule message" in mc):

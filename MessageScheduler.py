@@ -3,6 +3,8 @@ import asyncio
 from datetime import datetime, timedelta
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from pytz import timezone, utc
+from dateutil.relativedelta import relativedelta
 
 import SecretStuff
 
@@ -20,6 +22,12 @@ daysInMonth = {
 arrows = ["⬅", "◀", "➡", "▶"]
 
 months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Nov", "Dec"]
+
+timeZones = ["UK", "UTC", "ET", "PT"]
+
+repeaters = ["Never", "Hourly", "Daily", "Weekly", "Bi-weekly", "Monthly", "Yearly"]
+
+shortTimeZoneToProper = {"UK" : "Europe/London", "UTC" : "UTC", "ET" : "America/New_York", "PT" : "America/Los_Angeles"}
 
 async def main(args, message, client):    
   
@@ -54,10 +62,6 @@ async def mainReactionAdd(message, payload, client):
       await cancelScheduledMessage(message)
 #end mainReactionAdd
 
-async def test(message):
-  await message.channel.send(message.content)
-# end test
-
 async def sendHelpMessage(message):
   reply = "To Schedule a Message:\n\t"
   reply += "@MoBot#0697 schedule message #destination_channel message_id\n\t\t"
@@ -75,81 +79,127 @@ async def sendHelpMessage(message):
   await message.channel.send("```" + reply + "```")
 # end sendHelpMessage
 
-async def deleteSentMessages(messageId):
-  workbook = await openSpreadsheet()
-  scheduledMessagesSheet = workbook.worksheet("Scheduled Messages")
-  scheduledMessagesRange = scheduledMessagesSheet.range("A2:L" + str(scheduledMessagesSheet.row_count))
+async def deleteSentMessages(r, sheet, msgIDs):
 
-  for i in range(0, len(scheduledMessagesRange), 12):
-    if (scheduledMessagesRange[i+2].value == str(messageId)):
-      for j in range(0, 12):
-        scheduledMessagesRange[i+j].value = ""
-      break
+  for msgID in msgIDs:
+    for i in range(0, len(r), 13):
+      if (r[i+2].value == str(msgID)):
+        for j in range(0, 13):
+          r[i+j].value = ""
+        break
   
-  scheduledMessagesSheet.update_cells(scheduledMessagesRange, value_input_option="USER_ENTERED")
+  sheet.update_cells(r, value_input_option="USER_ENTERED")
 # end deleteSentMessages
 
-async def sendScheduledMessages(client, scheduledMessages, i):
-  guild = client.get_guild(scheduledMessages[i][0])
-  destChannel = guild.get_channel(scheduledMessages[i][3])
-  await destChannel.trigger_typing()
-      
-  msgLocation = None
-  msg = None
+async def sendScheduledMessages(client):
+  workbook = await openSpreadsheet()
+  sheet = workbook.worksheet("Scheduled Messages")
+  r = sheet.range("A2:M" + str(sheet.row_count))
+  scheduleMessages = await getScheduledMessagesAsArray(r)
 
-  for channel in guild.channels:
-    if (msgLocation == None):
-      try:
-        msg = await channel.fetch_message(scheduledMessages[i][2])
-        msgLocation = channel
-      except:
-        continue
+  sentMsgs = []
+  n = datetime.utcnow()
+  for msg in scheduleMessages:
+    guild = client.get_guild(int(msg[0]))
+    if (msg[-2] <= n):
 
-  if (msg != None):
-    content = msg.content
-    try:
-      embed = msg.embeds[0]
-    except IndexError:
-      embed = None
+      destChannel = guild.get_channel(int(msg[3]))
+      await destChannel.trigger_typing()
+          
+      msgLocation = None
+      message = None
 
-    if (content != ""):
-      if (content[:3] == "```" and content[-3:] == "```"):
-        content = content[3:-3]
+      for channel in guild.channels:
+        if (msgLocation == None):
+          try:
+            message = await channel.fetch_message(int(msg[2]))
+            msgLocation = channel
+          except:
+            continue
 
-      if (embed != None):
-        await destChannel.send(content=content, embed=embed)
+      if (message != None):
+        content = message.content
+        try:
+          embed = message.embeds[0]
+        except IndexError:
+          embed = None
+
+        if (content != ""):
+          if (content[:3] == "```" and content[-3:] == "```"):
+            content = content[3:-3]
+
+          if (embed != None):
+            await destChannel.send(content=content, embed=embed)
+          else:
+            await destChannel.send(content=content)
+        elif (embed != None):
+            await destChannel.send(embed=embed)
+
       else:
-        await destChannel.send(content=content)
-    elif (embed != None):
-        await destChannel.send(embed=embed)
+        member = guild.get_member(int(msg[4]))
+        reply = "```Scheduled message was unable to send.```"
+        reply += "Source Channel: <#" + str(msg[1]) + ">\n"
+        reply += "Desination Channel: <#" + str(msg[3]) + ">\n"
+        reply += "Message ID: " + str(msg[2]) + "\n"
+        link = "https://discordapp.com/channels/" + str(msg[0]) + "/" + str(msg[1]) + "/" + str(msg[2])
 
-  else:
-    member = guild.get_member(scheduledMessages[i][4])
-    reply = "```Scheduled message was unable to send.```"
-    reply += "Source Channel: <#" + str(scheduledMessages[i][1]) + ">\n"
-    reply += "Desination Channel: <#" + str(scheduledMessages[i][3]) + ">\n"
-    reply += "Message ID: " + str(scheduledMessages[i][2]) + "\n"
-    link = "https://discordapp.com/channels/" + str(scheduledMessages[i][0]) + "/" + str(scheduledMessages[i][1]) + "/" + str(scheduledMessages[i][2])
+        await member.send(reply + "```Basically, either MoBot can no longer view the channel where the message is, or the source channel, destination channel, or the orginal message has been deleted.```" + "The link to the message:\n" + link)
 
-    await member.send(reply + "```Basically, either MoBot can no longer view the channel where the message is, or the source channel, destination channel, or the orginal message has been deleted.```" + "The link to the message:\n" + link)
-  await deleteSentMessages(scheduledMessages[i][2])
+      if (msg[-1] != "Never"):
+        repeating = msg[-1]
+        date = msg[-2]
+        if (repeating == "Hourly"):
+          date += relativedelta(hours=1)
+        elif (repeating == "Daily"):
+          date += relativedelta(days=1)
+        elif (repeating == "Weekly"):
+          date += relativedelta(weeks=1)
+        elif (repeating == "Bi-Weekly"):
+          date += relativedelta(weeks=2)
+        elif (repeating == "Monthly"):
+          date += relativedelta(months=1)
+        elif (repeating == "Yearly"):
+          date += relativedelta(years=1)
+        msg[-2] = date
+        for i in range(len(r)):
+          if (r[i].value == str(msg[2])):
+            r[i+3].value = date.month
+            r[i+4].value = date.day
+            r[i+5].value = date.year
+            r[i+6].value = date.hour if date.hour <= 12 else 12 - date.hour
+            r[i+6].value = 12 if r[i+6].value == 0 else r[i+6].value
+            r[i+7].value = date.minute
+            r[i+8].value = "AM" if date.hour < 12 else "PM"
+      else:
+        sentMsgs.append(msg[2])
+  await deleteSentMessages(r, sheet, sentMsgs)      
 # end sendScheduledMessages
+
+async def getScheduledMessagesAsArray(r):
+  messages = []
+  for i in range(0, len(r), 13):
+    if (r[i].value == ""):
+      continue
+    date = getMessageTime([c.value for c in r[i+5:i+13]])
+    messages.append([c.value for c in r[i:i+5]] + [date] + [r[i+12].value])
+  return messages
+# end getScheduledMessagesAsArray
 
 async def getScheduledMessages(message):
   await message.channel.trigger_typing()
 
   workbook = await openSpreadsheet()
   scheduledMessagesSheet = workbook.worksheet("Scheduled Messages")
-  scheduledMessagesRange = scheduledMessagesSheet.range("A2:L" + str(scheduledMessagesSheet.row_count))
+  scheduledMessagesRange = scheduledMessagesSheet.range("A2:M" + str(scheduledMessagesSheet.row_count))
 
   scheduledMessages = []
 
   messageExists = False
-  for i in range(0, len(scheduledMessagesRange), 12):
+  for i in range(0, len(scheduledMessagesRange), 13):
     if (scheduledMessagesRange[i].value == str(message.guild.id)):
       messageExists = True
       temp = []
-      for j in range(0, 12):
+      for j in range(0, 13):
         temp.append(scheduledMessagesRange[i+j].value)
       scheduledMessages.append(temp)
 
@@ -197,7 +247,6 @@ async def getScheduledMessages(message):
         link = "https://discordapp.com/channels/" + scheduledMessages[i][0] + "/" + scheduledMessages[i][1] + "/" + scheduledMessages[i][2]
 
         await message.channel.send(reply + "```Basically, either MoBot can no longer view the channel where the message is, or the source channel, destination channel, or the orginal message has been deleted.```" + "The link to the message:\n" + link)
-
 # end getsch
 
 async def cancelScheduledMessage(message):
@@ -205,16 +254,16 @@ async def cancelScheduledMessage(message):
   
   workbook = await openSpreadsheet()
   scheduledMessagesSheet = workbook.worksheet("Scheduled Messages")
-  scheduledMessagesRange = scheduledMessagesSheet.range("A2:L" + str(scheduledMessagesSheet.row_count))
+  scheduledMessagesRange = scheduledMessagesSheet.range("A2:M" + str(scheduledMessagesSheet.row_count))
 
   mc = message.content
   msgId = mc.split("Message ID: ")[1].split("\n")[0]
 
   messageExists = False
-  for i in range(0, len(scheduledMessagesRange), 12):
-    if (scheduledMessagesRange[i+1].value == msgId):
+  for i in range(0, len(scheduledMessagesRange), 13):
+    if (scheduledMessagesRange[i+2].value == msgId):
       messageExists = True
-      for j in range(0, 12):
+      for j in range(0, 13):
         scheduledMessagesRange[i+j].value = ""
       scheduledMessagesSheet.update_cells(scheduledMessagesRange, value_input_option="USER_ENTERED")
       await message.channel.send("```Message has been unscheduled.```")
@@ -229,7 +278,7 @@ async def scheduleMessage(message, payload):
   
   workbook = await openSpreadsheet()
   scheduledMessagesSheet = workbook.worksheet("Scheduled Messages")
-  scheduledMessagesRange = scheduledMessagesSheet.range("A2:L" + str(scheduledMessagesSheet.row_count))
+  scheduledMessagesRange = scheduledMessagesSheet.range("A2:M" + str(scheduledMessagesSheet.row_count))
 
   mc = message.content
 
@@ -245,9 +294,10 @@ async def scheduleMessage(message, payload):
   minute = mc.split("Minute [")[1].split("]")[0]
   amPm = mc.split("AM/PM [")[1].split("]")[0]
   tz = mc.split("Time zone [")[1].split("]")[0]
+  repeating = mc.split("Repeating [")[1].split("]")[0]
 
   messageScheduled = False
-  for i in range(0, len(scheduledMessagesRange), 12):
+  for i in range(0, len(scheduledMessagesRange), 13):
     if (scheduledMessagesRange[i].value == "" or scheduledMessagesRange[i+2].value == msgId):
       messageScheduled = True
       scheduledMessagesRange[i+0].value = guildId
@@ -262,6 +312,7 @@ async def scheduleMessage(message, payload):
       scheduledMessagesRange[i+9].value = minute
       scheduledMessagesRange[i+10].value = amPm
       scheduledMessagesRange[i+11].value = tz
+      scheduledMessagesRange[i+12].value = repeating
 
       scheduledMessagesSheet.update_cells(scheduledMessagesRange, value_input_option="USER_ENTERED")
       await message.channel.send("```Message has been scheduled. Feel free to edit your scheduled message or this 'Message Scheduler' at anytime. You can also simply retype the '@MoBot schedule message' command to update the existing scheduled message's Date/Time Details.```")
@@ -283,7 +334,7 @@ async def switchProgress(message, progress, direction):
       reply = msgParts[0].split(previousAttribute)[0][:-2] + "➡" + previousAttribute + "\n    " + progress + " [" + msgParts[1]
       await message.edit(content=reply)
   elif (direction == "down"):
-    if (progress != "Time zone"):
+    if (progress != "Repeating"):
       msgParts = mc.split(progress + " [")
       nextAttribute = "\n  ➡" + msgParts[1].split("\n    ")[1]
       reply = msgParts[0] + progress + " [" + msgParts[1].split("]")[0] + "]" + nextAttribute + msgParts[1].split(nextAttribute[4:])[1]
@@ -292,10 +343,8 @@ async def switchProgress(message, progress, direction):
 
 async def incrementValue(message, payload, progress, value):
 
-  timeZones = ["UK", "UTC", "ET", "PT"]
-
   oldValue = value
-  if (progress != "AM/PM" and progress != "Time zone"):
+  if (progress not in ["AM/PM", "Time zone", "Repeating"]):
     value = int(oldValue)
 
     if (payload.emoji.name == "➡"):
@@ -319,6 +368,13 @@ async def incrementValue(message, payload, progress, value):
     elif (payload.emoji.name == "➡"):
       i = timeZones.index(value)
       value = timeZones[i-1]
+  elif (progress == "Repeating"):
+    i = len(repeaters) * -1 + repeaters.index(value)
+    if (payload.emoji.name == "⬅"):
+      value = repeaters[i-1]
+    elif (payload.emoji.name == "➡"):
+      value = repeaters[i+1]
+
 
   goodValue = False
   if (progress == "Month"):
@@ -336,6 +392,8 @@ async def incrementValue(message, payload, progress, value):
   elif (progress == "AM/PM"):
     goodValue = True
   elif (progress == "Time zone"):
+    goodValue = True
+  elif (progress == "Repeating"):
     goodValue = True
     
   if (goodValue):
@@ -376,7 +434,7 @@ async def prepareMessageToSchedule(message, channelID, messageID):
   if (msgLocation != None and destChannel != None and msg != None):
     tomorrow = datetime.now() + timedelta(days=1)
 
-    reply = "Message Scheduler\n\nMessage Details:\n    Destination Channel: #" + destChannel.name + "\n    Destination Channel ID: " + str(destChannel.id) + "\n\n    Message Snippet: '" + msg.content.replace("```", "")[:25].strip() + "...'\n    Message ID: " + str(msg.id) + "\n\n    Source Channel: #" + msgLocation.name + "\n    Source Channel ID: " + str(msgLocation.id) + "\n\nDate/Time Details:\n  ➡Month [" + str(tomorrow.month) + "]\n    Day [" + str(tomorrow.day) + "]\n    Year [" + str(tomorrow.year) + "]\n    Hour [6]\n    Minute [30]\n    AM/PM [AM]\n    Time zone [UK]\n\nTime Zones Available:\n    UK = United Kingdom\n    UTC = Universal Time Coordinated\n    ET = United States Eastern Time\n    PT = United States Pacific Time\n\nHow to Use:\n    The left/right arrows adjust the values.\n    The up/down arrows move through the 'Date/Time Details'.\n    When you've the 'Date/Time Details' as you want them, click the ✅ to schedule the message."
+    reply = "Message Scheduler\n\nMessage Details:\n    Destination Channel: #" + destChannel.name + "\n    Destination Channel ID: " + str(destChannel.id) + "\n\n    Message Snippet: '" + msg.content.replace("```", "")[:25].strip() + "...'\n    Message ID: " + str(msg.id) + "\n\n    Source Channel: #" + msgLocation.name + "\n    Source Channel ID: " + str(msgLocation.id) + "\n\nDate/Time Details:\n  ➡Month [" + str(tomorrow.month) + "]\n    Day [" + str(tomorrow.day) + "]\n    Year [" + str(tomorrow.year) + "]\n    Hour [6]\n    Minute [30]\n    AM/PM [AM]\n    Time zone [UK]\n    Repeating [Never]\n\nTime Zones Available:\n    UK = United Kingdom\n    UTC = Universal Time Coordinated\n    ET = United States Eastern Time\n    PT = United States Pacific Time\n\nHow to Use:\n    The left/right arrows adjust the values.\n    The up/down arrows move through the 'Date/Time Details'.\n    When you've the 'Date/Time Details' as you want them, click the ✅ to schedule the message."
 
     messageScheduler = await message.channel.send("```" + reply + "```")
     
@@ -392,6 +450,9 @@ async def prepareMessageToSchedule(message, channelID, messageID):
     reply = ""
     if (msgLocation == None and msg == None):
       reply += "Message ID was not found."
+      workbook = await openSpreadsheet()
+      sheet = workbook.worksheet("Scheduled Messages")
+      await deleteSentMessages(sheet.range("A2:M" + str(sheet.row_count)), sheet, [messageID])
     elif (destChannel == None):
       reply += "Destination channel was not found."
     reply += "\n\t@MoBot#0697 schedule message #destination-channel message_id\n\n"
@@ -399,6 +460,19 @@ async def prepareMessageToSchedule(message, channelID, messageID):
     reply += "`message_id` is the id of the message that MoBot will copy"
     await message.channel.send("```" + reply + "```")
 # end scheduleMessage
+
+def getMessageTime(messageTime):
+  messageTime[3] = 0 if messageTime[3] == "12" else messageTime[3]
+  eventTime = datetime(
+    int(messageTime[2]), # year
+    int(messageTime[0]), # month
+    int(messageTime[1]), # day
+    int(messageTime[3]) if messageTime[5] == "AM" else 12 + int(messageTime[3]), # hour
+    int(messageTime[4]) # minute
+  )
+  convertedTime = timezone(shortTimeZoneToProper[messageTime[6]]).localize(eventTime).astimezone(timezone("UTC"))
+  return datetime(convertedTime.year, convertedTime.month, convertedTime.day, convertedTime.hour, convertedTime.minute)
+# end getMessageTime
 
 async def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
