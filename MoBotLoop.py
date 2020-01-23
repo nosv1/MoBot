@@ -167,7 +167,7 @@ async def main(client):
       # update randomly every minute 1/30 every second, 30 not 60 because update clocks is slow
       if (getRandomCondition(1/30)):
         if (currentTime < donationDateCorrection("TE Garrett#9569")):
-          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2), client)
+          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
         else:
           await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
         newTime = getCurrentTime() # this needs to be after every 'random' update condition
