@@ -504,8 +504,8 @@ async def sendNRT(message, args):
 
   platform = args[2].replace("pc", "steam")
   id = " ".join(args[3:]).strip()
-  mmrs, url = RLRanks.getMMRs(platform, id)
   try:
+    mmrs, url = RLRanks.getMMRs(platform, id)
     nrt = getNRT(mmrs)
   except: # any errors should mean the id doesn't exist
     await message.channel.send("Something went wrong... Is the ID correct?")
@@ -1189,7 +1189,7 @@ async def tPrefixStyle(message, tCommandLog):
         registerees[i+1].value = registerees[i+1].value.replace(currentPrefixStyle, prefixStyles[prefixStyle])
         referencesSheet.update_cells(registerees, value_input_option="USER_ENTERED")
         await tCommandLog.send("<@" + str(user.id) + "> has updated his/her prefix style to " + prefixStyles[prefixStyle])
-        moBotMessages.append(await message.channel.send("```Prefix style upated.```"))
+        moBotMessages.append(await message.channel.send("```Prefix style updated.```"))
       except KeyError:
         moBotMessages.append(await message.channel.send("```Prefix style does not exist.\n!t prefixstyle 1 for NG | Noble Gaming\n!t prefixstyle 2 for [NG] Noble Gaming```"))
         badStyle = True
