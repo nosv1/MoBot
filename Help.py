@@ -147,11 +147,11 @@ def decodePermissions(command):
   if (permsCode[0] == "1"):
     perms.append("Administrator")
   if (permsCode[1] == "1"):
-    perms.append("Mange Messages")
+    perms.append("Manage Messages")
   if (permsCode[2] == "1"):
-    perms.append("Mange Roles")
+    perms.append("Manage Roles")
   if (permsCode[3] == "1"):
-    perms.append("Mange Channels")
+    perms.append("Manage Channels")
   if (permsCode[4] == "1"):
     perms.append("Change Nickname")
   
