@@ -1,5 +1,5 @@
 # MoBot
-This is MoBot - a cutsom Discord Bot.
+This is MoBot - a custom Discord Bot.
 
 Nah, but seriously, enjoy what is here. There's not many comments and it's a mess in the older files, but in case I die, now someone can else run this shit.
 
