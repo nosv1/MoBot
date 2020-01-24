@@ -35,7 +35,7 @@ async def unwatchWord(message, client, dic):
     if (len(dic[word]) == 0):
       dic.pop(word)
   else:
-    reply = "```MoBot cannot unwatch a word that you don't have it watching... '@MoBot watching' to see what words MoBot is currenlty watching for you.```"
+    reply = "```MoBot cannot unwatch a word that you don't have it watching... '@MoBot watching' to see what words MoBot is currently watching for you.```"
   await client.send_message(message.channel, reply)
   await export(dic)
 # end unwatchWord
