@@ -22,6 +22,7 @@ import MessageScheduler
 import MoBotTimeZones
 import EventScheduler
 import MoBotDatabase
+import MoBotTables
 
 import AOR
   
@@ -54,13 +55,15 @@ async def on_ready():
     started = True
   else:
     sys.exit()
+  
+  await MessageScheduler.sendScheduledMessages(client)
 
   await main(client)
 # end on_ready
 
 async def main(client):
   global moBotDB
-  moBotDB = await MoBotDatabase.connectDatabase('MoBot')
+  moBotDB = MoBotDatabase.connectDatabase('MoBot')
   print ("Connected to MoBot Database")
 
   print()
@@ -91,11 +94,21 @@ async def main(client):
           if (eventTime < currentTime):
             scheduledEvents= await EventScheduler.performScheduledEvent(event, client)
 
+        await MessageScheduler.sendScheduledMessages(client)
+
     except:
       print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
       sys.exit()
   # end infinte loop
 # end main
+async def updateDiscordTables():
+  moBotDB = MoBotTables.connectDatabase()
+  tables = MoBotTables.getSavedTables(moBotDB)
+  for table in tables:
+    r = random.random()
+    if (r < 2/10 or True): # 20% chance every minute = update 12 times per hour = 1 time every 5 minutes
+      await MoBotTables.sendTable(table, None, client)
+# end updateDiscordTables
 
 async def getGuildClocks():
   moBotDB.connection.commit()

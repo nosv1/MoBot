@@ -16,6 +16,7 @@ import mysql.connector
 
 import SecretStuff
 import ClocksAndCountdowns
+import MoBotTables
 import DiscordSheets
 import ReactionRole
 import Collections
@@ -45,7 +46,7 @@ client = discord.Client()
 moBotDB = None
 moBot = 449247895858970624
 mo = 405944496665133058
-moBotTestID = 476974462022189056
+moBotTest = 476974462022189056
 moBotSupport = 467239192007671818
 self = "MoBot.py"
 
@@ -63,15 +64,9 @@ autoRoles = {}
 async def on_ready():
   print("MoBotTest is online - " + str(datetime.now()))
 
-  workbook = await ReactionRole.openReactionRoleSpreadsheet()
-
-  global reactionMessages
-  reactionMessages = await ReactionRole.updateReactionMessages(reactionMessages, workbook)
-  print("Reaction Messages Received")
-
-  global autoRoles
-  autoRoles = await ReactionRole.updateAutoRoles(autoRoles, workbook)
-  print("AutoRoles Received")
+  '''global autoRoles
+  autoRoles = await ReactionRole.updateAutoRoles(autoRoles, await ReactionRole.openReactionRoleSpreadsheet())
+  print("AutoRoles Received")'''
 
   global moBotDB
   moBotDB = MoBotDatabase.connectDatabase('MoBot')
@@ -86,16 +81,15 @@ async def on_ready():
 @client.event
 async def on_raw_message_edit(payload):
   pd = payload.data
-  try:
-    guild = client.get_guild(int(pd["guild_id"]))
-    channel = guild.get_channel(int(pd["channel_id"]))
-    message = await channel.fetch_message(int(pd["id"]))
-  except:
-    channel = client.get_channel(int(pd["channel_id"]))
-    message = await channel.fetch_message(int(pd["id"]))
+  message = await client.get_channel(int(pd["channel_id"])).fetch_message(int(pd["id"]))
   
   if (not message.author.bot):
-    await on_message(message)
+    try:
+      pd["content"]
+      await on_message(message)
+    except KeyError: # when content was not updated
+      pass
+# end on_raw_message_edit
 
 @client.event
 async def on_message(message):
@@ -113,7 +107,7 @@ async def on_message(message):
     mc = mc.replace("  ", " ")
   args = mc.split(" ")
 
-  if (args[0] == "test" or "476974462022189056" in args[0]):
+  if (args[0] == "test" or str(moBotTest) in args[0]):
 
     authorPerms = message.channel.permissions_for(message.author)
     isBotSpam = message.channel.id == 593911201658961942
@@ -129,12 +123,10 @@ async def on_message(message):
     if (len(args) > 1):
       if (args[1] == "test"):
         await message.channel.send("done", delete_after=3)
+      elif (args[1] == "table"):
+        await MoBotTables.main(args, message, client)
       elif (args[1] == "nrt"):
-        await message.channel.trigger_typing()
-        platform = args[2]
-        id = " ".join(args[3:])
-        nrt = Noble2sLeague.getNRT(RLRanks.getMMRs(platform, id))
-        await message.channel.send("ID: `%s`\nPlatform: `%s`\nSeasons Used: `%s & %s`\nNRT: `%s`" % (id, platform, nrt.latestSeason, nrt.previousSeason, nrt.nrt))
+        await Noble2sLeague.sendNRT(message, args)
       elif (args[1] == "?"):
         await Help.main(args, message, client)
       elif (args[1] == "maze"):
@@ -231,9 +223,7 @@ async def on_message(message):
       elif (args[1] == "brailetoint"):
         await message.channel.send(str(braileToInt(message.content.split("brailetoint")[1].strip())))
       elif (args[1] == "watch"):
-        global reactionMessages 
-        reactionMessages = await ReactionRole.addReactionRoleMessage(message, args, reactionMessages)
-        #reactionMessages = await ReactionRole.clearDeletedMessages(reactionMessages, client)
+        await ReactionRole.addReactionRoleMessage(message, args)
       elif (args[1] == "copy"):
         await message.channel.trigger_typing()
 
@@ -383,6 +373,10 @@ async def on_raw_reaction_add(payload):
         elif (payload.emoji.name == "🗑"):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      if ("Score Submission" in embedAuthor):
+        await Noble2sLeague.mainReactionAdd(message, payload, client)
+      if ("MoBot Tables" in embedAuthor):
+        await MoBotTables.mainReactionAdd(message, payload, client)
       if ("TEPCOTT - Season 4" in embedAuthor):
         await TEPCOTT.mainReactionAdd(message, payload, client)
       if ("GTA V Weather Forecast" in embedAuthor):
@@ -397,7 +391,7 @@ async def on_raw_reaction_add(payload):
         await AOR.mainReactionAdd(message, payload, client)
       '''if ("Countdown Editor" in message.embeds[0].author.name):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
-      if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
+      if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTest):
         await Collections.mainReactionAdd(message, payload, message.embeds[0], client)
         if ("MoBotReservation" in message.embeds[0].author.url):
           await Reservations.mainReactionAdd(message, payload, client)
@@ -466,7 +460,7 @@ async def on_raw_reaction_remove(payload):
     if (len(message.embeds) > 0):
       if ("MoBot Commands" in embedAuthor):
         await Help.mainReactionAdd(message, payload, client)
-      '''if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTestID):
+      '''if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTest):
         await Collections.mainReactionRemove(message, payload, message.embeds[0], client)'''
       pass
 # end on_raw_reaction_remove
@@ -1054,6 +1048,8 @@ async def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
   creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
   clientSS = gspread.authorize(creds)  
+  workbook = clientSS.open("power/kills")
+  return workbook
   workbook = clientSS.open_by_key("14YQLkU7C8IuyLJXVZ9IIJZuYhnp5ezsZkeeyI-NUkQQ")
   workbook = clientSS.open_by_url("https://docs.google.com/spreadsheets/d/14YQLkU7C8IuyLJXVZ9IIJZuYhnp5ezsZkeeyI-NUkQQ/pubhtml?hl=en&widget=false&headers=false")
   return workbook
