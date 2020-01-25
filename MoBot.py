@@ -331,7 +331,7 @@ async def on_message(message):
 
           reply += "**Using IDs in Messages:**\n"
           reply += "@User = <@user_ID>\n"
-          reply += "#channel = #channel_ID\n"
+          reply += "#channel = <#channel_ID>\n"
           reply += "@Role = <@&role_ID>"
 
           await message.channel.send(reply)
