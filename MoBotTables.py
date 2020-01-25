@@ -21,7 +21,7 @@ class Table:
     self.tableID = tableID
     self.creatorID = int(creatorID)
     self.workbookKey = workbookKey
-    self.worksheetID = worksheetID
+    self.worksheetID = int(worksheetID)
     self.tableRange = tableRange
     self.autoUpdating = int(autoUpdating)
     self.bufferMessages = int(bufferMessages)
@@ -40,8 +40,10 @@ async def main(args, message, client):
     if (len(args) >= 4):
       if ("create" in args[2]):
         await setWorkbookKey(message, message.author)
-      if ("edit" in args[2]):
+      elif ("edit" in args[2]):
         await editTable(message)
+      elif ("delete" in args[2]):
+        await deleteTable(message)
 # end main
 
 async def mainReactionAdd(message, payload, client):
@@ -76,54 +78,95 @@ async def mainReactionAdd(message, payload, client):
     pass
 #end mainReactionAdd
 
+async def deleteTable(message):
+  tableMessageID = message.content.split("delete")[-1].strip()
+
+  moBotDB = connectDatabase()
+
+  table = findTable(moBotDB, tableMessageID, message.author.id)
+
+  if (table): # exists
+    if (table != -1): # is creator
+      moBotDB.cursor.execute("DELETE FROM discord_tables WHERE message_ids LIKE '%s%s%s'" % ("%", tableMessageID, "%"))
+      moBotDB.connection.commit()
+      for msgID in table.messageIDs:
+        try:
+          msg = await message.guild.get_channel(table.channelID).fetch_message(int(msgID))
+          await msg.delete()
+        except discord.errors.NotFound:
+          pass
+        except discord.errors.Forbidden:
+          pass
+      await message.channel.send("**Table Deleted**", delete_after=7)
+
+    else: # is not creator
+      await message.channel.send("**Not Authorizied**\n%s, currently only the creator of the table is authorized to delete a table. The creator for the given table is `%s`." % (message.author.id, message.guild.get_member(table.creatorID).display_name))
+
+  else: # doesn't exist
+    await message.channel.send("**Table Not Found**\n%s, the `message_id` given was not found in any of MoBot's existing tables. Make sure the given `message_id` was actually an id of a table." % message.author.mention)
+  moBotDB.connection.close()
+# end deleteTable
+
 async def editTable(message):
+
   tableMessageID = message.content.split("edit")[-1].strip()
 
   moBotDB = connectDatabase()
-  tables = getSavedTables(moBotDB)
 
-  tableExists = False
-  for table in tables:
-    if (tableMessageID in table.messageIDs):
-      tableExists = True
+  table = findTable(moBotDB, tableMessageID, message.author.id)
+
+  if (table): # exists
+    if (table != -1): # is creator
       moBotMember = message.guild.get_member(moBot)
-      if (table.creatorID == message.author.id):
-        embed = defaultEmbed(
-          moBotMember, 
-          await openUserSpreadsheet(
-            table.workbookKey, 
-            message.guild.get_channel(table.channelID), 
-            message.author, 
-            moBotMember
-          ), 
+      embed = defaultEmbed(
+        moBotMember, 
+        await openUserSpreadsheet(
           table.workbookKey, 
-          table.guildID, 
-          table.channelID, 
-          message.author
-        )
+          message.guild.get_channel(table.channelID), 
+          message.author, 
+          moBotMember
+        ), 
+        table.workbookKey, 
+        table.guildID, 
+        table.channelID, 
+        message.author
+      )
 
-        tableDict = vars(table)
-        for var in tableDict: # update the embed with table values
-          print(var, tableDict[var])
-          if (var != "tableID"):
-            # convert alignments and message ids to strings not arrays
-            embed = RandomSupport.updateDetailInURL(embed, var, tableDict[var])
+      tableDict = vars(table)
+      for var in tableDict: # update the embed with table values
+        if (var != "tableID"):
+          tableDict[var] = ",".join(tableDict[var]) if type(tableDict[var]) == list else tableDict[var] # converts arrays to csv strings
+          embed = updateDetailInURL(embed, var, tableDict[var])
 
-        await message.channel.send(embed=embed)
+      workbook = await openUserSpreadsheet(table.workbookKey, message.channel, message.author, moBotMember)
+      for sheet in workbook.worksheets():
+        if (sheet.id == table.worksheetID):
+          embed = updateFieldValue(embed, 'Sheet Name', spaceChar * 2 + " " + sheet.title)
+          break
+      embed = updateFieldValue(embed, 'Table Range', spaceChar * 2 + " " + RandomSupport.stripZero(table.tableRange))
+      embed = updateFieldValue(embed, 'Auto Updating', spaceChar * 2 + " " + ("Yes" if table.autoUpdating == 1 else "No"))
+      embed = updateFieldValue(embed, 'Number of Buffer Messages', spaceChar * 2 + " " + str(table.bufferMessages))
+      embed = updateFieldValue(embed, 'Left Aligned Ranges', spaceChar * 2 + " " + RandomSupport.stripZero(table.leftAligned))
+      embed = updateFieldValue(embed, 'Right Aligned Ranges', spaceChar * 2 + " " + RandomSupport.stripZero(table.rightAligned))
+      embed = updateFieldValue(embed, 'Centered Ranges', spaceChar * 2 + " " + RandomSupport.stripZero(table.centered))
+      embed = updateFieldValue(embed, 'Number of Headers', spaceChar * 2 + " " + str(table.headers))
+      embed = updateFieldValue(embed, 'Smart Merging', spaceChar * 2 + " " + ("Yes" if table.smartMerging == 1 else "No"))
 
-      else:
-        await message.channel.send("**Not Authorizied**\n%s, currently only the creator of the table is authorized to edit a table. The creator for the given table is `%s`." % (message.author.id, message.guild.get_member(table.creatorID).display_name))
+      msg = await message.channel.send(embed=embed)
+      await addReactions(msg)
 
-  if (not tableExists):
-    await message.channel.send("**Table Not Found**\n%s, the `message_id` given was not found in any of MoBot's existing tables. Make sure the given `message_id` was actually an id of a table.")
-  
+    else: # is not creator
+      await message.channel.send("**Not Authorizied**\n%s, currently only the creator of the table is authorized to edit a table. The creator for the given table is `%s`." % (message.author.id, message.guild.get_member(table.creatorID).display_name))
 
+  else: # doesn't exist
+    await message.channel.send("**Table Not Found**\n%s, the `message_id` given was not found in any of MoBot's existing tables. Make sure the given `message_id` was actually an id of a table.", message.author.mention)
 
   moBotDB.connection.close()
 # end editTable
 
 async def sendTable(tableDetails, message, client): # embed may be None
-  
+  refreshed = datetime.strftime(datetime.utcnow(), "*Refreshed: %b %d %H:%M UTC*")
+
   try:
     guild = client.get_guild(tableDetails.guildID)
     channel = guild.get_channel(tableDetails.channelID)
@@ -153,7 +196,7 @@ async def sendTable(tableDetails, message, client): # embed may be None
   async def sendNewMessages():
     await channel.trigger_typing()
     for table in tables:
-      msg = await channel.send(table)
+      msg = await channel.send("%s\n%s" % (refreshed if (tables.index(table) == 0) else "", table))
       msgIDs.append(msg.id)
   # end sendNewMessages
 
@@ -176,7 +219,7 @@ async def sendTable(tableDetails, message, client): # embed may be None
     for msgID in msgIDs: # first assuming table is already created
       try:
         msg = await channel.fetch_message(msgID)
-        await msg.edit(content=tables[msgIDs.index(msgID)])
+        await msg.edit(content="%s\n%s" % (refreshed if (msgIDs.index(msgID) == 0) else "", tables[msgIDs.index(msgID)]))
       except discord.errors.NotFound: # if message doesn't exist, delete all existing messages
         msgIDs = await clearMessages()
         await sendNewMessages()
@@ -191,7 +234,7 @@ async def sendTable(tableDetails, message, client): # embed may be None
 
     if (len(msgIDs) < len(tables)): # more tables than existing messages
       for table in tables[len(msgIDs):]:
-        msg = await channel.send(table)
+        msg = await channel.send("%s\n%s" % (refreshed if (tables.index(table) == 0) else "", table))
         msgIDs.append(msg.id)
     await sendBufferMessages()
 
@@ -235,7 +278,7 @@ def defaultEmbed(moBotMember, workbook, workbookKey, guildID, channelID, creator
 - `Auto Updating` and `Smart Mergining` are toggleable; no need to type out `Yes` or `No`.
 - The `alignment details` take range inputs. Much like the `Table Range` detail but instead of 1 range, each range you want to be aligned needs to be inputted at the same time - `A1:B1 A3:B3`. Inputs can also be `All` or `None` for these details.
 - **Once the `Sheet Name` is verified, and the `Table Range` is inputted, a table should be sent to this channel.**
-- The table details will be saved and can be edited using this editor or by using the command `@MoBot#0697 edit table message_id`. The `message_id` can be any of the *table messages*. 
+- The table details will be saved and can be edited using this editor or by using the command `@MoBot#0697 table edit message_id`. The `message_id` can be any of the *table messages*. 
 - Feel free to change the spreadsheet name and sheet name whenever you want; they are only used to get the IDs of the spreadsheet and sheet (which never change).
 
 **Table Details:**
@@ -371,7 +414,7 @@ async def setTableRange(message, embed, creator):
       embed = updateFieldValue(
         embed, 
         "Table Range", 
-        spaceChar * 2 + " " + (tableRange if tableRange[-1] != "0" else tableRange[:-1])
+        spaceChar * 2 + " " + RandomSupport.stripZero(tableRange)
       )
       await message.edit(embed=embed)
 
@@ -531,7 +574,7 @@ def createTable(tableDetails, workbook):
   if ("-1" not in [worksheetID, tableRange]): # if we have 2 valid inputs
     sheet = None
     for worksheet in workbook.worksheets():
-      if (str(worksheet.id) == str(worksheetID)):
+      if (worksheet.id == worksheetID):
         sheet = worksheet
 
     rnge = None
@@ -616,7 +659,7 @@ def createTable(tableDetails, workbook):
         line = "`%s`" % line
         if (isHeader):
           line += "\n` %s `" % "".center(len(line)-4,"-") # borders for headers,
-        if (len("\n".join(lines) + line) < 2000):
+        if (len("\n".join(lines) + line) < 1900):
           lines.append(line)
         else:
           tables.append("\n".join(lines))
@@ -726,6 +769,17 @@ def getSavedTables(moBotDB):
     tables.append(Table(*record))
   return tables
 # end getSavedTables
+
+def findTable(moBotDB, tableMessageID, creatorID):
+  tables = getSavedTables(moBotDB)
+  for table in tables:
+    if (tableMessageID in table.messageIDs):
+      if (table.creatorID == creatorID):
+        return table
+      else:
+        return -1
+  return None
+# end findTable
 
 def connectDatabase():
   return MoBotDatabase.connectDatabase('MoBot')

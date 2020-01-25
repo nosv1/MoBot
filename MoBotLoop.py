@@ -222,7 +222,7 @@ async def main(client):
         
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
-        #await updateDiscordTables() # only updates once every 5 minutes, random in function
+        await updateDiscordTables() # only updates once every 5 minutes, random in function
       # end if second == 0
 
         '''
@@ -430,7 +430,7 @@ async def updateDiscordTables():
   tables = MoBotTables.getSavedTables(moBotDB)
   for table in tables:
     r = random.random()
-    if (r < 2/10 or True): # 20% chance every minute = update 12 times per hour = 1 time every 5 minutes
+    if (r < 1/300): # 60 sec * 5 min = 300 one update per 5 minutes
       await MoBotTables.sendTable(table, None, client)
 # end updateDiscordTables
 

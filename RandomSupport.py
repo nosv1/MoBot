@@ -155,6 +155,11 @@ def cellInRange(cell, r): # r is numericRange [[col1, col2] [row1, row2]]
   return toTheRight and toTheLeft and below and above
 # end cellInRange
 
+def stripZero(r): # convert A1:B0 to A1:B
+  r = r.upper() if ":" in r else r
+  return r[:-1] if re.findall(r'[A-Z]0', r) else r
+# end stripZero
+
 def openSpreadsheet(spreadsheetKey):
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
   creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)

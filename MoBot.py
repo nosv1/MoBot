@@ -556,6 +556,9 @@ async def on_raw_reaction_add(payload):
             await Collections.mainReactionAdd(message, payload, message.embeds[0], client)
             if ("MoBotReservation" in message.embeds[0].author.url):
               await Reservations.mainReactionAdd(message, payload, client)
+              
+        elif ("MoBot Tables" in embedAuthor):
+          await MoBotTables.mainReactionAdd(message, payload, client)
 
         elif ("Countdown Editor" in embedAuthor):
           await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
