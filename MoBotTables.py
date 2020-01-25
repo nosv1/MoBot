@@ -275,7 +275,7 @@ def defaultEmbed(moBotMember, workbook, workbookKey, guildID, channelID, creator
 **Notes:**
 - `Number of Buffer Messages` is defaulted to at least 1, but if you think your table will get bigger, you can increase this. (Tables will not include blank rows, If a row is blank, that will mark the end of the table.)
 - **The max number of total messages is 10.**
-- `Auto Updating` and `Smart Mergining` are toggleable; no need to type out `Yes` or `No`.
+- `Auto Updating` and `Smart Merging` are toggleable; no need to type out `Yes` or `No`.
 - The `alignment details` take range inputs. Much like the `Table Range` detail but instead of 1 range, each range you want to be aligned needs to be inputted at the same time - `A1:B1 A3:B3`. Inputs can also be `All` or `None` for these details.
 - **Once the `Sheet Name` is verified, and the `Table Range` is inputted, a table should be sent to this channel.**
 - The table details will be saved and can be edited using this editor or by using the command `@MoBot#0697 table edit message_id`. The `message_id` can be any of the *table messages*. 
