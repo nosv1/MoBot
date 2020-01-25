@@ -201,7 +201,7 @@ async def on_message(message):
           await message.channel.send(":eyes: Use `@MoBot#0697 help` for help...")
 
         # --- SPECALIZED COMMANDS ---
-        elif ("table" in args[1]):
+        elif ("table" in args[1] and authorPerms.manageMessages):
           await MoBotTables.main(args, message, client)
         elif ("ticket" in args[1]):
           await ticketManager.main(args, message, client)
@@ -418,7 +418,7 @@ async def on_message(message):
         elif (args[1].lower() == "donate"):
           await message.channel.send("I wouldn't mind a dollar...✌😎✌\n||<https://venmo.com/MoBot_>  ||\n||<https://paypal.me/MoShots>||\n\nFor just $2/month, or $15/year, you can ask for any custom commands you may want/need.")
         elif (args[1].lower() == "server"):
-          await message.channel.send("Join my server... It's where you can see features that are in development and such, if you're into that... https://discord.gg/bgyEpEh")
+          await message.channel.send("Join my server... It's where you can see features that are in development and such, if you're into that... https://discord.gg/mqxMeTj")
 
       try:
       ## calling server specific file 
