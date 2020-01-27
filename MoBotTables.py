@@ -116,7 +116,7 @@ async def editTable(message):
   table = findTable(moBotDB, tableMessageID, message.author.id)
 
   if (table): # exists
-    if (table != -1): # is creator
+    if (type(table) != int): # is creator
       moBotMember = message.guild.get_member(moBot)
       embed = defaultEmbed(
         moBotMember, 
@@ -156,7 +156,8 @@ async def editTable(message):
       await addReactions(msg)
 
     else: # is not creator
-      await message.channel.send("**Not Authorizied**\n%s, currently only the creator of the table is authorized to edit a table. The creator for the given table is `%s`." % (message.author.id, message.guild.get_member(table.creatorID).display_name))
+      creatorID = table
+      await message.channel.send("**Not Authorizied**\n%s, currently only the creator of the table is authorized to edit a table. The creator for the given table is `%s`." % (message.author.mention, message.guild.get_member(creatorID).display_name))
 
   else: # doesn't exist
     await message.channel.send("**Table Not Found**\n%s, the `message_id` given was not found in any of MoBot's existing tables. Make sure the given `message_id` was actually an id of a table." % message.author.mention)
@@ -777,7 +778,7 @@ def findTable(moBotDB, tableMessageID, creatorID):
       if (table.creatorID == creatorID):
         return table
       else:
-        return -1
+        return table.creatorID
   return None
 # end findTable
 
