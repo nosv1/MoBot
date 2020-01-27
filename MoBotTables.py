@@ -159,7 +159,7 @@ async def editTable(message):
       await message.channel.send("**Not Authorizied**\n%s, currently only the creator of the table is authorized to edit a table. The creator for the given table is `%s`." % (message.author.id, message.guild.get_member(table.creatorID).display_name))
 
   else: # doesn't exist
-    await message.channel.send("**Table Not Found**\n%s, the `message_id` given was not found in any of MoBot's existing tables. Make sure the given `message_id` was actually an id of a table.", message.author.mention)
+    await message.channel.send("**Table Not Found**\n%s, the `message_id` given was not found in any of MoBot's existing tables. Make sure the given `message_id` was actually an id of a table." % message.author.mention)
 
   moBotDB.connection.close()
 # end editTable
