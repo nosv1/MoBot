@@ -432,6 +432,7 @@ async def updateDiscordTables():
     r = random.random()
     if (r < 1/300): # 60 sec * 5 min = 300 one update per 5 minutes
       await MoBotTables.sendTable(table, None, client)
+  moBotDB.connection.close()
 # end updateDiscordTables
 
 
