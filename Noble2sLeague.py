@@ -35,6 +35,7 @@ adminRole = 661997809884594177
 REGISTER_ID_CHNL = 519317465604554772
 SERIES_REPORT_CHNL = 533689609830531092
 LEAGUE_MATCH_RESULTS_CHNL = 666863321290637313
+REGISTER_LOG_CHNL = 569196829137305631
 
 ## common messages
 SERIES_REPORT_MSG = 666793704698150928
@@ -180,6 +181,14 @@ async def mainReactionAdd(message, payload, client):
           await scoreSubmission(message, payload, client)
         elif (payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI):
           await resetScoreSubmission(message, member)
+      
+      if ("Noble Rank Tracker" in embedAuthor):
+        if (payload.emoji.name == RandomSupport.FLOPPY_DISK_EMOJI):
+          await saveNRT(message, member)
+          try:
+            await message.remove_reaction(payload.emoji.name, member)
+          except: # when message was deleted in function
+            pass
     except TypeError: # no author name
       pass
 
@@ -503,32 +512,48 @@ async def sendNRT(message, args):
   await message.channel.trigger_typing()
 
   platform = args[2].replace("pc", "steam")
-  id = " ".join(args[3:]).strip()
+  playerID = " ".join(args[3:]).strip()
   try:
-    mmrs, url = RLRanks.getMMRs(platform, id)
+    mmrs, trackerURL = RLRanks.getMMRs(platform, playerID)
+    platform = trackerURL.split("/")[-2]
+    trackerID = trackerURL.split("/")[-1]
     nrt = getNRT(mmrs)
   except: # any errors should mean the id doesn't exist
-    await message.channel.send("Something went wrong... Is the ID correct?")
+    await message.channel.send("**Something went wrong... Is the ID correct?**\n`@MoBot#0697 nrt steam/xbox/ps id`\n`@MoBot#0697 nrt xbox Mo v0`")
     return
 
   if (nrt is None):
-    await message.channel.send("Not enough MMRs to calculate NRT.\n%s" % url)
+    await message.channel.send("**Not enough MMRs to calculate NRT.**\n<%s>" % url)
+    return
 
   moBotMember = message.guild.get_member(moBot)
   embed = discord.Embed(color=moBotMember.roles[-1].color)
-  embed.set_author(name="Noble Rank Tracker", icon_url=message.guild.icon_url)
+  embed.set_author(
+    name="Noble Rank Tracker", 
+    url="https://google.com/ogMessageID=%s/memberID=%s/playerID=%s/platform=%s/trackerID=%s/nrt=%s/" % (
+      message.id,
+      message.author.id, 
+      playerID.replace(" ", "%20"),
+      platform,
+      trackerID,
+      nrt.nrt if nrt.nrt >= 0 else "Invalid"
+    ), 
+    icon_url=message.guild.icon_url
+  )
 
-  description = "ID: `%s`\n" % id
+  description = "ID: `%s`\n" % playerID
   description += "Platform: `%s`\n\n" % platform
   description += "Season %s 2s: `%s`\n" % (nrt.last2.season, nrt.last2.mmr)
   description += "Season %s 3s: `%s`\n" % (nrt.last3.season, nrt.last3.mmr)
   description += "Season %s 2s (Peak): `%s`\n" % (nrt.peak2.season, nrt.peak2.mmr)
   description += "Season %s 3s (Peak): `%s`\n\n" % (nrt.peak3.season, nrt.peak3.mmr)
   description += "**NRT: `%s`**\n" % (nrt.nrt if nrt.nrt >= 0 else "Invalid")
-  description += "[__Tracker__](%s)" % url
+  description += "[__Tracker__](%s)" % trackerURL
   embed.description = description
+  embed.set_footer(text="| %s - Save NRT (ONLY IF THIS IS YOU) | " % RandomSupport.FLOPPY_DISK_EMOJI)
 
-  await message.channel.send(embed=embed)
+  msg = await message.channel.send(embed=embed)
+  await msg.add_reaction(RandomSupport.FLOPPY_DISK_EMOJI)
 # end sendNRT
 
 def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
@@ -609,6 +634,65 @@ def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
 
   return nrt
 # end getNRT
+
+async def saveNRT(message, member):
+  await message.channel.trigger_typing()
+
+  embed = message.embeds[0]
+  authorURL = embed.author.url
+
+  memberID = RandomSupport.getDetailFromURL(authorURL, "memberID")
+  playerID = RandomSupport.getDetailFromURL(authorURL, "playerID").replace("%20", " ")
+  nrt = RandomSupport.getDetailFromURL(authorURL, "nrt")
+  platform = RandomSupport.getDetailFromURL(authorURL, "platform").lower()
+  trackerID = RandomSupport.getDetailFromURL(authorURL, "trackerID")
+  trackerURL = "https://rocketleague.tracker.network/profile/%s/%s" % (platform, trackerID)
+
+  isMember = str(member.id) != memberID
+  if (isMember):
+    await message.channel.send("**Cannot Save NRT**\n%s, you did not request this NRT, so you cannot save it." % (member.mention), delete_after=10)
+
+  else:
+    workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
+    registeredIDsSheet = workbook.worksheet("RegisterID")
+    r = registeredIDsSheet.range("A2:F" + str(registeredIDsSheet.row_count))
+
+    isRegistered = False
+    for i in range(0, len(r), 6): # reg id, dis id, player id, platform, tracker url, nrt
+      isRegistered = r[i+1].value == memberID
+
+      if (isRegistered): 
+        isSamePlayer = r[i+2].value == "" or playerID == r[i+2].value
+
+        if (isSamePlayer):
+          r[i+2].value = playerID
+          r[i+3].value = platform
+          r[i+4].value = trackerURL
+          r[i+5].value = nrt
+          registeredIDsSheet.update_cells(r, value_input_option="USER_ENTERED")
+          messages = [message, await message.channel.send("**NRT Saved**")]
+          try:
+            messages.append(
+            await message.channel.fetch_message(RandomSupport.getDetailFromURL(authorURL, "ogMessageID")))
+          except: # incase it doesn't exist any more
+            pass
+
+          await asyncio.sleep(3)
+          for msg in messages:
+            try:
+              await msg.delete()
+            except: # incase forbidden or something
+              pass
+
+          await message.guild.get_channel(REGISTER_LOG_CHNL).send("%s has saved their NRT with:\nID: `%s`\nPlatform: `%s`" % (member.mention, playerID, platform))
+
+        else:
+          await message.channel.send("**Cannot Save NRT**\n%s, there is another player saved under your Discord ID.\nID: `%s`\nPlatform: `%s`\nTracker: <%s>" % (member.mention, r[i+3].value, r[i+2].value, trackerURL), delete_after=10)
+        break
+
+    if (not isRegistered):
+      await message.channel.send("**Cannot Save NRT**\n%s, you have not registered your ID.\n`@MoBot#0697 registerID input_name`\n`@MoBot#0697 registerID Mo v0`" % member.mention, delete_after=10)
+# end saveNRT
 
 
 ### Stream Scheduler ###
@@ -1556,16 +1640,17 @@ async def registerID(payload, message, args):
         nameIDs[i+1].value = str(userId)
         break
     moBotMessages.append(await message.channel.send("**ID Registered as %s**\nIf you want to change your ID use `@MoBot#0697 changeID new_name`." % (registerName)))
-    await message.guild.get_channel(569196829137305631).send("<@" + str(userId) + "> has registered their ID with " + registerName.strip() + ".")
+    await message.guild.get_channel(REGISTER_LOG_CHNL).send("<@" + str(userId) + "> has registered their ID with " + registerName.strip() + ".")
 
   # changing name
   if (not(idNotPresent) and nameNotPresent):
     if (payload is None):
       nameIDs[idLocation - 1].value = registerName
       moBotMessages.append(await message.channel.send("**ID Updated**"))
-      await message.guild.get_channel(569196829137305631).send("<@" + str(userId) + "> has changed their ID to " + registerName + ".")
+      await message.guild.get_channel(REGISTER_LOG_CHNL).send("<@" + str(userId) + "> has changed their ID to " + registerName + ".")
   
   registerIDSheet.update_cells(nameIDs, value_input_option="USER_ENTERED")
+  registerIDSheet.resize(rows=registerIDSheet.row_count + 1)
 
   if (payload is not None):
     await asyncio.sleep(3)
@@ -1613,7 +1698,7 @@ async def tournamentCheckin(message):
       if (signupRange[j].value == getUserName(message.author.id, registeredIDsRange)):
         signupRange[i+2].value = "=TRUE"
         await message.channel.send("**Checked In**")
-        registerLog = message.guild.get_channel(569196829137305631)
+        registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
         await registerLog.send("%s and %s have checked in for the %s tournament." % (message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)).mention, message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange)).mention, message.content.split(" ")[0].split("!")[1].strip()))
         signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
         return 0
@@ -1657,7 +1742,7 @@ async def tournamentSignup(message):
               await member.add_roles(role)
             break
         await message.channel.send("**Signup Complete**")
-        registerLog = message.guild.get_channel(569196829137305631)
+        registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
         await registerLog.send("%s has signed up %s and %s for the %s tournament." % (message.author.mention, message.guild.get_member(userIDs[0]).mention, message.guild.get_member(userIDs[1]).mention, message.content.split(" ")[0].split("!")[1].strip()))
         break
       if (signupRange[i].value in userNames): 
@@ -1678,7 +1763,7 @@ async def tournamentRetire(message):
     if (signupRange[i].value != ""):
       for j in range(i, i+2):
         if (getUserName(message.author.id, registeredIDsRange) == signupRange[j].value):
-          registerLog = message.guild.get_channel(569196829137305631)
+          registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
           users = [
             message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)),
             message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange))
@@ -1777,7 +1862,7 @@ async def signupOLD(message):
 
           seedingSheet.update_cells(currentWeekTable, value_input_option="USER_ENTERED")
           moBotMessages.append(await message.channel.send("```Signup Completed```"))
-          await message.guild.get_channel(569196829137305631).send("<@" + str(message.author.id) + "> has signed up " + user1Name + " and " + user2Name + ".")
+          await message.guild.get_channel(REGISTER_LOG_CHNL).send("<@" + str(message.author.id) + "> has signed up " + user1Name + " and " + user2Name + ".")
           break
   else:
     moBotMessages.append(await message.channel.send("```Signups must include 2 users at a time. @MoBot#0697 signup @user @user```"))
