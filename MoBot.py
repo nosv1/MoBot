@@ -354,10 +354,19 @@ async def on_message(message):
           guilds.sort(key=lambda x:x[2])
           for i in range(len(guilds)):
             reply += "**" + guilds[i][0] + "** - " + str(guilds[i][1]) + " - " + guilds[i][2].strftime("%b %d %Y") + "\n"
-          reply += "\nGuild Count: " + str(guildCount) + "\n"
-          reply += "Member Count: " + str(memberCount) + "\n"
 
-          await message.channel.send(reply)
+          replies = [""]
+          for line in reply.split("\n"):
+            if (len(replies[-1] + line) > 2000):
+              replies.append(line + "\n")
+            else:
+              replies[-1] += line + "\n"
+          for reply in replies:
+            await message.channel.send(reply)
+          await message.channel.send("%s%s" % (
+            "Guild Count: " + str(guildCount) + "\n",
+            "Member Count: " + str(memberCount) + "\n"
+          ))
         elif (args[1] == "embed"):
           if (args[2] == "help"):
             # its not that complex

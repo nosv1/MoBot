@@ -164,15 +164,22 @@ async def main(client):
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
       newTime = currentTime
-      # update randomly every minute 1/30 every second, 30 not 60 because update clocks is slow
-      if (getRandomCondition(1/30)):
+      # random updates
+      if (getRandomCondition(1/50)): # once every 50 seconds 
+        await updateDiscordTables() # tables have 1/5 chance every minute to update
+
         if (currentTime < donationDateCorrection("TE Garrett#9569")):
           await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
         else:
-          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")  
+
         newTime = getCurrentTime() # this needs to be after every 'random' update condition
 
-      if (second is 0 or newTime.second < second): # check for every 60 seconds or incase we miss the 0 tick because of slowness
+      # if (getRandomCondition(1/300)): # once every 5 minutes
+
+        # newTime = getCurrentTime() 
+
+      if (second is 0 or newTime < currentTime): # check for every 60 seconds or incase we miss the 0 tick because of slowness
 
         # update clocks and countdowns
         clocks = await getGuildClocks()
@@ -222,7 +229,6 @@ async def main(client):
         
         await updateTimeZoneList(currentTime)
         await AOR.updateStandings(client)
-        await updateDiscordTables() # only updates once every 5 minutes, random in function
       # end if second == 0
 
         '''
@@ -426,11 +432,13 @@ async def checkTEGarrettPointApplications(nowPacificTime):
 
 
 async def updateDiscordTables():
+  print('dt')
   moBotDB = MoBotTables.connectDatabase()
   tables = MoBotTables.getSavedTables(moBotDB)
   for table in tables:
-    r = random.random()
-    if (r < 1/300): # 60 sec * 5 min = 300 one update per 5 minutes
+    print(table.messageIDs)
+    if (getRandomCondition(1/5) or True): # once every 5 minutes
+      await client.get_user(mo).send(table.messageIDs[0])
       await MoBotTables.sendTable(table, None, client)
   moBotDB.connection.close()
 # end updateDiscordTables

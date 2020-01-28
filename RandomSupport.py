@@ -195,7 +195,8 @@ def getRole(guild, roleID):
 # end getRole
 
 def getRandomCondition(x):
-  return random.triangular(0, 1) < x
+  r = random.triangular(0, 1)
+  return r < x
 # end getRandom
 
 def steamIDToSteam64(steamID):

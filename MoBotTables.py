@@ -15,6 +15,7 @@ import RandomSupport
 from RandomSupport import spaceChar, getDetailFromURL, updateDetailInURL, updateFieldValue, a1ToNumeric, numericToA1
 
 moBot = 449247895858970624
+mo = 405944496665133058
 
 class Table:
   def __init__(self, tableID, creatorID, workbookKey, worksheetID, tableRange, autoUpdating, bufferMessages, leftAligned, rightAligned, centered, headers, smartMerging, guildID, channelID, messageIDs):
@@ -108,6 +109,7 @@ async def deleteTable(message):
 # end deleteTable
 
 async def editTable(message):
+  await message.channel.trigger_typing()
 
   tableMessageID = message.content.split("edit")[-1].strip()
 
@@ -174,6 +176,8 @@ async def sendTable(tableDetails, message, client): # embed may be None
     creator = guild.get_member(tableDetails.creatorID)
     moBotMember = guild.get_member(moBot)
   except discord.errors.NotFound:
+    return
+  except AttributeError:
     return
 
   workbook = await openUserSpreadsheet(tableDetails.workbookKey, channel, creator, moBotMember)
@@ -243,8 +247,8 @@ async def sendTable(tableDetails, message, client): # embed may be None
       embed = message.embeds[0]
       embed = updateDetailInURL(embed, "messageIDs", ",".join([str(msgID) for msgID in msgIDs]))
       await message.edit(embed=embed)
-      tableDetails.messageIDs = [str(msgID) for msgID in msgIDs]
-      saveTable(tableDetails)
+    tableDetails.messageIDs = [str(msgID) for msgID in msgIDs]
+    saveTable(tableDetails)
 # end sendTable
 
 
@@ -280,6 +284,7 @@ def defaultEmbed(moBotMember, workbook, workbookKey, guildID, channelID, creator
 - The `alignment details` take range inputs. Much like the `Table Range` detail but instead of 1 range, each range you want to be aligned needs to be inputted at the same time - `A1:B1 A3:B3`. Inputs can also be `All` or `None` for these details.
 - **Once the `Sheet Name` is verified, and the `Table Range` is inputted, a table should be sent to this channel.**
 - The table details will be saved and can be edited using this editor or by using the command `@MoBot#0697 table edit message_id`. The `message_id` can be any of the *table messages*. 
+- To delete a table, simply `@MoBot#0697 table delete table_message_id`. If you delete a table message, it'll simply resend it (if it's on auto-update).
 - Feel free to change the spreadsheet name and sheet name whenever you want; they are only used to get the IDs of the spreadsheet and sheet (which never change).
 
 **Table Details:**
