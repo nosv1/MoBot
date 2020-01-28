@@ -195,7 +195,7 @@ def getRole(guild, roleID):
 # end getRole
 
 def getRandomCondition(x):
-  r = random.triangular(0, 1)
+  r = random.random()
   return r < x
 # end getRandom
 
