@@ -544,7 +544,10 @@ async def updateStandings(client):
       (d in hourDays and r < 1/54) or 
       (d not in hourDays and r < 1/(54*24))
     ):
-      messages.append([await guildsChannels[guildID][channelID].fetch_message(messageID), getStandings(url, league, client)])
+      try:
+        messages.append([await guildsChannels[guildID][channelID].fetch_message(messageID), getStandings(url, league, client)])
+      except IndexError: # error in getStandings -> getSpreadsheet -> columns = str(rows[i]).split("<td")
+        pass
     
   for messageEmbed in messages:
     message = messageEmbed[0]
@@ -568,7 +571,10 @@ def getStandings(url, league, client):
   flags = getFlags()
 
   url = "%s?hl=en&widget=false&headers=false" % url
-  standingsTable, roundFlag = getSpreadsheet(url)
+  try:
+    standingsTable, roundFlag = getSpreadsheet(url)
+  except IndexError:
+    return
 
   guild = client.get_guild(aor)
   embed = discord.Embed()
