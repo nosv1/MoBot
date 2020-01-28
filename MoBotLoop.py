@@ -165,8 +165,8 @@ async def main(client):
 
       newTime = currentTime
       # random updates
-      if (getRandomCondition(1/45)): # once every 45 seconds 
-        await updateDiscordTables() # tables have 1/5 chance every minute to update
+      if (getRandomCondition(1/30)): # once every 30 seconds 
+        await updateDiscordTables()
 
         if (currentTime < donationDateCorrection("TE Garrett#9569")):
           await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
