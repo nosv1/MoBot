@@ -165,7 +165,7 @@ async def main(client):
 
       newTime = currentTime
       # random updates
-      if (getRandomCondition(1/50)): # once every 50 seconds 
+      if (getRandomCondition(1/45)): # once every 45 seconds 
         await updateDiscordTables() # tables have 1/5 chance every minute to update
 
         if (currentTime < donationDateCorrection("TE Garrett#9569")):
@@ -179,7 +179,8 @@ async def main(client):
 
         # newTime = getCurrentTime() 
 
-      if (second is 0 or newTime < currentTime): # check for every 60 seconds or incase we miss the 0 tick because of slowness
+      if (second is 0 or newTime > currentTime): # check for every 60 seconds or incase we miss the 0 tick because of slowness
+        currentTime = newTime
 
         # update clocks and countdowns
         clocks = await getGuildClocks()
@@ -436,7 +437,6 @@ async def updateDiscordTables():
   tables = MoBotTables.getSavedTables(moBotDB)
   for table in tables:
     if (getRandomCondition(1/5)): # once every 5 minutes
-      await client.get_user(mo).send(table.messageIDs[0])
       await MoBotTables.sendTable(table, None, client)
   moBotDB.connection.close()
 # end updateDiscordTables
