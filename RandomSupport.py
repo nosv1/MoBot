@@ -18,6 +18,7 @@ numberEmojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"
 CHECKMARK_EMOJI = "✅"
 X_EMOJI = "❌"
 COUNTER_CLOCKWISE_ARROWS_EMOJI = "🔄"
+FLOPPY_DISK_EMOJI = "💾"
 spaceChar = "⠀"
 
 ### --- EMOJI NUMBERS ---
