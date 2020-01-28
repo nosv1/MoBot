@@ -432,11 +432,9 @@ async def checkTEGarrettPointApplications(nowPacificTime):
 
 
 async def updateDiscordTables():
-  print('dt')
   moBotDB = MoBotTables.connectDatabase()
   tables = MoBotTables.getSavedTables(moBotDB)
   for table in tables:
-    print(table.messageIDs)
     if (getRandomCondition(1/5) or True): # once every 5 minutes
       await client.get_user(mo).send(table.messageIDs[0])
       await MoBotTables.sendTable(table, None, client)
