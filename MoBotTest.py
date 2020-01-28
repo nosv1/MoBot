@@ -373,6 +373,8 @@ async def on_raw_reaction_add(payload):
         elif (payload.emoji.name == "🗑"):
           await clearStreamScheduler(message, client)
           await message.remove_reaction(payload.emoji.name, message.guild.get_member(payload.user_id))
+      if ("Noble Rank Tracker" in embedAuthor):
+        await Noble2sLeague.saveNRT(message, member)
       if ("Score Submission" in embedAuthor):
         await Noble2sLeague.mainReactionAdd(message, payload, client)
       if ("MoBot Tables" in embedAuthor):
