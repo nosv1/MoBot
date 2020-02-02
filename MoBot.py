@@ -551,9 +551,10 @@ async def on_raw_reaction_add(payload):
     except IndexError:
       embedAuthorURL = "None"
 
-    await ReactionRole.reactionRole(message, payload, member, "click")
 
     if (not member.bot):
+      await ReactionRole.reactionRole(message, payload, member, "click")
+
       logActionToConsole(message, member, "reactionAdd")
       if (len(message.embeds) > 0):
 
@@ -685,9 +686,10 @@ async def on_raw_reaction_remove(payload):
       embedAuthorURL = "None"
     # end embed stuff
 
-    await ReactionRole.reactionRole(message, payload, member, "unclick")
 
     if (not member.bot or member.id == 476974462022189056):
+      await ReactionRole.reactionRole(message, payload, member, "unclick")
+      
       logActionToConsole(message, member, "reactionRemove")
 
       if (len(message.embeds) > 0 and "•" in embedFooter and "-- (" in embedFooter and ")" in embedFooter):
