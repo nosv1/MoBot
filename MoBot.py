@@ -431,7 +431,7 @@ async def on_message(message):
 
       # end @MoBot ...
 
-      await GeneralCommands.pingRole(messgae, authorPerms)
+      await GeneralCommands.pingRole(message, authorPerms)
 
       try:
       ## calling server specific file 
