@@ -183,18 +183,21 @@ async def on_message(message):
       if ((message.author.id == potterman or message.author.id == mo) and "beep" in args): # if potterman says beep...
         await message.channel.send("boop")
 
-      authorPerms = message.channel.permissions_for(message.author)
-      isBotSpam = message.channel.id == botSpam
-      isMo = message.author.id == mo
-      isNos = message.author.id == nosv1
-      authorPerms = UserPerms(
-        isNos or isMo or authorPerms.administrator,
-        isNos or isMo or authorPerms.manage_messages or isBotSpam,
-        isNos or isMo or authorPerms.manage_roles or isBotSpam,
-        isNos or isMo or authorPerms.manage_channels or isBotSpam,
-        isNos or isMo or authorPerms.change_nickname or isBotSpam,
-        isNos or isMo or authorPerms.add_reactions or isBotSpam,
-      )
+      try:
+        authorPerms = message.channel.permissions_for(message.author)
+        isBotSpam = message.channel.id == botSpam
+        isMo = message.author.id == mo
+        isNos = message.author.id == nosv1
+        authorPerms = UserPerms(
+          isNos or isMo or authorPerms.administrator,
+          isNos or isMo or authorPerms.manage_messages or isBotSpam,
+          isNos or isMo or authorPerms.manage_roles or isBotSpam,
+          isNos or isMo or authorPerms.manage_channels or isBotSpam,
+          isNos or isMo or authorPerms.change_nickname or isBotSpam,
+          isNos or isMo or authorPerms.add_reactions or isBotSpam,
+        )
+      except AttributeError: # user has no perms
+        authorPerms = None
 
       if (str(moBot) in args[0]):
         if (len(args) is 1):
@@ -431,7 +434,8 @@ async def on_message(message):
 
       # end @MoBot ...
 
-      await GeneralCommands.pingRole(message, authorPerms)
+      if authorPerms:
+        await GeneralCommands.pingRole(message, authorPerms)
 
       try:
       ## calling server specific file 
