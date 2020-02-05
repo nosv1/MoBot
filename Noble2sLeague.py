@@ -14,6 +14,7 @@ import SecretStuff
 import Collections
 import RLRanks
 import RandomSupport
+from RandomSupport import deleteMoBotMessages
 
 
 moBot = 449247895858970624
@@ -2264,10 +2265,6 @@ async def getTeamInfo(message, args):
   table += horizontalBoarder + "\n"
   await message.channel.send("```" + table + "```")
 # end getTeamInfo
-
-async def deleteMoBotMessages(moBotMessages):
-  for msg in moBotMessages:
-    await msg.delete()
 
 async def openSpreadsheet(ssKey):
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']

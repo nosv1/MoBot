@@ -171,6 +171,11 @@ def openSpreadsheet(spreadsheetKey):
 
 
 
+async def deleteMoBotMessages(moBotMessages):
+  for msg in moBotMessages:
+    await msg.delete()
+# end deleteMoBotMessages
+
 async def saveImageReturnURL(attachment, client):
   guild = client.get_guild(moBotSupport)
   channel = guild.get_channel(randomStorage)

@@ -7,6 +7,7 @@ import mysql.connector
 
 import SecretStuff
 import MoBotDatabase
+import RandomSupport
 
 moBot = 449247895858970624
 moBotTest = 476974462022189056
@@ -471,3 +472,52 @@ async def clearWelcomeMessages(channel):
       await msg.delete()
   return count
 # end clearWelcomeMessages
+
+async def pingRole(message, authorPerms):
+  moBot_messages = []
+
+  # check for manage message perm
+  if authorPerms.manageMessages: # has perm
+    
+    for role in message.guild.roles:
+      if " @%s" % role.name.lower() in " %s " % message.content.lower() and not role.mentionable: # role in message and to avoid trying to mention a role that is mentionable, idk
+        
+        try:
+          moBot_messages.append(await message.channel.send("**Preparing to Ping Unpingable Role**"))
+
+          moBot_messages.append(await message.channel.send("**Creating Temporary Role: `Temp %s`**" % role.name))
+          temp_role = await message.guild.create_role(
+            name="Temp %s" % role.name,
+            mentionable=True
+            )
+
+          moBot_messages.append(await message.channel.send("**Adding `%s` `%s` Users to `%s`**\nThis may take some time..." % (
+            len(role.members),
+            role.name,
+            temp_role.name
+          )))
+
+
+          quarterDone = int(len(role.members) / 4)
+          for i, member in enumerate(role.members):
+            try:
+              await member.add_roles(temp_role)
+            except discord.errors.Forbidden:
+              await message.channel.send("**Unable to Add Role to %s (Ghost Pinging)**" % member.mention, delete_after=3)
+            except: # in case member leaves whilst in pinging process, i think it'll be add_roles to NoneType
+              pass
+
+            if i in [quarterDone * i for i in range(1, 4)]:
+              moBot_messages.append(await message.channel.send("**%s of %s Users Added to `%s`**" % (i, len(role.members), temp_role.name)))
+
+          moBot_messages.append(await message.channel.send(temp_role.mention))
+          moBot_messages.append(await message.channel.send("**Unpingable Role Pinged**"))
+
+          await temp_role.delete()
+          moBot_messages.append(await message.channel.send("**`%s` Deleted**" % temp_role.name))
+
+          await RandomSupport.deleteMoBotMessages(moBot_messages)
+
+        except discord.errors.Forbidden:
+          await message.channel.send("**Could Not Ping Un-pingable Role**\n%s needs to create a temporary role, but it does not have have the `Manage Roles` permission.", delete_after=7)
+# end pingRole

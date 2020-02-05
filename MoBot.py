@@ -183,20 +183,20 @@ async def on_message(message):
       if ((message.author.id == potterman or message.author.id == mo) and "beep" in args): # if potterman says beep...
         await message.channel.send("boop")
 
-      if (str(moBot) in args[0]):
-        authorPerms = message.channel.permissions_for(message.author)
-        isBotSpam = message.channel.id == botSpam
-        isMo = message.author.id == mo
-        isNos = message.author.id == nosv1
-        authorPerms = UserPerms(
-          isNos or isMo or authorPerms.administrator,
-          isNos or isMo or authorPerms.manage_messages or isBotSpam,
-          isNos or isMo or authorPerms.manage_roles or isBotSpam,
-          isNos or isMo or authorPerms.manage_channels or isBotSpam,
-          isNos or isMo or authorPerms.change_nickname or isBotSpam,
-          isNos or isMo or authorPerms.add_reactions or isBotSpam,
-        )
+      authorPerms = message.channel.permissions_for(message.author)
+      isBotSpam = message.channel.id == botSpam
+      isMo = message.author.id == mo
+      isNos = message.author.id == nosv1
+      authorPerms = UserPerms(
+        isNos or isMo or authorPerms.administrator,
+        isNos or isMo or authorPerms.manage_messages or isBotSpam,
+        isNos or isMo or authorPerms.manage_roles or isBotSpam,
+        isNos or isMo or authorPerms.manage_channels or isBotSpam,
+        isNos or isMo or authorPerms.change_nickname or isBotSpam,
+        isNos or isMo or authorPerms.add_reactions or isBotSpam,
+      )
 
+      if (str(moBot) in args[0]):
         if (len(args) is 1):
           await message.channel.send(":eyes: Use `@MoBot#0697 help` for help...")
 
@@ -429,6 +429,10 @@ async def on_message(message):
         elif (args[1].lower() == "server"):
           await message.channel.send("Join my server... It's where you can see features that are in development and such, if you're into that... https://discord.gg/mqxMeTj")
 
+      # end @MoBot ...
+
+      await GeneralCommands.pingRole(messgae, authorPerms)
+
       try:
       ## calling server specific file 
         if (str(message.guild.id) in servers):
@@ -447,6 +451,8 @@ async def on_message(message):
 
       except AttributeError: # some reason message.guild is none
         pass
+
+    # end not MoBot message
 
     if (not message.author.bot):
       global moBotDB
