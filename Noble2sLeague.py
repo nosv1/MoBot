@@ -114,12 +114,16 @@ async def main(args, message, client):
       await tCaptain(message, tCommandLog)
 
   if (args[0] == "!minor" or args[0] == "!major"):
-    if (args[1].lower() == "checkin"):
-      await tournamentCheckin(message)
-    elif (args[1].lower() == "retire"):
-      await tournamentRetire(message)
-    else:
-      await tournamentSignup(message)
+    try:
+      if (args[1].lower() == "checkin"):
+        await tournamentCheckin(message)
+      elif (args[1].lower() == "retire"):
+        await tournamentRetire(message)
+      else:
+        await tournamentSignup(message)
+    except: # likely a gspread resource exhausted error
+      await message.channel.send("Unable to signup at this time; please try again in a couple seconds :shrug:.", delete_after=5)
+
 
   if (message.author.name == "Mo" and message.content == "test"):
     #await testing(message)
@@ -1685,106 +1689,172 @@ def getUserName(memberID, registeredIDsRange):
 
 ### Tournaments
 
+# sheet ids
+sheetIDs = [1974721732, 333630845, 96287982] # ones, twos, threes
+
 async def tournamentCheckin(message):
   await message.channel.trigger_typing()
-  workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
-  signupSheet = workbook.worksheet("Minor") if ("!minor" in message.content) else workbook.worksheet("Major")
 
-  signupRange = signupSheet.range("B2:D" + str(signupSheet.row_count))
+  workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
   registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
 
-  for i in range(0, len(signupRange), 3):
-    for j in range(i, i+2):
-      if (signupRange[j].value == getUserName(message.author.id, registeredIDsRange)):
-        signupRange[i+2].value = "=TRUE"
-        await message.channel.send("**Checked In**")
-        registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
-        await registerLog.send("%s and %s have checked in for the %s tournament." % (message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)).mention, message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange)).mention, message.content.split(" ")[0].split("!")[1].strip()))
-        signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
-        return 0
-  await message.channel.send("**Member Not On Team**\n" + message.author.mention + " is not on a team for this tournament.")
+  gameType = await getGameType(workbook)
+  numPlayers = gameType[1]
+  gameType = gameType[0]
+
+  for sheet in workbook.worksheets():
+    if sheet.id == sheetIDs[numPlayers-1]:
+      r = sheet.range(1, 2, sheet.row_count, 2 + numPlayers)
+      for i in range(0, len(r), numPlayers + 1):
+        for j in range(i, i+numPlayers+1):
+          if r[j].value == getUserName(message.author.id, registeredIDsRange):
+            r[i+numPlayers].value = "=TRUE"
+            sheet.update_cells(r, value_input_option="USER_ENTERED")
+
+            registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
+            users = [message.guild.get_member(getRegisteredID(r[k].value, registeredIDsRange)).mention for k in range(i, i+numPlayers)]
+            await registerLog.send("%s has checked in the following for the `%s` tournament:\n- %s" % (
+              message.author.mention,
+              gameType,
+              "\n- ".join(users)
+            ))
+            await message.channel.send("**Team Checked In to the `%s` Tournament**" % gameType)
+            return
+
+  await message.channel.send("**Member Not On Team**\n%s, you cannot check in if you are not on a team.")
 # end tournamentCheckin
 
 async def tournamentSignup(message):
   await message.channel.trigger_typing()
-  workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
-  registeredIDsSheet = workbook.worksheet("RegisterID")
-  signupSheet = workbook.worksheet("Minor") if ("!minor" in message.content) else workbook.worksheet("Major")
 
+  workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
   registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
-  signupRange = signupSheet.range("B2:D" + str(signupSheet.row_count))
 
   mc = message.content.replace("!", "")
-  userIDs = [int(mc.split(">")[0].split("@")[1]), int(mc.split(">")[-2].split("@")[1])]
-  continueSignup = True
-  if (userIDs[0] == userIDs[1]):
-    await message.channel.send("**Canceling Signup Process**\n" + message.author.mention + ", when signing up a team, include both members of the team.")
-    continueSignup = False
+  userIDs = [int(userID.split("@")[1]) for userID in mc.split(">")[:-1]]
+  usernames = [getUserName(str(userID), registeredIDsRange) for userID in userIDs]
 
-  if (continueSignup):
-    for userID in userIDs:
-      member = message.guild.get_member(userID)
-      if (not checkIfRegistered(member, registeredIDsRange)):
-        await message.channel.send("**Canceling Signup Process**\n" + member.mention + " is not a registered member. Use the command `@MoBot#0697 registerID username` to register.")
-        continueSignup = False
+  gameType = await getGameType(workbook)
+  numPlayers = gameType[1]
+  gameType = gameType[0]
 
-  if (continueSignup):
-    for i in range(len(signupRange)):
-      userNames = [getUserName(str(userIDs[0]), registeredIDsRange), getUserName(str(userIDs[1]), registeredIDsRange)]
-      if (signupRange[i].value == ""):
-        signupRange[i].value = userNames[0]
-        signupRange[i+1].value = userNames[1]
-        signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
-        for role in message.guild.roles:
-          if (role.id == registeredRole):
-            for userID in userIDs:
-              member = message.guild.get_member(userID)
-              await member.add_roles(role)
+  for userID in userIDs:
+    member = message.guild.get_member(userID)
+    if not checkIfRegistered(member, registeredIDsRange):
+      await message.channel.send("**Canceling Signup**\n%s, " + member.mention + " is not a registered member. Use the command `@MoBot#0697 registerID username` to register." % message.author.mention)
+      return
+
+  if len(userIDs) != numPlayers:
+    await message.channel.send("**Canceling Singup**\n%s, This week's tournament is a `%s` tournament. Exaclty `%s` player%s %s needed when signing up.\n`!minor/major %s`" % (
+      message.author.mention,
+      gameType,
+      numPlayers,
+      "s" if numPlayers > 1 else "",
+      "are" if numPlayers > 1 else "is",
+      ("@user " * numPlayers).strip()
+    ))
+    return
+
+  else:
+    for sheet in workbook.worksheets():
+      if sheet.id == sheetIDs[len(userIDs)-1]:
+
+        r = sheet.range(1, 1, sheet.row_count, len(userIDs) + 2)
+        for i, cell in enumerate(r):
+          if cell.value == "":
+            for j, username in enumerate(usernames):
+              r[j+i].value = username
+            sheet.update_cells(r, value_input_option="USER_ENTERED")
+
+            for role in message.guild.roles:
+              if role.id == registeredRole:
+                for userID in userIDs:
+                  member = message.guild.get_member(userID)
+                  await member.add_roles(role)
+                break
+            registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
+            users = "\n- ".join([message.guild.get_member(userID).mention for userID in userIDs])
+            await registerLog.send("%s has signed up the following members for the `%s` tournament:\n- %s" % (
+              message.author.mention,
+              gameType,
+              users
+            ))
+            await message.channel.send("**Team Signed Up for the `%s` Tournament**" % gameType)
             break
-        await message.channel.send("**Signup Complete**")
-        registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
-        await registerLog.send("%s has signed up %s and %s for the %s tournament." % (message.author.mention, message.guild.get_member(userIDs[0]).mention, message.guild.get_member(userIDs[1]).mention, message.content.split(" ")[0].split("!")[1].strip()))
-        break
-      if (signupRange[i].value in userNames): 
-        member = message.guild.get_member(int(getRegisteredID(signupRange[i].value), registeredIDsRange))
-        await message.channel.send("**Canceling Signup Process**\n" + member.mention + " has already signed up. If this is a mistake, contact an Organiser.")
+
+          elif cell.value in usernames:
+            member = message.guild.get_member(int(getRegisteredID(cell.value, registeredIDsRange)))
+            await message.channel.send("**Canceling Signup Process**\n%s, " + member.mention + " is already signed up. If this is a mistake, contact an Organiser." % message.author.mention)
+            break
         break
 # end tournamentSignup
 
 async def tournamentRetire(message):
   await message.channel.trigger_typing()
+
   workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
-  signupSheet = workbook.worksheet("Minor") if ("!minor" in message.content) else workbook.worksheet("Major")
-
   registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
-  signupRange = signupSheet.range("B2:D" + str(signupSheet.row_count))
 
-  for i in range(0, len(signupRange), 3):
-    if (signupRange[i].value != ""):
-      for j in range(i, i+2):
-        if (getUserName(message.author.id, registeredIDsRange) == signupRange[j].value):
-          registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
-          users = [
-            message.guild.get_member(getRegisteredID(signupRange[i].value, registeredIDsRange)),
-            message.guild.get_member(getRegisteredID(signupRange[i+1].value, registeredIDsRange))
-          ]
-          await registerLog.send("%s and %s have retired from the %s." % (users[0].mention, users[1].mention, message.content.split(" ")[0].replace("!", "").strip()))
-          for role in message.guild.roles:
-            if (role.id == registeredRole):
-              for user in users:
-                await user.remove_roles(role)
-              break
-          for k in range(i+3, len(signupRange)):
-            if (signupRange[k-3].value != ""):
-              signupRange[k-3].value = signupRange[k].value
-            else:
-              await message.channel.send("**Retired**")
-              signupSheet.update_cells(signupRange, value_input_option="USER_ENTERED")
-              return None
-    else:
-      await message.channel.send("**Could Not Retire**\nYou are not on a team for this tournament.")
+  gameType = await getGameType(workbook)
+  numPlayers = gameType[1]
+  gameType = gameType[0]
+
+  for sheet in workbook.worksheets():
+    if sheet.id == sheetIDs[numPlayers-1]:
+      r = sheet.range(1, 2, sheet.row_count, 2 + numPlayers)
+      for i in range(0, len(r), numPlayers + 1):
+        for j in range(i, i+numPlayers+1):
+          if r[j].value == getUserName(message.author.id, registeredIDsRange):
+            users = [message.guild.get_member(getRegisteredID(r[k].value, registeredIDsRange)) for k in range(i, i+numPlayers)]
+            for role in message.guild.roles:
+              if (role.id == registeredRole):
+                for user in users:
+                  await user.remove_roles(role)
+                break
+            for k in range(i+3, len(r)):
+              if (r[k-3].value != ""):
+                r[k-3].value = r[k].value
+              else:
+                sheet.update_cells(r, value_input_option="USER_ENTERED")
+                
+                registerLog = message.guild.get_channel(REGISTER_LOG_CHNL)
+                await registerLog.send("%s has retired the following from the `%s` tournament:\n- %s" % (
+                  message.author.mention,
+                  gameType,
+                  "\n- ".join(user.mention for user in users),
+                ))
+                await message.channel.send("**Team Retired from the `%s` Tournament**" % gameType)
+                return
       break
+
+  await message.channel.send("**Could Not Retire**\n%s, you cannot retire if you are not on a team." % message.author.mention)
 # end tournamentRetire
+
+async def getGameType(workbook):
+  variableSheet = workbook.worksheet([sheet.title for sheet in workbook.worksheets() if sheet.id == 1948688080][0])
+  weekNumber = variableSheet.range("A1:B1")[1].value
+  weeksRange = variableSheet.range(1, 4, 2, variableSheet.col_count)
+
+  gameType = [None, None]
+  for i, cell in enumerate(weeksRange):
+    if str(cell.value) == str(weekNumber):
+      gameType = weeksRange[i+2].value
+
+  if "1" in gameType:
+    gameType = ["1v1", 1]
+  elif "2" in gameType:
+    gameType = ["2v2", 2]
+  elif "hoop" in gameType.lower():
+    gameType = ["Hoops", 2]
+  elif "3" in gameType:
+    gameType = ["3v3", 3]
+  elif "dropshot" in gameType.lower():
+    gameType = ["Dropshot", 3]
+  elif "rumble" in gameType.lower():
+    gameType = ["Rumble", 3]
+
+  return gameType
+# end getGameType
 
 async def signupOLD(message):
   await message.channel.trigger_typing()
