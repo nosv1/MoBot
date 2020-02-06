@@ -179,7 +179,7 @@ async def main(client):
         newTime = getCurrentTime() # this needs to be after every 'random' update condition
 
       if newTime > currentTime:
-        print("Updating Clocks and Countdowns")
+        print("\nUpdating Clocks and Countdowns")
 
       if (second is 0 or newTime > currentTime): # check for every 60 seconds or incase we miss the 0 tick because of slowness
         currentTime = newTime
