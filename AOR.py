@@ -556,7 +556,7 @@ async def updateStandings(client):
     moBotMember = message.guild.get_member(moBot)
     embed.color = moBotMember.roles[-1].color
 
-    print("\nUpdating AOR Standings\n")
+    print("\nUpdating AOR Standings")
     await messageEmbed[0].edit(content=spaceChar, embed=messageEmbed[1])
 # end updateStandings
 
