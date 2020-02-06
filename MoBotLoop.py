@@ -165,20 +165,21 @@ async def main(client):
 
       newTime = currentTime
       # random updates
-      if (getRandomCondition(1/30)): # once every 30 seconds 
-        await updateDiscordTables()
+      if (getRandomCondition(1/60)): # once every 60 seconds 
+        await updateDiscordTables() 
 
-        if (currentTime < donationDateCorrection("TE Garrett#9569")):
-          print("\nUpdating TE Garrett#9569 Point Applications")
-          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
-        else:
-          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")  
+        if (getRandomCondition(1/5)): # once every 5 minutes
+
+          if (currentTime < donationDateCorrection("TE Garrett#9569")):
+            print("\nUpdating TE Garrett#9569 Point Applications")
+            await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
+          else:
+            await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
 
         newTime = getCurrentTime() # this needs to be after every 'random' update condition
 
-      # if (getRandomCondition(1/300)): # once every 5 minutes
-
-        # newTime = getCurrentTime() 
+      if newTime > currentTime:
+        print("Updating Clocks and Countdowns")
 
       if (second is 0 or newTime > currentTime): # check for every 60 seconds or incase we miss the 0 tick because of slowness
         currentTime = newTime
@@ -303,7 +304,7 @@ async def updateDanioTables():
   for table in tables:
     r = random.random()
     if (r < 1/50): # once an hour
-      print("Updating Danio#3620 Table")
+      print("\nUpdating Danio#3620 Table")
       try:
         message = await channel.fetch_message(table.messageID)
         moBotMember = message.guild.get_member(moBot)
@@ -443,6 +444,7 @@ async def updateDiscordTables():
   tables = MoBotTables.getSavedTables(moBotDB)
   for table in tables:
     if (getRandomCondition(1/5)): # once every 5 minutes
+      print("\nUpdating Discord Table\n")
       await MoBotTables.sendTable(table, None, client)
   moBotDB.connection.close()
 # end updateDiscordTables
