@@ -18,7 +18,7 @@ spaceChar = "⠀"
 async def sayEmbed(message, args, isEdit):
   mc = message.content
   empty = discord.Embed().Empty
-  color = empty
+  color = message.guild.get_member(moBot).roles[-1].color
   authorIcon = empty
   authorLine = None
   authorURL = None
