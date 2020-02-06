@@ -1812,9 +1812,9 @@ async def tournamentRetire(message):
                 for user in users:
                   await user.remove_roles(role)
                 break
-            for k in range(i+3, len(r)):
-              if (r[k-3].value != ""):
-                r[k-3].value = r[k].value
+            for k in range(i+numPlayers+1, len(r)):
+              if (r[k-(numPlayers + 1)].value != ""):
+                r[k-(numPlayers + 1)].value = r[k].value
               else:
                 sheet.update_cells(r, value_input_option="USER_ENTERED")
                 
