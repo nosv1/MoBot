@@ -169,6 +169,7 @@ async def main(client):
         await updateDiscordTables()
 
         if (currentTime < donationDateCorrection("TE Garrett#9569")):
+          print("\nUpdating TE Garrett#9569 Point Applications")
           await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
         else:
           await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")  
@@ -195,6 +196,7 @@ async def main(client):
         # user requests
         if (currentTime < donationDateCorrection("CASE#2606")):
           if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
+            print("\nClearing CASE#2606 Welcome Messages")
             await clearCASEWelcomeMessages()
           #await checkCASEStreamers()
         else:
@@ -301,6 +303,7 @@ async def updateDanioTables():
   for table in tables:
     r = random.random()
     if (r < 1/50): # once an hour
+      print("Updating Danio#3620 Table")
       try:
         message = await channel.fetch_message(table.messageID)
         moBotMember = message.guild.get_member(moBot)
