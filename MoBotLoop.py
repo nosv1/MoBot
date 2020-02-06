@@ -301,30 +301,33 @@ async def updateDanioTables():
   for table in tables:
     r = random.random()
     if (r < 1/50): # once an hour
-      message = await channel.fetch_message(table.messageID)
-      moBotMember = message.guild.get_member(moBot)
-      embed = discord.Embed(color=moBotMember.roles[-1].color)
-      embed.set_author(name=table.title, icon_url=message.guild.icon_url)
-      workbook = RandomSupport.openSpreadsheet(table.key)
-      sheet = workbook.worksheet("Discord Table")
-      r = sheet.range("A1:D22")
-      widths = {
-        "names" : int(r[2].value),
-        "points" : int(r[3].value)
-      }
-      flags = AOR.getFlags()
-      des = "**__%s__**\n" % r[4].value
-      for i in range(8, len(r), 4):
-        if (r[i].value != ""):
-          des += "`%s` %s `%s` `%s`\n" % (
-            r[i].value.rjust(3," "), 
-            flags[r[i+1].value],
-            r[i+2].value.ljust(widths["names"], " "),
-            r[i+3].value.rjust(widths["points"], " "))
-      des += "[__Results Spreadsheet__](https://docs.google.com/spreadsheets/d/%s/)" % table.key
-      embed.description = des
-      embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Refreshed: %b %d %H:%M UTC |"))
-      await message.edit(embed=embed)
+      try:
+        message = await channel.fetch_message(table.messageID)
+        moBotMember = message.guild.get_member(moBot)
+        embed = discord.Embed(color=moBotMember.roles[-1].color)
+        embed.set_author(name=table.title, icon_url=message.guild.icon_url)
+        workbook = RandomSupport.openSpreadsheet(table.key)
+        sheet = workbook.worksheet("Discord Table")
+        r = sheet.range("A1:D22")
+        widths = {
+          "names" : int(r[2].value),
+          "points" : int(r[3].value)
+        }
+        flags = AOR.getFlags()
+        des = "**__%s__**\n" % r[4].value
+        for i in range(8, len(r), 4):
+          if (r[i].value != ""):
+            des += "`%s` %s `%s` `%s`\n" % (
+              r[i].value.rjust(3," "), 
+              flags[r[i+1].value],
+              r[i+2].value.ljust(widths["names"], " "),
+              r[i+3].value.rjust(widths["points"], " "))
+        des += "[__Results Spreadsheet__](https://docs.google.com/spreadsheets/d/%s/)" % table.key
+        embed.description = des
+        embed.set_footer(text=datetime.strftime(datetime.utcnow(), "| Refreshed: %b %d %H:%M UTC |"))
+        await message.edit(embed=embed)
+      except AttributeError: # no channel??
+        pass
 # end danioTables 
 
 
