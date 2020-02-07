@@ -237,10 +237,10 @@ async def sendTable(tableDetails, message, client): # embed may be None
           except discord.errors.NotFound:
             pass
 
-    if (len(msgIDs) < len(tables)): # more tables than existing messages
+    '''if (len(msgIDs) < len(tables)): # more tables than existing messages
       for table in tables[len(msgIDs):]:
         msg = await channel.send("%s\n%s" % (refreshed if (tables.index(table) == 0) else "", table))
-        msgIDs.append(msg.id)
+        msgIDs.append(msg.id)'''
     await sendBufferMessages()
 
     if (message is not None):
