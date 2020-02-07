@@ -7,6 +7,8 @@ import gspread
 import SecretStuff
 import MoBotDatabase
 
+import GRG # combine roles...
+
 moBot = 449247895858970624
 reactionRoleCommand = "`@MoBot#0697 watch [emoji] [message_id] [#channel] [add/remove] [@Role @Role...]`\n`@MoBot#0697 watch :100: 592137813814804522 add @Subscribers @Verfied`\n`#channel` is only needed if you're using this command in a different channel"
 
@@ -52,6 +54,7 @@ async def reactionRole(message, payload, member, clickUnclick):
   moBotDB.connection.commit()
   
   reactionMessages = getReactionMessages(moBotDB)
+  moBotDB.connection.close()
 
   for reactionMessage in reactionMessages:
     if (reactionMessage.emoji == emoji and reactionMessage.messageID == str(message.id)):
@@ -88,11 +91,13 @@ async def reactionRole(message, payload, member, clickUnclick):
               ))
             except discord.errors.Forbidden:
               pass
+
+          if GRG.GRG_GUILD_ID == message.guild.id:
+            await GRG.combineRoles(role, member, message.guild)
       except discord.errors.Forbidden:
         await message.channel.send("**Cannot Add/Remove Role**\n<@%s> does not have permission." % moBot, delete_after=7)
         await message.remove_reaction(payload.emoji, member)
       break
-  moBotDB.connection.close()
 # end reactionRole
 
 async def addReactionToMessage(msg, emojis):

@@ -36,19 +36,26 @@ import MoBotDatabase
 import Mazes
 import Help
 import GTAWeather
-import TEPCOTT
+import GeneralCommands
 
+import TEPCOTT
 import COTM
 import AOR
 import Noble2sLeague
+import GRG
 
 client = discord.Client()
 moBotDB = None
-moBot = 449247895858970624
-mo = 405944496665133058
-moBotTest = 476974462022189056
 moBotSupport = 467239192007671818
-self = "MoBot.py"
+
+# channels
+botSpam = 593911201658961942
+
+# users
+moBot = 449247895858970624
+moBotTest = 476974462022189056
+mo = 405944496665133058
+nosv1 = 475325629688971274
 
 spaceChar = "⠀"
 
@@ -60,6 +67,16 @@ helpPages = {
 reactionMessages = {}
 autoRoles = {}
 
+class UserPerms:
+  def __init__(self, administrator, manageMessages, manageRoles, manageChannels, changeNicknames, addReactions):
+    self.administrator = administrator
+    self.manageMessages = manageMessages
+    self.manageRoles = manageRoles
+    self.manageChannels = manageChannels
+    self.changeNicknames = changeNicknames
+    self.addReactions = addReactions
+# end UserPerms
+
 @client.event
 async def on_ready():
   print("MoBotTest is online - " + str(datetime.now()))
@@ -69,8 +86,11 @@ async def on_ready():
   print("AutoRoles Received")'''
 
   global moBotDB
-  moBotDB = MoBotDatabase.connectDatabase('MoBot')
-  print ("Connected to MoBot Database")
+  try:
+    moBotDB = MoBotDatabase.connectDatabase('MoBot')
+    print ("Connected to MoBot Database")
+  except mysql.connector.errors.DatabaseError:
+    print("Could Not Connect to MoBot Database")
 
   '''mobotLog = client.get_guild(moBotSupport).get_channel(604099911251787776) # mobot log
   embed = discord.Embed(color=int("0xd1d1d1", 16))
@@ -108,20 +128,22 @@ async def on_message(message):
   args = mc.split(" ")
 
   if (args[0] == "test" or str(moBotTest) in args[0]):
-
     authorPerms = message.channel.permissions_for(message.author)
-    isBotSpam = message.channel.id == 593911201658961942
-    isMo = mo == message.author.id
-    permissions = {
-      "changeNicknamePerms" : isMo or authorPerms.change_nickname or isBotSpam,
-      "manageChannelPerms" : isMo or authorPerms.manage_channels or isBotSpam,
-      "manageMessagePerms" : isMo or authorPerms.manage_messages or isBotSpam,
-      "manageChannelPerms" : isMo or authorPerms.manage_channels or isBotSpam,
-      "manageRolePerms" : isMo or authorPerms.manage_roles or isBotSpam,
-    }
+    isBotSpam = message.channel.id == botSpam
+    isMo = message.author.id == mo
+    isNos = message.author.id == nosv1
+    authorPerms = UserPerms(
+      isNos or isMo or authorPerms.administrator,
+      isNos or isMo or authorPerms.manage_messages or isBotSpam,
+      isNos or isMo or authorPerms.manage_roles or isBotSpam,
+      isNos or isMo or authorPerms.manage_channels or isBotSpam,
+      isNos or isMo or authorPerms.change_nickname or isBotSpam,
+      isNos or isMo or authorPerms.add_reactions or isBotSpam,
+    )
       
     if (len(args) > 1):
       if (args[1] == "test"):
+        await GRG.combineRoles(message.guild.get_role(586219710002102282), message.author, message.guild)
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
@@ -153,8 +175,8 @@ async def on_message(message):
         await makeEmbed(message)
       elif (args[1] == "permission"):
         user = message.guild.get_member(int(args[2]))
-        userPerms = message.channel.permissions_for(user)
-        await message.channel.send(str(userPerms.administrator))
+        authorPerms = message.channel.permissions_for(user)
+        await message.channel.send(str(authorPerms.administrator))
         await nosV1User.send("---")
       elif (args[1] == "say"):
         if (args[2] == "embed"):
@@ -290,7 +312,10 @@ async def on_message(message):
       try:
         moBotDB.connection.commit()
       except AttributeError: # when no connection was made
-        moBotDB = MoBotDatabase.connectDatabase('MoBot')
+        try:
+          moBotDB = MoBotDatabase.connectDatabase('MoBot')
+        except mysql.connector.errors.DatabaseError:
+          pass # likely host cannot connect to database
 
       moBotDB.cursor.execute("""
         SELECT *
@@ -303,7 +328,7 @@ async def on_message(message):
         await SimpleCommands.sendCommand(message, record)
         break
     except:
-      await client.get_user(int(mo)).send("MoBot Database Error!```" + str(traceback.format_exc()) + "```")
+      pass
 
 # end on_message
 
