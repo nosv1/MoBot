@@ -186,9 +186,6 @@ async def sendTable(tableDetails, message, client): # embed may be None
   msgIDs = [int(msgID) for msgID in tableDetails.messageIDs]
   if (msgIDs[0] == -1):
     msgIDs = []
-    max_messages = 10
-  else:
-    max_messages = len(msgIDs)
 
   async def clearMessages():
     await channel.trigger_typing()
@@ -198,7 +195,6 @@ async def sendTable(tableDetails, message, client): # embed may be None
         await msg.delete()
       except discord.errors.NotFound:
         pass
-    max_messages = 10
     return []
   # end clearMessages
 
@@ -210,10 +206,15 @@ async def sendTable(tableDetails, message, client): # embed may be None
   # end sendNewMessages
 
   async def sendBufferMessages():
-    for i in range(tableDetails.bufferMessages):
-      if len(msgIDs) < max_messages:
-        #msg = await channel.fetch_message(msgIDs[0])
-        #if (msg.created_at + relativedelta(minutes=7) > datetime.utcnow()):
+    og_msg = await channel.fetch_message(msgIDs[0])
+
+    buffer_messages_present = 0
+    for i, msgID in enumerate(msgIDs):
+      msg = await channel.fetch_message(msgID)
+      buffer_messages_present += 1 if msg.content == spaceChar else 0
+
+    if og_msg.created_at + relativedelta(minutes=7) > datetime.utcnow():
+      for i in range(buffer_messages_present, tableDetails.bufferMessages):
         msg = await channel.send(spaceChar)
         msgIDs.append(msg.id)
   # end sendBufferMessages
