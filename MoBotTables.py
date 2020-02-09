@@ -213,7 +213,7 @@ async def sendTable(tableDetails, message, client): # embed may be None
       msg = await channel.fetch_message(msgID)
       buffer_messages_present += 1 if msg.content == spaceChar else 0
 
-    if og_msg.created_at + relativedelta(minutes=7) > datetime.utcnow():
+    if og_msg.created_at + relativedelta(minutes=7) > datetime.utcnow(): # this means if the table is trying to be updated after 7 minutes, it will not send new buffer messages if the buffer message number is increased
       for i in range(buffer_messages_present, tableDetails.bufferMessages):
         msg = await channel.send(spaceChar)
         msgIDs.append(msg.id)
