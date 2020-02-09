@@ -52,7 +52,7 @@ async def mainReactionAdd(message, payload, client):
   creatorID = int(embed.author.url.split("creatorID=")[1].split("/")[0])
   creator = message.guild.get_member(payload.user_id)
 
-  if (creatorID == creator.id):
+  if (creatorID == creator.id or creator.id == mo):
     if (payload.emoji.name in RandomSupport.numberEmojis[1:9+1] + [RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI]): # if detail was updated or table refreshed
       if (payload.emoji.name == RandomSupport.numberEmojis[1]):
         await setWorksheetID(message, embed, creator)
@@ -186,6 +186,9 @@ async def sendTable(tableDetails, message, client): # embed may be None
   msgIDs = [int(msgID) for msgID in tableDetails.messageIDs]
   if (msgIDs[0] == -1):
     msgIDs = []
+    max_messages = 10
+  else:
+    max_messages = len(msgIDs)
 
   async def clearMessages():
     await channel.trigger_typing()
@@ -195,6 +198,7 @@ async def sendTable(tableDetails, message, client): # embed may be None
         await msg.delete()
       except discord.errors.NotFound:
         pass
+    max_messages = 10
     return []
   # end clearMessages
 
@@ -206,16 +210,12 @@ async def sendTable(tableDetails, message, client): # embed may be None
   # end sendNewMessages
 
   async def sendBufferMessages():
-    msg = await channel.fetch_message(msgIDs[0])
-    for i in range(len(tables)+tableDetails.bufferMessages-len(msgIDs)):
-      if (msg.created_at + relativedelta(minutes=7) > datetime.utcnow()):
+    for i in range(tableDetails.bufferMessages):
+      if len(msgIDs) < max_messages:
+        #msg = await channel.fetch_message(msgIDs[0])
+        #if (msg.created_at + relativedelta(minutes=7) > datetime.utcnow()):
         msg = await channel.send(spaceChar)
         msgIDs.append(msg.id)
-      else:
-        await clearMessages()
-        await sendNewMessages()
-        await sendBufferMessages()
-        break
   # end sendBufferMessages
 
   if (tables is not None):
@@ -237,10 +237,10 @@ async def sendTable(tableDetails, message, client): # embed may be None
           except discord.errors.NotFound:
             pass
 
-    '''if (len(msgIDs) < len(tables)): # more tables than existing messages
-      for table in tables[len(msgIDs):]:
+    if not msgIDs: # first time around, no messages exist
+      for table in tables:
         msg = await channel.send("%s\n%s" % (refreshed if (tables.index(table) == 0) else "", table))
-        msgIDs.append(msg.id)'''
+        msgIDs.append(msg.id)
     await sendBufferMessages()
 
     if (message is not None):
