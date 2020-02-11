@@ -4,6 +4,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+import pytz
 
 import SecretStuff
 import MoBotDatabase
@@ -49,7 +50,10 @@ async def main(args, message, client):
     await prepareEditor(message, args[1], args[2], 1, 0)
   elif (len(args) == 2):
     await message.channel.trigger_typing()
-    await prepareEditor(message, args[1], await createChannel(message, args[1]), 1, 0)
+    await prepareEditor(message, args[2], await createChannel(message, args[1]), 1, 0)
+  elif len(args) > 3:
+    if "countdown" in args[1]:
+      await shorthand(message, args[1])
 # end main
 
 async def memberJoin(member):
@@ -104,6 +108,62 @@ async def mainReactionAdd(message, payload, client, clockType):
 async def mainReactionRemove(message, payload, client):
   pass
 # end mainReactionRemove
+
+
+async def shorthand(message, channelID):
+  # @MoBot countdown channel_id -10 minutes -- adjusts
+  # @MoBot countdown channel_id +10 minutes -- adjusts
+  # @MoBot countdown channel_id 23 hours 10 minutes -- sets
+
+  channel = message.guild.get_channel(int(channelID))
+  if channel is None:
+    await message.channel.send("**Channel Does Not Exist**\n`@MoBot#0697 countdown channel_id ...`")
+    return
+
+  adjust = True
+  isNegative = None
+  amount = ""
+  if "+" in message.content:
+    isNegative = False
+    amount = message.content.split("+")[1].strip()
+  elif "-" in message.content:
+    isNegative = True
+    amount = message.content.split("-")[1].strip()
+  else:
+    adjust = False # setting countdown not adjusting
+    amount = message.content.split(channelID)[1]
+
+  values = {"year" : 0, "month" : 0, "week" : 0, "day" : 0, "hour" : 0, "minute" : 0, "second" : 0}
+  for key in values:
+    try:
+      amount.index(key)
+      try:
+        values[key] = float(amount.split(key)[0].strip().split(" ")[-1].strip())
+      except ValueError:
+        await message.channel.send("**Could Not Parse Input**\nTo set the countdown based on the current time:\n  `@MoBot countdown channel_id 23 hours 10 minutes`\n  This will set the countdown 23 hours and 10 minutes from now.\nTo adjust the countdown from its current end time:\n  `@MoBot countdown channel_id +1 day 4 hours 1 minute`\n  This will add 1 day, 4 hours, and 1 minute. Conversely, you can use **-**1 day, for example, to remove time from the countdown.")
+        return
+    except ValueError: # key not present in text
+      pass
+
+  countdown = await getCountdown(message, message.guild.id, channel.id)
+  tz = pytz.timezone(countdown.timeZone)
+  endDatetime = tz.localize(datetime.strptime(countdown.endDatetime, "%m/%d/%Y %H:%M"))
+  now = pytz.utc.localize(datetime.utcnow()).astimezone(tz)
+
+  if adjust:
+    endDatetime += (-1 if isNegative else 1) * relativedelta(years=values["year"], months=values["month"], weeks=values["week"], days=values["day"], hours=values["hour"], minutes=values["minute"], seconds=values["second"])
+    countdown.endDatetime = endDatetime
+
+  else:
+    now += relativedelta(years=values["year"], months=values["month"], weeks=values["week"], days=values["day"], hours=values["hour"], minutes=values["minute"], seconds=values["second"])
+    countdown.endDatetime = now
+
+  endDatetime = countdown.endDatetime
+  countdown.endDatetime = datetime.strftime(countdown.endDatetime.replace(tzinfo=None), "%m/%d/%Y %H:%M")
+  await updateCountdownInfo(message.guild, countdown)
+  await message.channel.send("**Countdown Updated**\nNew Time: `%s`\nExpect update within a minute." % datetime.strftime(endDatetime, "%H:%M:%S %Z - %b %d"))
+# end shorthand
+
 
 async def delete(clockType, channelID):
     moBotDB = MoBotDatabase.connectDatabase('MoBot')
