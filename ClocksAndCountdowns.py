@@ -53,7 +53,7 @@ async def main(args, message, client):
     await prepareEditor(message, args[2], await createChannel(message, args[1]), 1, 0)
   elif len(args) > 3:
     if "countdown" in args[1]:
-      await shorthand(message, args[1])
+      await shorthand(message, args[2])
 # end main
 
 async def memberJoin(member):
