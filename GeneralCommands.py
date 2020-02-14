@@ -432,9 +432,9 @@ async def replaceMessage(message, args):
         await oldMessage.edit(content=newMessage.content, embed=newMessage.embeds[0])
       except IndexError: # when there is no embed
         await oldMessage.edit(content=newMessage.content)
-      await message.channel.send("**Message Replaced <#%s>**" % oldMessage.id)
+      await message.channel.send("**Message Replaced in <#%s>**" % oldMessage.channel.id)
     except discord.errors.Forbidden:
-      await message.channel.send("**I can only edit my own messages.**")
+      await message.channel.send("**@MoBot#0697 can only edit its own messages.**")
   # end replaceMsg
 
   oldMessages = args[args.index("replace")+1:-1]
@@ -444,10 +444,10 @@ async def replaceMessage(message, args):
       try:
         await replaceMsg(await findMessageInGuild(message, int(oldMessages[i].strip())), newMessage)
       except ValueError: # when user didn't provide int
-        await message.channel.send("**%s is not a `[Message_ID]`**")
+        await message.channel.send("**%s is not a `[Message_ID]`**" % oldMessages[i])
         return
   else:
-    await message.channel.send("**Only 1 `[Message_ID] given.**\n`@MoBot#0697 [Old_Message_ID Old_Message_ID ...] [New_Message_ID]`")
+    await message.channel.send("**Only 1 `Message_ID` given.**\n`@MoBot#0697 [Old_Message_ID Old_Message_ID ...] [New_Message_ID]`")
 # end replaceMessage
 
 async def findMessageInGuild(message, messageID):
