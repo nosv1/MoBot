@@ -764,7 +764,7 @@ def setDriverDivsFromQualifiers(): # use quali table to update driver divs...
           division,
           total_points
         ) VALUES (
-          '%s', '%s', '%s',
+          '%s', '%s', '%s'
         ); """ % (
           qualifier.discordID,
           qualifier.displayName,
