@@ -257,10 +257,14 @@ async def startSubmission(message, member):
       message.guild.get_role(everyoneRole) : discord.PermissionOverwrite(read_messages=False),
       message.guild.get_role(leagueTeamRole): discord.PermissionOverwrite(
         read_messages=True, 
-        send_messages=True),
+        send_messages=True,
+        attach_files=True,
+        embed_links=True),
       member : discord.PermissionOverwrite(
-        read_messages=True,
-        send_messages=True)
+        read_messages=True, 
+        send_messages=True,
+        attach_files=True,
+        embed_links=True),
     },
     category=message.channel.category,
     position=1 # put it at the bottom
