@@ -255,8 +255,12 @@ async def startSubmission(message, member):
     "submit %s" % member.display_name,
     overwrites={
       message.guild.get_role(everyoneRole) : discord.PermissionOverwrite(read_messages=False),
-      message.guild.get_role(leagueTeamRole): discord.PermissionOverwrite(read_messages=True),
-      member : discord.PermissionOverwrite(read_messages=True)
+      message.guild.get_role(leagueTeamRole): discord.PermissionOverwrite(
+        read_messages=True, 
+        send_messages=True),
+      member : discord.PermissionOverwrite(
+        read_messages=True,
+        send_messages=True)
     },
     category=message.channel.category,
     position=1 # put it at the bottom
