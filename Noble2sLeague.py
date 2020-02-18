@@ -265,7 +265,7 @@ async def startSubmission(message, member):
         send_messages=True,
         attach_files=True,
         embed_links=True,
-        read_history=True),
+        read_message_history=True),
     },
     category=message.channel.category,
     position=1 # put it at the bottom
