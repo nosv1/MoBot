@@ -443,7 +443,7 @@ async def updateDiscordTables():
   moBotDB = MoBotTables.connectDatabase()
   tables = MoBotTables.getSavedTables(moBotDB)
   for table in tables:
-    if (getRandomCondition(1/5)): # once every 5 minutes
+    if (getRandomCondition(1/10)): # once every 10 minutes
       print("\nUpdating Discord Table\n")
       await MoBotTables.sendTable(table, None, client)
   moBotDB.connection.close()
