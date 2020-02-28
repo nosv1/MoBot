@@ -527,6 +527,7 @@ async def sendNRT(message, args):
 
   platform = args[2].replace("pc", "steam")
   playerID = " ".join(args[3:]).strip()
+  trackerURL = "No URL Available"
   try:
     mmrs, trackerURL = RLRanks.getMMRs(platform, playerID)
     platform = trackerURL.split("/")[-2]
@@ -537,7 +538,7 @@ async def sendNRT(message, args):
     return
 
   if (nrt is None):
-    await message.channel.send("**Not enough MMRs to calculate NRT.**\n<%s>" % url)
+    await message.channel.send("**Not enough MMRs to calculate NRT.**\n<%s>" % trackerURL)
     return
 
   moBotMember = message.guild.get_member(moBot)
