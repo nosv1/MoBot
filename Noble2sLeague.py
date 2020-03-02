@@ -369,7 +369,7 @@ async def scoreSubmission(message, payload, client):
       if (msg.author.id == userID):
         if (not ballChasing):
           for word in msg.content.split(" "):
-            ballChasing = "https://ballchasing.com/" in word
+            ballChasing = "https://ballchasing.com/group/" in word
             if (ballChasing):
               links.append(word)
               break
