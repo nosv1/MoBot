@@ -118,10 +118,10 @@ async def getJob(message, args):
       splitJobName.append(jobName[i] + jobName[i+1] + jobName[i+2])
 
     for i in range(len(splitJobName)):
-      combo = splitJobName[i]
+      combo = splitJobName[i].lower()
       for job in jobListSplit:
         for j in range(len(jobListSplit[job][0])):
-          if (jobListSplit[job][0][j] in combo):
+          if (jobListSplit[job][0][j].lower() in combo):
             jobListSplit[job][1] += -1
           else:
             jobListSplit[job][1] += 1
