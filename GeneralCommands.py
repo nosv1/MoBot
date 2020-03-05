@@ -474,6 +474,7 @@ async def clearWelcomeMessages(channel):
 # end clearWelcomeMessages
 
 async def pingRole(message, authorPerms):
+  return
   moBot_messages = []
 
   # check for manage message perm
