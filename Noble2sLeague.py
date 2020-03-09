@@ -258,15 +258,18 @@ async def startSubmission(message, member):
     overwrites={
       message.guild.get_role(everyoneRole) : discord.PermissionOverwrite(read_messages=False),
       message.guild.get_role(gameModeratorRole): discord.PermissionOverwrite(
-        read_messages=True, 
+        manage_channels=True,
+        read_messages=True,
         send_messages=True,
         attach_files=True,
-        embed_links=True),
+        embed_links=True,
+        read_message_history=True),
       message.guild.get_role(gameSupportRole): discord.PermissionOverwrite(
         read_messages=True, 
         send_messages=True,
         attach_files=True,
-        embed_links=True),
+        embed_links=True,
+        read_message_history=True),
       member : discord.PermissionOverwrite(
         read_messages=True, 
         send_messages=True,
