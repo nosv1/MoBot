@@ -422,7 +422,7 @@ async def scoreSubmission(message, payload, client):
     embed = embed.to_dict()
     del embed["footer"]
     embed = discord.Embed.from_dict(embed)
-    message = await channel.send(content="<@&%s> <@&%s>" % (gameModeratorRole gameSupportRole), embed=embed)
+    message = await channel.send(content="<@&%s> <@&%s>" % (gameModeratorRole, gameSupportRole), embed=embed)
 
 
   elif (state == "verify"):
