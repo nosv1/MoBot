@@ -143,7 +143,13 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await Noble2sLeague.sendNRT(message, args)
+        await message.channel.edit(
+          overwrites={
+            message.guild.get_role(594145209240256543): discord.PermissionOverwrite(
+              manage_channels=True,
+            )
+          }
+        )
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
