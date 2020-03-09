@@ -126,7 +126,10 @@ async def getJob(message, args):
           else:
             jobListSplit[job][1] += 1
     for job in jobListSplit:
-      score = float(jobListSplit[job][1] / len(jobListSplit[job][0]))
+      try:
+        score = float(jobListSplit[job][1] / len(jobListSplit[job][0]))
+      except ZeroDivisionError:
+        score = 0
       if (jobName == "x"):
         score = random.random()
       potentialJobs.append([job, score])
