@@ -29,7 +29,9 @@ ssIDs = {
 ## roles
 registeredRole = 569198468472766475
 everyoneRole = 437936224402014208
-leagueTeamRole = 647052103667417088
+## leagueTeamRole = 647052103667417088
+gameSupportRole = 682854465002536960
+gameModeratorRole = 682854291580387388
 adminRole = 661997809884594177
 
 ## common channels
@@ -255,7 +257,12 @@ async def startSubmission(message, member):
     "submit %s" % member.display_name,
     overwrites={
       message.guild.get_role(everyoneRole) : discord.PermissionOverwrite(read_messages=False),
-      message.guild.get_role(leagueTeamRole): discord.PermissionOverwrite(
+      message.guild.get_role(gameModeratorRole): discord.PermissionOverwrite(
+        read_messages=True, 
+        send_messages=True,
+        attach_files=True,
+        embed_links=True),
+      message.guild.get_role(gameSupportRole): discord.PermissionOverwrite(
         read_messages=True, 
         send_messages=True,
         attach_files=True,
@@ -415,12 +422,12 @@ async def scoreSubmission(message, payload, client):
     embed = embed.to_dict()
     del embed["footer"]
     embed = discord.Embed.from_dict(embed)
-    message = await channel.send(content="<@&%s>" % leagueTeamRole, embed=embed)
+    message = await channel.send(content="<@&%s> <@&%s>" % (gameModeratorRole gameSupportRole), embed=embed)
 
 
   elif (state == "verify"):
     member = message.guild.get_member(payload.user_id)
-    if (any(role.id in [leagueTeamRole, adminRole] for role in member.roles)):
+    if (any(role.id in [gameModeratorRole, gameSupportRole, adminRole] for role in member.roles)):
       workbook = await openSpreadsheet(ssIDs["Season 4 League Play"])
       worksheet = workbook.worksheet(RandomSupport.getDetailFromURL(url, "divSheetTitle").replace("%20", " "))
 
