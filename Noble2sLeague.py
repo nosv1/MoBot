@@ -39,6 +39,7 @@ REGISTER_ID_CHNL = 519317465604554772
 SERIES_REPORT_CHNL = 533689609830531092
 LEAGUE_MATCH_RESULTS_CHNL = 666863321290637313
 REGISTER_LOG_CHNL = 569196829137305631
+LEAGUE_RESULTS_CHNL = 686981857379614746
 
 ## common messages
 SERIES_REPORT_MSG = 666793704698150928
@@ -453,8 +454,34 @@ async def scoreSubmission(message, payload, client):
     
   await addScoreSubmitReactions(message, RandomSupport.getDetailFromURL(embed.author.url, "state"))
 
-  if (state != "verify"): # has not been submitted by user or verified by staff
+  if state != "verify": # has not been submitted by user or verified by staff
     await message.edit(embed=embed)
+
+  elif state == "closed": # verified by staff, sending to viewing channel
+    match_result_embed = discord.Embed(color=moBotMember.roles[-1].color)
+    match_result_embed.description = "**Division: `%s`\nMatch ID: `%s`\n\n%s: `%s`\n%s: `%s`\n\nScreenshots: %s**\n*Click the picture icon(s) to view the screenshots.*" % (
+      RandomSupport.getValueFromField(embed, "Division"),
+      RandomSupport.getValueFromField(embed, "Match ID"),
+      RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
+      RandomSupport.getValueFromField(
+        embed, 
+        RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
+      ),
+      RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+      RandomSupport.getValueFromField(
+        embed, 
+        RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+      ),
+      RandomSupport.getValueFromField(embed, "Proof")
+    )
+    match_result_embed.set_author(
+      name="Noble Leagues - Season 4\nMatch Result",
+      icon_url=message.guild.icon_url
+    )
+
+    await message.guild.get_channel(LEAGUE_RESULTS_CHNL).send(embed=match_result_embed)
+
+
 # end startSubmission
 
 def getTeamsFromDivMatchID(workbook, div, matchID):
