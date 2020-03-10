@@ -472,7 +472,7 @@ async def scoreSubmission(message, payload, client):
         embed, 
         RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
       ),
-      RandomSupport.getValueFromField(embed, "Proof")
+      RandomSupport.getValueFromField(embed, "Proof").split("\n")[0]
     )
     match_result_embed.set_author(
       name="Noble Leagues - Season 4\nMatch Result",
