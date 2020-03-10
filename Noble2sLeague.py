@@ -457,7 +457,7 @@ async def scoreSubmission(message, payload, client):
   if state != "verify": # has not been submitted by user or verified by staff
     await message.edit(embed=embed)
 
-  elif state == "closed": # verified by staff, sending to viewing channel
+  if state == "closed": # verified by staff, sending to viewing channel
     match_result_embed = discord.Embed(color=moBotMember.roles[-1].color)
     match_result_embed.description = "**Division: `%s`\nMatch ID: `%s`\n\n%s: `%s`\n%s: `%s`\n\nScreenshots: %s**\n*Click the picture icon(s) to view the screenshots.*" % (
       RandomSupport.getValueFromField(embed, "Division"),
