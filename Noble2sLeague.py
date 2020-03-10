@@ -462,12 +462,12 @@ async def scoreSubmission(message, payload, client):
     match_result_embed.description = "**Division: `%s`\nMatch ID: `%s`\n\n%s: `%s`\n%s: `%s`\n\nScreenshots: %s**\n*Click the picture icon(s) to view the screenshots.*" % (
       RandomSupport.getValueFromField(embed, "Division"),
       RandomSupport.getValueFromField(embed, "Match ID"),
-      RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
+      RandomSupport.getDetailFromURL(url, "team1").replace("%20", " "),
       RandomSupport.getValueFromField(
         embed, 
         RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
       ),
-      RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+      RandomSupport.getDetailFromURL(url, "team2").replace("%20", " "),
       RandomSupport.getValueFromField(
         embed, 
         RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
