@@ -591,10 +591,12 @@ def getStandings(url, league, client):
         flag = flags[standingsTable[i][1].split("flags/")[1].upper()]
       except KeyError:
         flag = ""
+      except IndexError:
+        flag = ""
       name = standingsTable[i][2].replace("<br/>", "")
       points = standingsTable[i][-6]
 
-      if (points != " - "):
+      if (points.isnumeric()):
         lines.append([position, flag, name, points])
         maxNameWidth = len(name) if len(name) > maxNameWidth else maxNameWidth
         maxPointsWdith = len(points) if len(points) > maxPointsWdith else maxPointsWdith
@@ -638,6 +640,7 @@ def getSpreadsheet(url):
       columns[j] = columns[j].split("</td")[0].split(".png")[0].split("\">")[-1]
     table.append(columns)
 
+  print(str(rows[3]).split("<td")[completedRounds])
   roundFlag = str(rows[3]).split("<td")[completedRounds].split("flags/")[1].split(".png")[0]
   return table, roundFlag
 # end getSpreadsheet
