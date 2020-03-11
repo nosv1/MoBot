@@ -119,7 +119,7 @@ async def main(args, message, client):
       if ("add game emojis" in message.content):
         await addGameEmojis(message)
     if (len(args) > 3):
-      if ("standings" in args[1] and "new" in args[2]): # @MoBot standings new S18-UK-PC-F1
+      if ("standings" in args[1] and "new" in args[2]): # @MoBot standings new S18-EU-PC-F1
         await newStandings(message, client)
     
 # end main
@@ -592,7 +592,7 @@ def getStandings(url, league, client):
       except KeyError:
         flag = ""
       name = standingsTable[i][2].replace("<br/>", "")
-      points = standingsTable[i][-5]
+      points = standingsTable[i][-6]
 
       if (points != " - "):
         lines.append([position, flag, name, points])
@@ -620,11 +620,11 @@ def getSpreadsheet(url):
   rows = soup.findAll("tr")
   table = []
   completedRounds = 0
-  for i in range(5, 25): # p1 to P20
+  for i in range(4, 24): # p1 to P20
     columns = str(rows[i]).split("<td")
 
     tempCompletedRounds = 0
-    for column in columns[6:27]:
+    for column in columns[5:18]: # columns[round 1: 30-num rounds]
       if (column.split("\">")[1].split("</td>")[0] != ""):
         tempCompletedRounds += 1
     completedRounds = tempCompletedRounds if tempCompletedRounds > completedRounds else completedRounds
@@ -638,7 +638,7 @@ def getSpreadsheet(url):
       columns[j] = columns[j].split("</td")[0].split(".png")[0].split("\">")[-1]
     table.append(columns)
 
-  roundFlag = str(rows[3]).split("<td")[completedRounds + 1].split("flags/")[1].split(".png")[0]
+  roundFlag = str(rows[3]).split("<td")[completedRounds].split("flags/")[1].split(".png")[0]
   return table, roundFlag
 # end getSpreadsheet
 
