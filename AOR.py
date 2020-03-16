@@ -552,6 +552,7 @@ async def updateStandings(client):
   for messageEmbed in messages:
     message = messageEmbed[0]
     embed = messageEmbed[1]
+    print(message.id)
 
     moBotMember = message.guild.get_member(moBot)
     embed.color = moBotMember.roles[-1].color
@@ -640,7 +641,6 @@ def getSpreadsheet(url):
       columns[j] = columns[j].split("</td")[0].split(".png")[0].split("\">")[-1]
     table.append(columns)
 
-  print(str(rows[3]).split("<td")[completedRounds])
   roundFlag = str(rows[3]).split("<td")[completedRounds].split("flags/")[1].split(".png")[0]
   return table, roundFlag
 # end getSpreadsheet
