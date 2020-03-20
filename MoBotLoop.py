@@ -251,6 +251,8 @@ async def main(client):
             fieldValue = entry.summary
             embed.add_field(name=fieldName, value=fieldValue, inline=False)
           await nobleLeaugesDestination.send(embed=embed)'''
+    except discord.errors.HTTPException:
+      pass
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
       errorCode = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
