@@ -255,7 +255,7 @@ async def main(client):
       pass
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
-      error_code = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["status"]
+      error_code = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
       error_status = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["status"]
       if str(error_code)[0] == "5" or error_status == "RESOURCE_EXHAUSTED":
         pass
