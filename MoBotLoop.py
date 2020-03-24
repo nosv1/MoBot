@@ -251,12 +251,13 @@ async def main(client):
             fieldValue = entry.summary
             embed.add_field(name=fieldName, value=fieldValue, inline=False)
           await nobleLeaugesDestination.send(embed=embed)'''
-    except discord.errors.HTTPException:
+    except discord.errors.HTTPException: # fucking shit discord
       pass
     except gspread.exceptions.APIError:
       eType, value, eTraceback = sys.exc_info()
-      errorCode = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
-      if (str(errorCode)[0] == "5"):
+      error_code = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["status"]
+      error_status = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["status"]
+      if str(error_code)[0] == "5" or error_status == "RESOURCE_EXHAUSTED":
         pass
       else:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
