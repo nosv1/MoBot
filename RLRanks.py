@@ -63,10 +63,17 @@ def getMMRs(platform, id):
 
   for season in seasons:
     
-    mmrs[season] = {2 : {"current" : 0, "peak" : 0}, 3 : {"current" : 0, "peak" : 0}} # 2v2s : mmr, 3v3s : mmr
+    mmrs[season] = {
+      1 : {"current" : 0, "peak" : 0, "games" : 0}, 
+      2 : {"current" : 0, "peak" : 0, "games" : 0}, 
+      3 : {"current" : 0, "peak" : 0, "games" : 0}
+    } 
 
-    splitOnTwos = "Ranked Doubles 2v2"
-    splitOnThrees = "Ranked Standard 3v3"
+    splitOn = {
+      1 : "Ranked Duel 1v1",
+      2 : "Ranked Doubles 2v2",
+      3 : "Ranked Standard 3v3"
+    }
 
     reg1 = r"(\n\d,\d\d\d)|(\n\d\d\d\d)|(\n\d\d\d)" 
     mmrsAboveThis = "<img"
@@ -89,19 +96,20 @@ def getMMRs(platform, id):
         if (tier != "0"):
           return max([int(mmr) for mmr in mmrs[tiers.index(tier)+1:]]) # peak baby
       return 0
-    # end getPeak()
+    # end getPeak
 
-    try:
-      mmrs[season][2]["peak"] = getPeak(splitOnTwos) # shouldn't ever give error
-      mmrs[season][2]["current"] = int(getMMR(splitOnTwos))
-    except IndexError: # if player has no mmr
-      pass
+    def getGamesPlayed(splitOn):
+      return currentMMRHtml.split("id=\"season-%s\"" % season)[1].split(splitOn)[1].split("</tr>")[0].split("<td")[-1].split("</td")[0].split(">")[1].split("<")[0].strip()
+    # end getGamesPlayed
 
-    try:
-      mmrs[season][3]["peak"] = getPeak(splitOnThrees) # shouldn't ever give error
-      mmrs[season][3]["current"] = int(getMMR(splitOnThrees))
-    except IndexError: # if player has no mmr
-      pass
+
+    for mode in mmrs[season]:
+      try:
+        mmrs[season][mode]["peak"] = getPeak(splitOn[mode]) # shouldn't ever give error
+        mmrs[season][mode]["current"] = int(getMMR(splitOn[mode]))
+        mmrs[season][mode]["games"] = getGamesPlayed(splitOn[mode])
+      except IndexError: # if player has no mmr
+        pass
 
   return mmrs, url1
 # end getMMRs
