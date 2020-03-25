@@ -82,25 +82,25 @@ async def sendDSN(message, args):
   description = "ID: `%s`\n" % playerID
   description += "Platform: `%s`\n\n" % platform
 
-  description += "**Games Played (1s, 2s, 3s):**\n"
-  for season in list(mmrs.keys())[:3]:
+  gp = "**Games Played:**\n"
+  mmr = "**MMRs:**\n"
+  seasons = list(mmrs.keys())
+  for season in seasons[:3]:
     games_played = []
+    peaks = []
     for mode in mmrs[season]:
-      games_played.append(str(mmrs[season][mode]["games"]))
-    description += "Season %s: `%s`\n" % (season, ", ".join(games_played))
-  description += "\n"
+      try:
+        games_played.append(int(mmrs[season][mode]["games"]))
+      except ValueError: # games = n/a or something
+        pass
 
-  description += "**MMRs:**\n"
-  description += "Season %s %ss: `%s`\n" % (
-    dsn.first_peak.season, 
-    dsn.first_peak.mode, 
-    dsn.first_peak.mmr
-  )
-  description += "Season %s %ss: `%s`\n\n" % (
-    dsn.second_peak.season, 
-    dsn.second_peak.mode,
-    dsn.second_peak.mmr
-  )
+      peaks.append(mmrs[season][mode]["peak" if season == seasons[0] else "current"])
+      
+    gp += "Season %s: `%s`\n" % (season, sum(games_played))
+    mmr += "Season %s: `%s`\n" % (season, max(peaks))
+
+  description += gp + "\n"
+  description += mmr + "\n"
 
   description += "**DSN: `%s`**\n" % (dsn.dsn if dsn.dsn >= 0 else "Invalid")
   description += "[__Tracker__](%s)" % trackerURL
