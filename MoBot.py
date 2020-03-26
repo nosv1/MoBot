@@ -299,6 +299,8 @@ async def on_message(message):
 
 
         ## random commands
+        elif ("corona" in args[1]): 
+          await message.channel.send(RandomSupport.cornavirus())
         elif ("gtaweather" in args[1] or "gta weather" in message.content):
           await GTAWeather.sendWeatherForecast(message)
         elif (args[1] == "admin" and isMo):
