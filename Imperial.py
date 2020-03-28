@@ -56,6 +56,9 @@ async def sendDSN(message, args):
     platform = trackerURL.split("/")[-2]
     trackerID = trackerURL.split("/")[-1]
     dsn = getDSN(mmrs)
+  except ValueError: # only one index for mmr array, too early in season
+    await message.channel.send("**Something went wrong... It's likely too early in the season to get an accurate MMR peak.**\n`@MoBot#0697 dsn steam/xbox/ps id`\n`@MoBot#0697 dsn xbox Mo v0`")
+    return
   except: # any errors should mean the id doesn't exist
     await message.channel.send("**Something went wrong... Is the ID correct?**\n`@MoBot#0697 dsn steam/xbox/ps id`\n`@MoBot#0697 dsn xbox Mo v0`")
     return
