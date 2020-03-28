@@ -144,16 +144,6 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        from bs4 import BeautifulSoup as bsoup
-        import requests
-
-        url = "https://www.worldometers.info/coronavirus/"
-        soup = bsoup(requests.get(url).text, "html.parser")
-        corona_cases = str(soup).split("Coronavirus Cases:")[1].split("</span")[0].split(">")[-1].strip()
-        deaths = str(soup).split("Deaths:")[1].split("</span")[0].split(">")[-1].strip()
-        recovered = str(soup).split("Recovered:")[1].split("</span")[0].split(">")[-1].strip()
-
-        await message.channel.send("Coronavirus Cases: `%s`\nDeaths: `%s`\nRecovered: `%s`" % (corona_cases, deaths, recovered))
 
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
