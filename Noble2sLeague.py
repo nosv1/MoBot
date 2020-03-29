@@ -23,7 +23,7 @@ ssIDs = {
   "Noble Leagues Off-Season" : "1M8wij5yJXNplkRdrhIj-sMqfHBC8KmKHlFqyOCMaARw",
   "Noble Leagues Qualifiers" : "1Ut8QSZ48uB-H1wpE3-NxpPwBKLybkK-uo6Jb5LOSIxY",
   "Noble Leagues MoBot" : "1w-cme_ZtMIU3nesgGajc-5Y3eJX22Htwl_UIefG3E1Q",
-  "Season 4 League Play" : "1GGEx2UMN6KJmeAte0s7XIxsU2-AUNt8Nlr2GZUhA7VM",
+  "Noble Leagues | League Play Sheet" : "1GGEx2UMN6KJmeAte0s7XIxsU2-AUNt8Nlr2GZUhA7VM",
 }
 
 ## roles
@@ -331,7 +331,7 @@ async def scoreSubmission(message, payload, client):
         div = RandomSupport.getValueFromField(embed, "Division")
 
     if (matchID is not None and div is not None):
-      game = getTeamsFromDivMatchID(await openSpreadsheet(ssIDs["Season 4 League Play"]), div, matchID)
+      game = getTeamsFromDivMatchID(await openSpreadsheet(ssIDs["Noble Leagues | League Play Sheet"]), div, matchID)
 
       if (game is not None):
         if (game.team1Score == "" and game.team2Score == ""):
@@ -432,7 +432,7 @@ async def scoreSubmission(message, payload, client):
   elif (state == "verify"):
     member = message.guild.get_member(payload.user_id)
     if (any(role.id in [gameModeratorRole, gameSupportRole, adminRole] for role in member.roles)):
-      workbook = await openSpreadsheet(ssIDs["Season 4 League Play"])
+      workbook = await openSpreadsheet(ssIDs["Noble Leagues | League Play Sheet"])
       worksheet = workbook.worksheet(RandomSupport.getDetailFromURL(url, "divSheetTitle").replace("%20", " "))
 
       r = worksheet.range(RandomSupport.getDetailFromURL(url, "scoreRange"))
@@ -569,7 +569,7 @@ async def sendNRT(message, args):
     mmrs, trackerURL = RLRanks.getMMRs(platform, playerID)
     platform = trackerURL.split("/")[-2]
     trackerID = trackerURL.split("/")[-1]
-    nrt = getNRT(mmrs)
+    nrt = await getNRT(mmrs)
   except ValueError: # only one index for mmr array, too early in season
     await message.channel.send("**Something went wrong... It's likely too early in the season to get an accurate MMR peak.**\n`@MoBot#0697 nrt steam/xbox/ps id`\n`@MoBot#0697 nrt xbox Mo v0`")
     return
@@ -611,7 +611,7 @@ async def sendNRT(message, args):
   await msg.add_reaction(RandomSupport.FLOPPY_DISK_EMOJI)
 # end sendNRT
 
-def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
+async def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   class NRT:
     def __init__(self):
       self.peak2 = MMR(0, 0, 0) # starting with current season, otherwise get past season
@@ -672,21 +672,18 @@ def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
     return None
 
   mmrs = [nrt.peak2.mmr, nrt.peak3.mmr, nrt.last2.mmr, nrt.last3.mmr]
-  allGt1000 = not any(mmr < 1000 for mmr in mmrs) # all > 1000
-  oneLastLt1000 = (mmrs[-2] >= 1000 and mmrs[-1] < 1000) or (mmrs[-1] >= 1000 and mmrs[-1] < 1000) # ONLY one last season < 1000
-  bothLastLt1000 = not any(mmr >= 1000 for mmr in mmrs[-2:]) # both last season < 1000
-  onePeakLt1000 = any(mmr < 1000 for mmr in mmrs[:-2]) # one this sesaon < 1000
-  bothPeakGt1000 = not onePeakLt1000
 
-  nrt.avg = .5 * twos + .25 * threes + .25 * last
+  workbook = await openSpreadsheet(ssIDs["Noble Leagues | League Play Sheet"])
+  nrt_sheet = workbook.worksheet("NRT")
+  calc_range = nrt_sheet.range("B10:C12")
+  calc_range[0].value = mmrs[0]
+  calc_range[1].value = mmrs[1]
+  calc_range[4].value = mmrs[2]
+  calc_range[5].value = mmrs[3]
+  nrt_sheet.update_cells(calc_range, value_input_option="USER_ENTERED")
 
-  if (allGt1000 or (oneLastLt1000 and bothPeakGt1000)):
-    nrt.nrt = (nrt.avg-1000)/10
-  elif (bothLastLt1000):
-    nrt.nrt = 0
-  elif (onePeakLt1000):
-    nrt.nrt = -1
-
+  nrt_range = nrt_sheet.range("C17:C17")
+  nrt.nrt = float(nrt_range[0].value)
   return nrt
 # end getNRT
 
