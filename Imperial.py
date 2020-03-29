@@ -109,6 +109,7 @@ async def sendDSN(message, args):
 # end sendDSN
 
 def getDSN(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
+  print(mmrs)
   class DSN:
     def __init__(self):
       self.first_peak = MMR(0, 0, 0) # from last 3 seasons "13, 12, 11", 2s or 3s
@@ -140,7 +141,7 @@ def getDSN(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
       for mode in [2, 3]: # 2s, 3s
         for season in seasons[:3]: # last 3 seasons
           mmr = MMR(
-            mmrs[seasons[0]][mode]["peak" if season == seasons[0] else "current"], seasons[0], 
+            mmrs[season][mode]["peak" if season == seasons[0] else "current"], seasons, 
             mode
           )
           if rank == 1:
