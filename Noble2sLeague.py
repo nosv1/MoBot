@@ -40,6 +40,7 @@ SERIES_REPORT_CHNL = 533689609830531092
 LEAGUE_MATCH_RESULTS_CHNL = 666863321290637313
 REGISTER_LOG_CHNL = 569196829137305631
 LEAGUE_RESULTS_CHNL = 686981857379614746
+ACTIVITY_LOG = 445265120549928962
 
 ## common messages
 SERIES_REPORT_MSG = 666793704698150928
@@ -228,7 +229,7 @@ async def memberRemove(member, client):
 
 async def memberRoleAdd(member, role):
   if (role.id == 519297202795839488): # if role == verified
-    activityLog = member.guild.get_channel(445265120549928962)
+    activityLog = member.guild.get_channel(ACTIVITY_LOG)
     await activityLog.send("<@209584832030834688>, " + member.mention + " has been added to `Verified`.")
 # end memberRoleAdd
 
@@ -873,10 +874,13 @@ async def setnick(message):
 # end setnick
 
 async def updateDailyGrowth(message):
+  if message.channel.id != ACTIVITY_LOG:
+    return
+
   now = message.created_at + timedelta(hours=1)
   today = datetime(now.year, now.month, now.day)
-  
-  activityLog = message.guild.get_channel(445265120549928962)
+
+  activityLog = message.guild.get_channel(ACTIVITY_LOG)
   history = await activityLog.history(after=today).flatten()
 
   joined = 0
