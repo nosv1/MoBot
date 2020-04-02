@@ -38,9 +38,15 @@ donate = discord.Activity(type=discord.ActivityType.watching, name="@MoBot donat
 server = discord.Activity(type=discord.ActivityType.watching, name="@MoBot server")
 moBotHelp = discord.Activity(type=discord.ActivityType.watching, name="@MoBot help")
 
+# servers
 moBotSupport = 467239192007671818
+
+# users
 mo = 405944496665133058
 moBot = 449247895858970624
+
+# channels
+MOBOT_SUPPORT_CLOCK = 579774370684207133 # voice
 
 class Clock:
   def __init__(self, channelID, guildID, guildName, timeFormat, timeZone):
@@ -79,12 +85,22 @@ donations = { # donation / 2 = months providing service
   }
 }
 
+
 scheduledEvents = []
 reminders = []
+
 
 tenMinutetime = datetime.now()
 messagesSent = 0
 messageRate = 0
+
+
+currentTime = None
+currentUTC = None
+hour = None
+minute = None
+second = None
+
 
 isConnected = False
 # when bot is first online
@@ -127,6 +143,82 @@ async def on_message(message):
     tenMinutetime = n
 # end on_message
 
+@client.event
+async def on_guild_channel_update(before, after):
+  global scheduledEvents, reminders
+
+  try:
+    if before.id == MOBOT_SUPPORT_CLOCK: # clock changes every minute
+      await updateDiscordTables() 
+
+      if (getRandomCondition(1/10)): # once every 10 minutes
+
+        if (currentTime < donationDateCorrection("TE Garrett#9569")):
+          print("\nUpdating TE Garrett#9569 Point Applications")
+          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
+        else:
+          await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+
+      # user requests
+      if (currentTime < donationDateCorrection("CASE#2606")):
+        if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
+          print("\nClearing CASE#2606 Welcome Messages")
+          await clearCASEWelcomeMessages()
+        #await checkCASEStreamers()
+      else:
+        await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
+      
+      if (currentTime < donationDateCorrection("Danio#3260")):
+        await updateDanioTables() # once an hour (random in function)
+      else:
+        await client.get_user(int(mo)).send("<@547053137551163432>'s donation has expired.")
+
+
+      if (minute % 5 is 0): # check every 5 minutes
+        try:
+          workbook = await EventScheduler.openSpreadsheet()
+          eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
+          scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
+          remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
+          reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
+
+          await MessageScheduler.sendScheduledMessages(client)
+        except gspread.exceptions.APIError:
+          pass
+      # end if minute % 5 == 0
+        
+      for event in scheduledEvents:
+        eventTime = await EventScheduler.getEventTime(event)
+        if (eventTime < currentTime):
+          scheduledEvents = await EventScheduler.performScheduledEvent(event, client)
+      for reminder in reminders:
+        reminderTime = reminder.date
+        if (reminderTime < currentUTC):
+          reminders = await EventScheduler.sendReminder(reminder, client)
+          
+      await updateTimeZoneList(currentTime)
+      await AOR.updateStandings(client)
+    # end if clock changed
+
+  except discord.errors.HTTPException: # fucking shit discord
+    pass
+  except gspread.exceptions.APIError:
+    eType, value, eTraceback = sys.exc_info()
+    error_code = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["code"]
+    error_status = json.loads(value.__dict__["response"].__dict__["_content"])["error"]["status"]
+    if str(error_code)[0] == "5": # or error_status == "RESOURCE_EXHAUSTED":
+      pass
+    else:
+      await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
+  except:
+    try:
+      await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
+    except:
+      print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
+      sys.exit()
+
+# end on_guild_channel_update
+
 async def main(client):
   try:
     global scheduledEvents, reminders
@@ -149,6 +241,7 @@ async def main(client):
   lastSecond = 0
   while (True):
     try:
+      global currentTime, currentUTC, hour, minute, second
       currentTime = getCurrentTime()
       currentUTC = datetime.utcnow()
       hour = currentTime.hour
@@ -163,26 +256,7 @@ async def main(client):
       sys.stdout.write("\rCurrent Time: " + str(currentTime))
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
-      newTime = currentTime
-      # random updates
-      if (getRandomCondition(1/60)): # once every 60 seconds 
-        await updateDiscordTables() 
-
-        if (getRandomCondition(1/10)): # once every 10 minutes
-
-          if (currentTime < donationDateCorrection("TE Garrett#9569")):
-            print("\nUpdating TE Garrett#9569 Point Applications")
-            await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
-          else:
-            await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
-
-        newTime = getCurrentTime() # this needs to be after every 'random' update condition
-
-      if newTime > currentTime:
-        print("\nUpdating Clocks and Countdowns")
-
-      if (second is 0 or newTime > currentTime): # check for every 60 seconds or incase we miss the 0 tick because of slowness
-        currentTime = newTime
+      if (second is 0): # check for every 60 seconds or incase we miss the 0 tick because of slowness
 
         # update clocks and countdowns
         clocks = await getGuildClocks()
@@ -193,46 +267,6 @@ async def main(client):
           await updateMoBotStatus(client)
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
-
-        # user requests
-        if (currentTime < donationDateCorrection("CASE#2606")):
-          if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
-            print("\nClearing CASE#2606 Welcome Messages")
-            await clearCASEWelcomeMessages()
-          #await checkCASEStreamers()
-        else:
-          await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
-        
-        if (currentTime < donationDateCorrection("Danio#3260")):
-          await updateDanioTables() # once an hour (random in function)
-        else:
-          await client.get_user(int(mo)).send("<@547053137551163432>'s donation has expired.")
-
-
-        if (minute % 5 is 0): # check every 5 minutes
-          try:
-            workbook = await EventScheduler.openSpreadsheet()
-            eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
-            scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
-            remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
-            reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
-
-            await MessageScheduler.sendScheduledMessages(client)
-          except gspread.exceptions.APIError:
-            pass
-        # end if minute % 5 == 0
-          
-        for event in scheduledEvents:
-          eventTime = await EventScheduler.getEventTime(event)
-          if (eventTime < currentTime):
-            scheduledEvents = await EventScheduler.performScheduledEvent(event, client)
-        for reminder in reminders:
-          reminderTime = reminder.date
-          if (reminderTime < currentUTC):
-            reminders = await EventScheduler.sendReminder(reminder, client)
-        
-        await updateTimeZoneList(currentTime)
-        await AOR.updateStandings(client)
       # end if second == 0
 
         '''
