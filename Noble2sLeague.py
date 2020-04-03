@@ -881,7 +881,7 @@ async def updateDailyGrowth(message):
   today = datetime(now.year, now.month, now.day)
 
   activityLog = message.guild.get_channel(ACTIVITY_LOG)
-  history = await activityLog.history(after=today).flatten()
+  history = await activityLog.history(limit=None, after=today).flatten()
 
   joined = 0
   left = 0
