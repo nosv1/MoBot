@@ -99,7 +99,7 @@ async def driverPit(message, pitLogChannel):
     betweenPits = pitLogMsg.created_at - lastPitTime
     betweenPitsMin = int(str(pitLogMsg.created_at - lastPitTime).split(":")[1][-2:])
 
-    if (betweenPitsMin >= 19):
+    if (betweenPitsMin >= 15):
       await pitLogMsg.edit(content="---\n" + driverName + " - Pit " + str(numPits) + "\n" + str(betweenPits)[2:-3] + " minutes between pits.\n" + str(sinceRaceStart)[:-3] + " hours since race start.")
       update += "✅"
     else:
