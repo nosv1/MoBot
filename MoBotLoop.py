@@ -196,7 +196,6 @@ async def on_guild_channel_update(before, after):
         if (reminderTime < currentUTC):
           reminders = await EventScheduler.sendReminder(reminder, client)
           
-      await updateTimeZoneList(currentTime)
       await AOR.updateStandings(client)
     # end if clock changed
 
@@ -267,6 +266,8 @@ async def main(client):
           await updateMoBotStatus(client)
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
+
+        await updateTimeZoneList(currentTime)
       # end if second == 0
 
         '''
@@ -662,10 +663,17 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
 # end updateGuildCountdowns
 
 async def updateTimeZoneList(currentTime):
-  timeZonesChannel = client.get_channel(607323514042712074)
-  if (timeZonesChannel is None):
+  timeZonesChannels = [
+    client.get_channel(607323514042712074), # support server
+    client.get_channel(381814096644800514) # ducati doctor
+  ]
+  if (None in timeZonesChannels):
     return
-  timeZonesListMessage = await timeZonesChannel.fetch_message(607323599925149706)
+  timeZonesListMessages = [
+    await timeZonesChannels[0].fetch_message(607323599925149706),
+    await timeZonesChannels[1].fetch_message(696459610663682088)
+  ]
+
 
   timeZones = MoBotTimeZones.timeZones
 
@@ -687,7 +695,8 @@ async def updateTimeZoneList(currentTime):
     name = "__" + tz + "__" if (tz == "UTC") else tz
     embed.add_field(name=name, value=spaceChar + value, inline=False)
   
-  await timeZonesListMessage.edit(embed=embed)
+  await timeZonesListMessages[0].edit(embed=embed)
+  await timeZonesListMessages[1].edit(embed=embed)
 # end updateTimeZoneList
 
 async def convertTime(currentTime, tz, toFrom):
