@@ -261,12 +261,12 @@ async def main(client):
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
         try:
-          await updateGuildCountdowns(client, currentTime, countdowns)
           await updateGuildClocks(client, currentTime, clocks)
+          await updateGuildCountdowns(client, currentTime, countdowns)
           await updateMoBotStatus(client)
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
-
+        
         await updateTimeZoneList(currentTime)
       # end if second == 0
 
@@ -657,6 +657,8 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
     except AttributeError: # when channel doesn't exist
       #await ClocksAndCountdowns.delete("countdown", countdown.channelID)
       #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, countdown.channelID))
+      pass
+    except discord.errors.NotFound: # unkown channel
       pass
     except discord.errors.Forbidden:
       pass
