@@ -563,6 +563,8 @@ async def updateGuildClocks(client, currentTime, clocks):
       #await ClocksAndCountdowns.delete("clock", clock.channelID)
       #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, clock.channelID))
       pass
+    except discord.errors.NotFound: # unknown channel
+      pass
     except discord.errors.Forbidden:
       pass
 # end guildClocks
@@ -658,7 +660,7 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
       #await ClocksAndCountdowns.delete("countdown", countdown.channelID)
       #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, countdown.channelID))
       pass
-    except discord.errors.NotFound: # unkown channel
+    except discord.errors.NotFound: # unknown channel
       pass
     except discord.errors.Forbidden:
       pass
