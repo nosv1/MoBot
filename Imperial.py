@@ -47,6 +47,10 @@ async def sendDSN(message, args):
   platform = args[2].replace("pc", "steam")
   playerID = " ".join(args[3:]).strip()
   trackerURL = "No URL Available"
+  mmrs, trackerURL = RLRanks.getMMRs(platform, playerID)
+  platform = trackerURL.split("/")[-2]
+  trackerID = trackerURL.split("/")[-1]
+  dsn = getDSN(mmrs)
   try:
     mmrs, trackerURL = RLRanks.getMMRs(platform, playerID)
     platform = trackerURL.split("/")[-2]
@@ -109,7 +113,6 @@ async def sendDSN(message, args):
 # end sendDSN
 
 def getDSN(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
-  print(mmrs)
   class DSN:
     def __init__(self):
       self.first_peak = MMR(0, 0, 0) # from last 3 seasons "13, 12, 11", 2s or 3s
@@ -135,24 +138,17 @@ def getDSN(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   '''
 
   def getPeaks(): # 1st and 2nd highest peaks across last 3 seasons, 2s or 3s
-    peaks = [0, 0]
-    for rank in [1, 2]: # 1st highest, 2nd highest
-      temp_peak = MMR(0, 0, 0)
-      for mode in [2, 3]: # 2s, 3s
-        for season in seasons[:3]: # last 3 seasons
-          mmr = MMR(
-            mmrs[season][mode]["peak" if season == seasons[0] else "current"], seasons, 
-            mode
-          )
-          if rank == 1:
-            if mmr.mmr > temp_peak.mmr:
-              temp_peak = mmr
-          elif rank == 2:
-            if mmr.mmr > temp_peak.mmr and (mmr.mmr < peaks[0].mmr or peaks[0].mmr == 0):
-              temp_peak = mmr
-
-      peaks[rank-1] = temp_peak
-    return peaks[0], peaks[1]
+    peaks = [0, 0, 0]
+    for i, season in enumerate(seasons[:3]):
+      s_max = MMR(0, 0, 0)
+      for mode in [2, 3]:
+        mmr = MMR(
+          mmrs[season][mode]["peak" if season == seasons[0] else "current"], seasons, 
+          mode
+        )
+        s_max = mmr if mmr.mmr > s_max.mmr else s_max
+      peaks[i] = s_max
+    return tuple(sorted(peaks, key=lambda x: x.mmr, reverse=True)[:2])
   # end getPeak
 
   dsn.first_peak, dsn.second_peak = getPeaks()
