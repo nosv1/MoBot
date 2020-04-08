@@ -144,7 +144,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await Noble2sLeague.sendNRT(message, args)
+        await Imperial.sendDSN(message, args)
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
