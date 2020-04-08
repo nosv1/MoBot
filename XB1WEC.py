@@ -164,6 +164,6 @@ async def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
   creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('XB1WEC_client_secret.json'), scope)
   clientSS = gspread.authorize(creds)  
-  workbook = clientSS.open_by_key("1KCYmp_GuCR_PS16AKD3OpS7qFDu9NL4Un2YW0VUWiWI")
+  workbook = clientSS.open_by_key("1Xk0C0nPQYtfE5Ee_4aHrgKsc5Tx1PCZc_rY-UXA-PAQ")
   return workbook
 # end openSpreadsheet
