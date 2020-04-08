@@ -47,10 +47,6 @@ async def sendDSN(message, args):
   platform = args[2].replace("pc", "steam")
   playerID = " ".join(args[3:]).strip()
   trackerURL = "No URL Available"
-  mmrs, trackerURL = RLRanks.getMMRs(platform, playerID)
-  platform = trackerURL.split("/")[-2]
-  trackerID = trackerURL.split("/")[-1]
-  dsn = getDSN(mmrs)
   try:
     mmrs, trackerURL = RLRanks.getMMRs(platform, playerID)
     platform = trackerURL.split("/")[-2]
