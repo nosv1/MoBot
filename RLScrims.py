@@ -538,8 +538,8 @@ async def updateRanks(winner, blueTeam, orangeTeam, channelID, matchType, embed)
     for i in range(len(ids)):
       if (ids[i].value == ""):
         ids[i].value = memberID
-        matchTypeRange[i].value = 10 if (team == winner) else 0
-        smrChange = 10 if (team == winner) else 0
+        matchTypeRange[i].value = 20 if (team == winner) else 0
+        smrChange = 20 if (team == winner) else 0
         currentRank = "Theta"
         currentSmr = 0
         return smrChange, currentRank, currentSmr
