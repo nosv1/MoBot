@@ -558,7 +558,7 @@ async def updateGuildClocks(client, currentTime, clocks):
 
     try:
       channel = guild.get_channel(clock.channelID)
-      await channel.edit(name=convertedTime.strftime(clock.timeFormat).replace("+", "UTC+"))
+      await channel.edit(name=convertedTime.strftime(clock.timeFormat).replace("+", "UTC+").replace("-", "UTC-"))
     except AttributeError: # when channel doesn't exist
       #await ClocksAndCountdowns.delete("clock", clock.channelID)
       #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, clock.channelID))
