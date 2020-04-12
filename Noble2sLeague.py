@@ -24,6 +24,7 @@ ssIDs = {
   "Noble Leagues Qualifiers" : "1Ut8QSZ48uB-H1wpE3-NxpPwBKLybkK-uo6Jb5LOSIxY",
   "Noble Leagues MoBot" : "1w-cme_ZtMIU3nesgGajc-5Y3eJX22Htwl_UIefG3E1Q",
   "Noble Leagues | League Play Sheet" : "1GGEx2UMN6KJmeAte0s7XIxsU2-AUNt8Nlr2GZUhA7VM",
+  "Euro-Nations Player Database" : "1z369K84jIr6d0kJgcCovj68sGyncs72yjn9cJ7dPNJ8",
 }
 
 ## roles
@@ -74,6 +75,8 @@ async def main(args, message, client):
   if (str(moBot) in args[0]):
     if (args[1] == "info"):
       await getTeamInfo(message, args)
+    elif (args[1] == "enc") :
+      await sendPlayersFromCountry(message, args)
     elif (args[1] == "submit"):
       await submitResultConfirm(message, client)
     elif (args[1].lower() == "registerid" or args[1].lower() == "changeid"):
@@ -481,8 +484,6 @@ async def scoreSubmission(message, payload, client):
     )
 
     await message.guild.get_channel(LEAGUE_RESULTS_CHNL).send(embed=match_result_embed)
-
-
 # end startSubmission
 
 def getTeamsFromDivMatchID(workbook, div, matchID):
@@ -960,6 +961,21 @@ async def getMMR(message, payload, tCommandLog):
   elif (payload.emoji.name == "❌"):
     await message.clear_reactions()
 # end getMMR
+
+async def sendPlayersFromCountry(message, args):
+  workbook = await openSpreadsheet(ssIDs["Euro-Nations Player Database"])
+  sheets = workbook.worksheets()
+  player_sheet = [x for x in sheets if str(x.id) == "1994162224"][0]
+  country = args[-1].strip().upper()
+  player_countries = player_sheet.range("A2:B" + str(player_sheet.row_count))
+  players = []
+  for i, cell in enumerate(player_countries):
+    if cell.value == "" and player_countries[i+1].value == "":
+      break
+    if cell.value.upper() == country:
+      players.append(player_countries[i-1].value)
+  await message.channel.send("\n".join(players))
+# end sendPlayersFromCountry
 
 
 
