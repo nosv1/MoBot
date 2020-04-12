@@ -963,18 +963,37 @@ async def getMMR(message, payload, tCommandLog):
 # end getMMR
 
 async def sendPlayersFromCountry(message, args):
+  country = args[-1].strip().title()
+
   workbook = await openSpreadsheet(ssIDs["Euro-Nations Player Database"])
   sheets = workbook.worksheets()
+  country_sheet = [x for x in sheets if str(x.id) == "1040439972"][0]
   player_sheet = [x for x in sheets if str(x.id) == "1994162224"][0]
-  country = args[-1].strip().upper()
-  player_countries = player_sheet.range("A2:B" + str(player_sheet.row_count))
+
+  country_sheet.update_acell("C1", country)
+  r = country_sheet.range("B2:D" + str(country_sheet.row_count))
+
   players = []
-  for i, cell in enumerate(player_countries):
-    if cell.value == "" and player_countries[i+1].value == "":
+  widths = [0, 0, 0]
+  for i, cell in enumerate(r):
+    if cell.value == "":
       break
-    if cell.value.upper() == country:
-      players.append(player_countries[i-1].value)
-  await message.channel.send("\n".join(players))
+    elif cell.col != 2: # not player column (B)
+      continue
+    else:
+      players.append([cell.value, r[i+1].value, r[i+2].value])
+  players[0][-1] = "Avail?"
+
+  for i in range(len(players)):
+    for j in range(len(widths)):
+      widths[j] = len(players[i][j]) if len(players[i][j]) > widths[j] else widths[j]
+
+  for i in range(len(players)):
+    u = []
+    for j, x in enumerate(players[i]):
+      u.append(x.center(widths[j], " "))
+    players[i] = " | ".join(u)
+  await message.channel.send("`| " + players[0] + " |`\n`" + "-" * (sum(widths) + (len(widths) - 1) * 3 + 4) + "`\n`| " + " |`\n`| ".join(players[1:]) + " |`")
 # end sendPlayersFromCountry
 
 
