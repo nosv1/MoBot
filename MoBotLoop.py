@@ -482,12 +482,15 @@ async def updateDiscordTables():
   moBotDB = MoBotTables.connectDatabase()
   tables = MoBotTables.getSavedTables(moBotDB)
   for table in tables:
-    if (getRandomCondition(1/20)): # once every 20 minutes
+    if (getRandomCondition(1/5)): # once every 5 minutes
       print("\nUpdating Discord Table\n")
       try:
         await MoBotTables.sendTable(table, None, client)
       except AttributeError: # when update channel has been deleted
         print("Channel: <#%s> in Guild: %s possible deleted" % (table.channelID, table.guildID))
+        pass
+      except gspread.exceptions.APIError:
+        print("Resource Exhausted Probably\n")
         pass
   moBotDB.connection.close()
 # end updateDiscordTables
