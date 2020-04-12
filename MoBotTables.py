@@ -264,7 +264,7 @@ def defaultEmbed(moBotMember, workbook, workbookKey, guildID, channelID, creator
 - `Spreadsheet Name` (already recieved from url)
 - `Sheet Name` (Tab Name) 
 - `Table Range` (A1:B10, A:B10, 1:B, A:10, etc.)
-- `Auto Updating` (auto updates randomly every 5 minutes)
+- `Auto Updating` (auto updates randomly every 20 minutes)
 - `Number of Buffer Messages` (used to avoid character limits for messages)
 - `Alignments` (what ranges will be centred or left/right aligned)
 - `Number of Headers` (how many rows at the top are headers, used for `smart merging`)
