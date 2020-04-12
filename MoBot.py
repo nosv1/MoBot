@@ -652,6 +652,8 @@ async def on_raw_reaction_add(payload):
               break
         except KeyError:
           pass
+        except UnboundLocalError: # when there was error in previous try catch...
+          pass
   except discord.errors.Forbidden:
     pass
 # end on_reaction_add
