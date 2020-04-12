@@ -482,8 +482,8 @@ async def updateDiscordTables():
   moBotDB = MoBotTables.connectDatabase()
   tables = MoBotTables.getSavedTables(moBotDB)
   for table in tables:
-    if (getRandomCondition(1/5)): # once every 5 minutes
-      print("\nUpdating Discord Table\n")
+    if (getRandomCondition(1/20)): # once every 20 minutes
+      print("\nUpdating Discord Table %s\n" % table.tableID)
       try:
         await MoBotTables.sendTable(table, None, client)
       except AttributeError: # when update channel has been deleted
