@@ -982,7 +982,6 @@ async def sendPlayersFromCountry(message, args):
       continue
     else:
       players.append([cell.value, r[i+1].value, r[i+2].value])
-  players[0][-1] = "Avail?"
 
   for i in range(len(players)):
     for j in range(len(widths)):
