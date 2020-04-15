@@ -422,7 +422,7 @@ async def on_message(message):
             await bugReport(message)
           else:
             await message.channel.send("If there was an issue with a MoBot function, please use `@MoBot#0697 bug [issue]` to submit a bug report.\nFeel free to include a screenshot, as well as what your input was, what happened, and what you thought should have happened.\n\n<@" + str(mo) + "> may reach out to you if he needs more information.")
-        elif (args[1] == "send" and permissions["administratorPerms"]):
+        elif (args[1] == "send" and authorPerms.administrator):
           if (args[2] == "collection"):
             await CollectionsOLD.sendCollection(message, args, True, client)
           elif(args[2] == "fail"):
