@@ -5,6 +5,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import mysql.connector
 import sys
+import traceback
 
 import SecretStuff
 import MoBotDatabase
