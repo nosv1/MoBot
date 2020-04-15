@@ -14,7 +14,7 @@ moBotTest = 476974462022189056
 mo = 405944496665133058
 
 # MESSAGES
-PRIVATE_CHANNEL_CREATION = 700018067866124318
+PRIVATE_CHANNEL_CREATION = 700023016549253171 # 700018067866124318
 
 # EMOJIS 
 SHOPPING_CART = "🛒"
@@ -110,6 +110,7 @@ async def updateInventory(args, message, client):
                 inventory_range[i].value = code_name
                 inventory_range[i+1].value = item[0]
                 inventory_range[i+2].value = user_quantity
+                inventory_sheet.update_cells(inventory_range, value_input_option="USER_ENTERED")
                 await message.channel.send(f"Inventory Updated\n`{code_name}` `{item[0]}` `{user_quantity}`")
                 return
           else:
@@ -122,6 +123,8 @@ async def updateInventory(args, message, client):
       await message.channel.send("Could not proceed. Your discord name does not contain any of the names listed on the spreadsheet.")
 
   except gspread.exceptions.APIError:
+    print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
+    sys.exit()
     await message.channel.send("There was a technical difficulty sending the information to the spreadsheet. Please try again in a moment.\nYou should be able to simply add a `.` or some character (not a space) to the end of your message to run the command again without having to retype or copy-paste.")
     return
 # end updateInventory
