@@ -44,6 +44,7 @@ import AOR
 import Noble2sLeague
 import GRG
 import Imperial
+import ReapersMC
 
 client = discord.Client()
 moBotDB = None
@@ -144,7 +145,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await Noble2sLeague.sendPlayersFromCountry(message, args)
+        await ReapersMC.updateInventory(args, message, client)
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
@@ -431,6 +432,9 @@ async def on_raw_reaction_add(payload):
       if ("open a ticket" in message.content.lower()):
         if (payload.emoji.name == "✅"):
           await ticketManager.openTicket(message, member, True, client)
+      if message.id == 700023016549253171:
+        await ReapersMC.mainReactionAdd(message, payload, client)
+
 
 @client.event
 async def on_raw_reaction_remove(payload):
