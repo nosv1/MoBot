@@ -155,8 +155,9 @@ async def on_guild_channel_update(before, after):
       if (getRandomCondition(1/10)): # once every 10 minutes
 
         if (currentTime < donationDateCorrection("TE Garrett#9569")):
-          print("\nUpdating TE Garrett#9569 Point Applications")
-          await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
+          # print("\nUpdating TE Garrett#9569 Point Applications")
+          # await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
+          pass
         else:
           await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
 
