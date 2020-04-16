@@ -963,36 +963,41 @@ async def getMMR(message, payload, tCommandLog):
 # end getMMR
 
 async def sendPlayersFromCountry(message, args):
-  country = args[-1].strip().title()
+  await message.channel.trigger_typing()
 
-  workbook = await openSpreadsheet(ssIDs["Euro-Nations Player Database"])
-  sheets = workbook.worksheets()
-  country_sheet = [x for x in sheets if str(x.id) == "1040439972"][0]
-  player_sheet = [x for x in sheets if str(x.id) == "1994162224"][0]
+  try:
+    country = args[-1].strip().title()
 
-  country_sheet.update_acell("C1", country)
-  r = country_sheet.range("B2:D" + str(country_sheet.row_count))
+    workbook = await openSpreadsheet(ssIDs["Euro-Nations Player Database"])
+    sheets = workbook.worksheets()
+    country_sheet = [x for x in sheets if str(x.id) == "1040439972"][0]
+    player_sheet = [x for x in sheets if str(x.id) == "1994162224"][0]
 
-  players = []
-  widths = [0, 0, 0]
-  for i, cell in enumerate(r):
-    if cell.value == "":
-      break
-    elif cell.col != 2: # not player column (B)
-      continue
-    else:
-      players.append([cell.value, r[i+1].value, r[i+2].value])
+    country_sheet.update_acell("C1", country)
+    r = country_sheet.range("B2:D" + str(country_sheet.row_count))
 
-  for i in range(len(players)):
-    for j in range(len(widths)):
-      widths[j] = len(players[i][j]) if len(players[i][j]) > widths[j] else widths[j]
+    players = []
+    widths = [0, 0, 0]
+    for i, cell in enumerate(r):
+      if cell.value == "":
+        break
+      elif cell.col != 2: # not player column (B)
+        continue
+      else:
+        players.append([cell.value, r[i+1].value, r[i+2].value])
 
-  for i in range(len(players)):
-    u = []
-    for j, x in enumerate(players[i]):
-      u.append(x.center(widths[j], " "))
-    players[i] = " | ".join(u)
-  await message.channel.send("`| " + players[0] + " |`\n`" + "-" * (sum(widths) + (len(widths) - 1) * 3 + 4) + "`\n`| " + " |`\n`| ".join(players[1:]) + " |`")
+    for i in range(len(players)):
+      for j in range(len(widths)):
+        widths[j] = len(players[i][j]) if len(players[i][j]) > widths[j] else widths[j]
+
+    for i in range(len(players)):
+      u = []
+      for j, x in enumerate(players[i]):
+        u.append(x.center(widths[j], " "))
+      players[i] = " | ".join(u)
+    await message.channel.send("`| " + players[0] + " |`\n`" + "-" * (sum(widths) + (len(widths) - 1) * 3 + 4) + "`\n`| " + " |`\n`| ".join(players[1:]) + " |`")
+  except gspread.exceptions.APIError:
+    await message.channel.send("**There were technical difficulties retrieving the information. Try again in a moment.**")
 # end sendPlayersFromCountry
 
 
