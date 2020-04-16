@@ -27,7 +27,7 @@ async def main(args, message, client):
   for i in range(len(args)):
     args[i].strip()
 
-  if "&mobot" in args[0].lower():
+  if str(moBot) in args[0]:
     if "inventory"in args[1].lower():
       await updateInventory(args, message, client)
 
@@ -68,7 +68,7 @@ async def createPrivateChannel(message, payload, client):
     position=sys.maxsize
   )
 
-  await channel.send(f"{user.mention}, use `&mobot inventory [code-name] [item] [quantity]` to update the inventory.\nEx. `&mobot inventory [Anarchy] [Pistol] [-2]`")
+  await channel.send(f"{user.mention}, use `@MoBot#0697 inventory [code-name] [item] [quantity]` to update the inventory.\nEx. `@MoBot#0697 inventory [Anarchy] [Pistol] [-2]`")
 # end createPrivateChannel
 
 async def updateInventory(args, message, client):
