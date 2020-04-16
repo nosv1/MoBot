@@ -68,7 +68,7 @@ async def createPrivateChannel(message, payload, client):
     position=sys.maxsize
   )
 
-  await channel.send(f"{user.mention}, use `@MoBot#0697 inventory [code-name] [item] [quantity]` to update the inventory.\nEx. `@MoBot#0697 inventory [Anarchy] [Pistol] [-2]`")
+  await channel.send(f"{user.mention}, use `@MoBot#0697 inventory [code-name] [item] [quantity]` to update the inventory.\nEx. `@MoBot#0697 inventory [TestName] [Pistol] [-2]`")
 # end createPrivateChannel
 
 async def updateInventory(args, message, client):
