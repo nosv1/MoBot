@@ -9,6 +9,7 @@ import random
 from pytz import timezone
 import json
 import re
+import traceback
 
 import SecretStuff
 import Collections
@@ -18,6 +19,7 @@ from RandomSupport import deleteMoBotMessages
 
 
 moBot = 449247895858970624
+mo = 405944496665133058
 ssIDs = {
   "2s League [XB1/PC]" : "1qzDGDOzgaqR7Mmsda-tE1tYn71oU52Gt1okEHqScEnU",
   "Noble Leagues Off-Season" : "1M8wij5yJXNplkRdrhIj-sMqfHBC8KmKHlFqyOCMaARw",
@@ -997,6 +999,9 @@ async def sendPlayersFromCountry(message, args):
     await message.channel.send("`| " + players[0] + " |`\n`" + "-" * (sum(widths) + (len(widths) - 1) * 3 + 4) + "`\n`| " + " |`\n`| ".join(players[1:]) + " |`")
   except gspread.exceptions.APIError:
     await message.channel.send("**There were technical difficulties retrieving the information. Try again in a moment.**")
+  except:
+    await message.channel.send("**There was an error...**\n")
+    await message.guild.get_member(mo).send(f"```{traceback.format_exc()}```")
 # end sendPlayersFromCountry
 
 
