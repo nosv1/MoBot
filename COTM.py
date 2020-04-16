@@ -66,9 +66,14 @@ CROWN = "👑"
 WRENCH = "🔧"
 GLOBE_WITH_LINES = "🌐"
 
+# common roles
+PEEKER_ROLE = 534230087244185601
+CHILDREN_ROLE = 529112570448183296
+
 spaceChar = "⠀"
 logos = {
   "cotmFaded" : "https://i.gyazo.com/e720604af6507b3fc905083e8c92edf7.png",
+  "cotm_white_trans" : "https://i.gyazo.com/226faa8d1f43c56d579faa9d81ff9e86.png",
   "d1" : "https://i.gyazo.com/6e47789b04f7dcd859893da2d2ee623d.png",
   "d2" : "https://i.gyazo.com/095a118003220990734330eb74ce14fe.png",
   "d3" : "https://i.gyazo.com/53ab40295fcdd9cbef5b443fd118a1a1.png",
@@ -96,7 +101,9 @@ async def main(args, message, client):
   qualifyingChannel = message.guild.get_channel(QUALIFYING)
   qualiScreenshotsChannel = message.guild.get_channel(QUALI_SCREENSHOTS)
 
-  if (args[0][-19:-1] == str(moBot)):
+  if str(moBot) in args[0]:
+    if args[1] == "newsignup":
+      await handleFormSignup(message)
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
     if (args[1] == "reserve" and authorPerms.administrator):
@@ -236,6 +243,40 @@ async def memberRemove(member, client):
   channel = guild.get_channel(EVENT_CHAT)
   await channel.send("%s has left :eyes: Was he important?\n||%s||" % (member.mention, mo.mention))
 # end memberRemove
+
+
+
+async def handleFormSignup(message):
+  if not message.webhook_id: # is not from webhook
+    return
+
+  args = message.content.split("[")[1:]
+  number = args[0].split("]")[0]
+  discord_name = args[1].split("]")[0]
+  gamertag = args[2].split("]")[0]
+  was_edited = args[3].splt("]")[0] == "true"
+
+  if was_edited:
+    return
+
+  for member in message.guild.members:
+    if f"{member.name}#{member.discriminator}" == discord_name:
+      await member.edit(nick=gamertag)
+
+      embed = discord.Embed()
+      embed.color = int("0xFFFFFE", 16)
+      embed.set_author(name=f"Child #{number}", icon_url=logos["cotm_white_trans"])
+      embed.description = f"We welcome {member.mention}."
+
+      await message.guild.get_channel(EVENT_CHAT).send(embed=embed)
+      await member.remove_roles(message.guild.get_role(PEEKER_ROLE))
+      await member.add_roles(message.guild.get_role(CHILDREN_ROLE))
+      return
+# end handleFormSignup
+
+
+
+
 
 async def addDriver(message):
   divisionUpdatesChannel = message.guild.get_channel(DIVISION_UPDATES)
