@@ -129,9 +129,8 @@ async def main(args, message, client):
         await tournamentRetire(message)
       else:
         await tournamentSignup(message)
-    except: # likely a gspread resource exhausted error
-      await message.channel.send("Unable to signup at this time; please try again in a couple seconds :shrug:.", delete_after=5)
-
+    except gspread.exceptions.APIError:
+      await message.channel.send("There were technical difficulties signing up. Try again in a moment.", delete_after=7)
 
   if (message.author.name == "Mo" and message.content == "test"):
     #await testing(message)
