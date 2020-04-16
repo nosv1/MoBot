@@ -1879,7 +1879,7 @@ async def tournamentSignup(message):
 
           elif cell.value in usernames:
             member = message.guild.get_member(int(getRegisteredID(cell.value, registeredIDsRange)))
-            await message.channel.send("**Canceling Signup Process**\n%s, " + member.mention + " is already signed up. If this is a mistake, contact an Organiser." % message.author.mention)
+            await message.channel.send(f"**Canceling Signup Process**\n{message.author.mention}, {member.mention} is already signed up. If this is a mistake, contact an Organiser.")
             break
         break
 # end tournamentSignup
