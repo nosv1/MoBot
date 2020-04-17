@@ -23,11 +23,11 @@ arrows = ["⬅", "◀", "➡", "▶"]
 
 months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sep", "Nov", "Dec"]
 
-timeZones = ["UK", "UTC", "ET", "PT"]
+timeZones = ["UK", "UTC", "ET", "PT", "AEST"]
 
 repeaters = ["Never", "Hourly", "Daily", "Weekly", "Bi-weekly", "Monthly", "Yearly"]
 
-shortTimeZoneToProper = {"UK" : "Europe/London", "UTC" : "UTC", "ET" : "America/New_York", "PT" : "America/Los_Angeles"}
+shortTimeZoneToProper = {"UK" : "Europe/London", "UTC" : "UTC", "ET" : "America/New_York", "PT" : "America/Los_Angeles", "AEST" : "Australia/Sydney"}
 
 async def main(args, message, client):    
   
@@ -434,7 +434,7 @@ async def prepareMessageToSchedule(message, channelID, messageID):
   if (msgLocation != None and destChannel != None and msg != None):
     tomorrow = datetime.now() + timedelta(days=1)
 
-    reply = "Message Scheduler\n\nMessage Details:\n    Destination Channel: #" + destChannel.name + "\n    Destination Channel ID: " + str(destChannel.id) + "\n\n    Message Snippet: '" + msg.content.replace("```", "")[:25].strip() + "...'\n    Message ID: " + str(msg.id) + "\n\n    Source Channel: #" + msgLocation.name + "\n    Source Channel ID: " + str(msgLocation.id) + "\n\nDate/Time Details:\n  ➡Month [" + str(tomorrow.month) + "]\n    Day [" + str(tomorrow.day) + "]\n    Year [" + str(tomorrow.year) + "]\n    Hour [6]\n    Minute [30]\n    AM/PM [AM]\n    Time zone [UK]\n    Repeating [Never]\n\nTime Zones Available:\n    UK = United Kingdom\n    UTC = Universal Time Coordinated\n    ET = United States Eastern Time\n    PT = United States Pacific Time\n\nHow to Use:\n    The left/right arrows adjust the values.\n    The up/down arrows move through the 'Date/Time Details'.\n    When you've the 'Date/Time Details' as you want them, click the ✅ to schedule the message."
+    reply = "Message Scheduler\n\nMessage Details:\n    Destination Channel: #" + destChannel.name + "\n    Destination Channel ID: " + str(destChannel.id) + "\n\n    Message Snippet: '" + msg.content.replace("```", "")[:25].strip() + "...'\n    Message ID: " + str(msg.id) + "\n\n    Source Channel: #" + msgLocation.name + "\n    Source Channel ID: " + str(msgLocation.id) + "\n\nDate/Time Details:\n  ➡Month [" + str(tomorrow.month) + "]\n    Day [" + str(tomorrow.day) + "]\n    Year [" + str(tomorrow.year) + "]\n    Hour [6]\n    Minute [30]\n    AM/PM [AM]\n    Time zone [UK]\n    Repeating [Never]\n\nTime Zones Available:\n    UK = United Kingdom\n    UTC = Universal Time Coordinated\n    ET = United States Eastern Time\n    PT = United States Pacific Time\n    AEST = Australian Eastern Standard Time\n\nHow to Use:\n    The left/right arrows adjust the values.\n    The up/down arrows move through the 'Date/Time Details'.\n    When you've the 'Date/Time Details' as you want them, click the ✅ to schedule the message."
 
     messageScheduler = await message.channel.send("```" + reply + "```")
     
