@@ -102,7 +102,7 @@ async def main(args, message, client):
   qualiScreenshotsChannel = message.guild.get_channel(QUALI_SCREENSHOTS)
 
   if str(moBot) in args[0]:
-    if args[1] == "newsignup":
+    if "newsignup" in args[1]:
       await handleFormSignup(message)
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
@@ -254,7 +254,7 @@ async def handleFormSignup(message):
   number = args[0].split("]")[0]
   discord_name = args[1].split("]")[0]
   gamertag = args[2].split("]")[0]
-  was_edited = args[3].splt("]")[0] == "true"
+  was_edited = args[3].split("]")[0] == "true"
 
   if was_edited:
     return
