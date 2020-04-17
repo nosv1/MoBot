@@ -146,7 +146,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.handleFormSignup(await message.guild.get_channel(527355464216739866).fetch_message(700362940326477859))
+        await COTM.handleFormSignup(await message.guild.get_channel(527355464216739866).fetch_message(700658656953499729))
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
