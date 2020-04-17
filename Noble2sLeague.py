@@ -1836,7 +1836,7 @@ async def tournamentSignup(message):
   for userID in userIDs:
     member = message.guild.get_member(userID)
     if not checkIfRegistered(member, registeredIDsRange):
-      await message.channel.send("**Canceling Signup**\n%s, " + member.mention + " is not a registered member. Use the command `@MoBot#0697 registerID username` to register." % message.author.mention)
+      await message.channel.send(f"**Canceling Signup**\n{message.author.mention}, {member.mention} is not a registered member. Use the command `@MoBot#0697 registerID username` to register.")
       return
 
   if len(userIDs) != numPlayers:
