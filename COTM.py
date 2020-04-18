@@ -501,7 +501,7 @@ async def submitVotes(message, member):
         voting_msg = await voting.fetch_message(VOTING_EMBED)
         voting_embed = voting_msg.embeds[0]
         voting_embed = RandomSupport.updateFieldValue(voting_embed, "Total Voters", count)
-        await voting_msg.edit(embed=vote_embed)
+        await voting_msg.edit(embed=voting_embed)
 
         await message.channel.delete() # delete channel
         break
