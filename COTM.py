@@ -27,6 +27,8 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 import numpy as np
 import os
+import sys
+import re
 
 import SecretStuff
 
@@ -35,8 +37,13 @@ import RandomSupport
 GUILD_ID = 527156310366486529
 
 # common member ids
-moID = 405944496665133058
+mo = 405944496665133058
 moBot = 449247895858970624
+moBotTest = 476974462022189056
+
+# common messages 
+VOTING_EMBED = 620778154197385256
+VOTING_CHECKMARK = 620778190767390721
 
 # common channels
 COTM_STREAMS = 527161746473877504
@@ -55,8 +62,11 @@ PIT_MARSHALL_SIGNUP = 605985462502555679
 MINI_CHAMPIONSHIPS = 630610458029588480
 DRIVER_HISTORY = 631556653174620160
 EVENT_CHAT = 527156400908926978
+VOTING = 608472349712580608
+VOTING_LOG = 530284914071961619
 
 # common emojis
+X_EMOJI = "❌"
 CHECKMARK_EMOJI = "✅"
 ARROWS_COUNTERCLOCKWISE_EMOJI  = "🔄"
 THUMBSUP_EMOJI = "👍"
@@ -67,6 +77,7 @@ WRENCH = "🔧"
 GLOBE_WITH_LINES = "🌐"
 
 # common roles
+EVERYONE = 527156310366486529
 PEEKER_ROLE = 534230087244185601
 CHILDREN_ROLE = 529112570448183296
 
@@ -115,7 +126,7 @@ async def main(args, message, client):
       else:
         driverID = message.author.id
       await updateDriverHistory(message, driverID, await openSpreadsheet())
-    if (message.author.id == moID):
+    if (message.author.id == mo):
       try:
         if (args[1] == "update"):
           if (args[2] == "standings"):
@@ -157,22 +168,17 @@ async def mainReactionAdd(message, payload, client):
 
   if ("MoBot" not in member.name):
     if (payload.emoji.name == CHECKMARK_EMOJI):
-      if (message.id == 614836845267910685): # message id for "Do you need to submit quali time"  
-        await addUserToQualiScreenshots(message, member, qualiScreenshotsChannel, client)
-        await message.remove_reaction(payload.emoji.name, member)
-      elif (message.id == 620778190767390721): # message id for voting
+      if (message.id == VOTING_CHECKMARK): # track-voting
         await openVotingChannel(message, member)
         await message.remove_reaction(payload.emoji.name, member)
 
-    if ("are you ready to vote" in message.content):
-      if (payload.emoji.name == CHECKMARK_EMOJI):
-        await votingProcess(message, member, client)
-      elif (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
+    if re.match(r"(voting)(?!.*-log)", message.channel.name): # is voting-name channel
+      if payload.emoji.name in RandomSupport.numberEmojis[0:5]:
+        await votePlaced(message, member)
+      elif payload.emoji.name == X_EMOJI:
         await resetVotes(message)
-
-    if (message.channel.id == qualiScreenshotsChannel.id):
-      if (message.channel.permissions_for(member).administrator and payload.emoji.name == THUMBSUP_EMOJI):
-        await waitForQualiTime(message, member, payload, qualifyingChannel, client)
+      elif payload.emoji.name == CHECKMARK_EMOJI:
+        await submitVotes(message, member)
 
     if (message.id == 620811567210037253): # message id for Reserves Embed
       if (payload.emoji.name == WAVE_EMOJI):
@@ -182,7 +188,7 @@ async def mainReactionAdd(message, payload, client):
         await reserveAvailable(message, member, payload, client)
         await message.channel.send(".", delete_after=0)
       elif (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
-        if (member.id == moID):
+        if (member.id == mo):
           workbook = await openSpreadsheet()
           await getReserves(workbook)
           await updateStartOrders(message.guild, workbook)
@@ -239,15 +245,15 @@ async def mainMemberUpdate(before, after, client):
 
 async def memberRemove(member, client):
   guild = client.get_guild(GUILD_ID)
-  mo = guild.get_member(moID)
+  mo = guild.get_member(mo)
   channel = guild.get_channel(EVENT_CHAT)
-  await channel.send("%s has left :eyes: Was he important?\n||%s||" % (member.mention, mo.mention))
+  await channel.send("%s has remaining :eyes: Was he important?\n||%s||" % (member.mention, mo.mention))
 # end memberRemove
 
 
 
 async def handleFormSignup(message):
-  if not message.webhook_id: # is not from webhook
+  if not message.webhook_id or True: # is not from webhook
     return
 
   args = message.content.split("[")[1:]
@@ -274,6 +280,235 @@ async def handleFormSignup(message):
       return
 # end handleFormSignup
 
+
+
+async def openVotingChannel(message, member):
+  await message.channel.trigger_typing()
+
+  guild = message.guild
+  category_channels = message.channel.category.channels
+
+  for channel in category_channels:
+    if member.display_name.lower() in channel.name.replace("-", " "): # channel already created
+      await message.channel.send(f"{channel.mention}", delete_after=10)
+      return
+
+  channel = await guild.create_text_channel(
+    f"voting-{member.display_name}",
+    overwrites = {
+      guild.get_role(EVERYONE) : discord.PermissionOverwrite(read_messages=False),
+      member : discord.PermissionOverwrite(
+        read_messages=True,
+        send_messages=False
+      ),
+    },
+    category=message.channel.category,
+    position=sys.maxsize
+  )
+  msg = await channel.send(
+    content=member.mention,
+    embed=(await createOgVotingEmbed(message))
+  )
+  await msg.add_reaction(X_EMOJI)
+  for emoji in RandomSupport.numberEmojis[0:5]:
+    await msg.add_reaction(emoji)
+# end openVotingChannel
+
+async def createOgVotingEmbed(message):
+
+  embed = discord.Embed()
+  embed.color = int("0xFFFFFE", 16)
+  embed.set_footer(text="Please do not spam the number-buttons... If there are issues, contact @Mo#9991 :)")
+  embed.set_author(
+    name="Voting",
+    icon_url=logos["cotm_white_trans"],
+    url="https://google.com/current_option=1/1=0/2=0/3=0/4=0/"
+  )
+
+  embed.add_field(
+    name="**Instructions**",
+    value=f"Select the number-button below to cast your vote. You have 4 votes to spend total. Spread them out, or stack them all on one option. Click the {X_EMOJI} to clear all your votes.\n{spaceChar}",
+    inline=False
+  )
+
+  og_voting_embed = await (message.guild.get_channel(VOTING)).fetch_message(VOTING_EMBED)
+  options = RandomSupport.getValueFromField(
+    og_voting_embed.embeds[0], 
+    "Options"
+  ).split("\n")
+  options = [f"{i+1}. {option} - 0" for i, option in enumerate(options) if spaceChar not in option]
+  embed.add_field(
+    name="**Options**", 
+    value= "\n".join(options) + "\n" + spaceChar,
+    inline=False
+  )
+
+  embed.add_field(
+    name="**Current Option**",
+    value=f"{options[0]}\n{spaceChar}",
+    inline=False
+  )
+
+  embed.add_field(
+    name="**Votes Remaining**",
+    value="4",
+    inline=False
+  )
+
+  return embed
+# end createOgVotingEmbed
+
+async def resetVotes(message):
+  await message.clear_reactions()
+  await message.edit(embed=(await createOgVotingEmbed(message)))
+  await message.add_reaction(X_EMOJI)
+  for emoji in RandomSupport.numberEmojis[0:5]:
+    await message.add_reaction(emoji)
+# end resetVotes
+
+async def votePlaced(message, member):
+  await message.channel.trigger_typing()
+
+  embed = message.embeds[0]
+  url = embed.author.url
+  reactions = message.reactions
+
+  current_option_number = int(RandomSupport.getDetailFromURL(url, "current_option"))
+  votes_remaining = int(RandomSupport.getValueFromField(embed, "Votes Remaining"))
+  
+  vote = None
+  for r in reactions:
+    if r.emoji == X_EMOJI:
+      continue
+    
+    number = RandomSupport.numberEmojis.index(r.emoji)
+    if len(await r.users().flatten()) > 1 and not vote: # vote hasn't been found
+      vote = number
+      votes_remaining = votes_remaining - vote
+      break
+
+  new_vote = vote + int(RandomSupport.getDetailFromURL(url, str(current_option_number)))
+  embed = RandomSupport.updateDetailInURL( # update vote count for option
+    embed, 
+    str(current_option_number),
+    str(new_vote)
+  )
+
+  options = RandomSupport.getValueFromField(embed, "Options")
+  options = options.split("\n")
+  options[current_option_number-1] = options[current_option_number-1][:-1] + str(new_vote)
+  #re.sub(r"( - \d$)", options[current_option_number-1], f" - {new_vote}")) # not sure why this does't work
+  embed = RandomSupport.updateFieldValue(embed, "Options", "\n".join(options)) # update options with correct vote counts
+
+  embed = RandomSupport.updateFieldValue(embed, "Votes Remaining", str(votes_remaining)) # update votes remaining
+
+  option_numbers = [1, 2, 3, 4]
+  new_option_number = option_numbers[option_numbers.index(current_option_number)-3]
+  embed = RandomSupport.updateDetailInURL(embed, "current_option", str(new_option_number)) # increment by 1, update current option number
+
+  embed = RandomSupport.updateFieldValue( # update current option
+    embed, "Current Option", 
+    f"{options[new_option_number-1]}\n{spaceChar}"
+  )
+
+  if votes_remaining == 0:
+    embed = RandomSupport.updateFieldValue(
+      embed, 
+      "Votes ", 
+      f"You have no votes remaining. Click the {CHECKMARK_EMOJI} to submit."
+    )
+
+  await message.edit(embed=embed)
+
+  for r in reactions:
+    if r.emoji == X_EMOJI:
+      continue
+    if r.emoji == CHECKMARK_EMOJI:
+      continue
+
+    number = RandomSupport.numberEmojis.index(r.emoji)
+    await message.remove_reaction(r.emoji, member)
+    if number > votes_remaining or votes_remaining == 0:
+      await message.remove_reaction(r.emoji, message.guild.get_member(moBot))
+
+  if votes_remaining == 0:
+    await message.add_reaction(CHECKMARK_EMOJI)
+# end votesPlaced
+
+async def submitVotes(message, member):
+  await message.channel.trigger_typing()
+
+  try:
+    workbook = await openSpreadsheet()
+    sheets = workbook.worksheets()
+    sheet = [sheet for sheet in sheets if sheet.id == 242811195][0] # Voting Sheet
+    r = sheet.range(f"C4:G{sheet.row_count}")
+    user_found = findDriver(r, member.display_name)
+
+    if user_found != -1:
+      await message.channel.send(f"**Cancelling Submssion**\nYou cannot vote more than once. If this is a mistake, contact <@{mo}>.")
+      await message.clear_reactions()
+      return
+
+    for i, cell in enumerate(r):
+
+      if cell.value == "": # append vote
+        vote_embed = message.embeds[0]
+        votes = [int(RandomSupport.getDetailFromURL(vote_embed.author.url, str(j))) for j in range(1, 5)]
+        r[i].value = member.display_name
+        for j in range(1, 5):
+          r[i+j].value = votes[j-1]
+        sheet.update_cells(r, value_input_option="USER_ENTERED")
+        await message.channel.send("**Votes Submitted**\nThank you for voting. :)")
+
+        totals = [0] * 4 # getting totals
+        for j in range(0, len(r), 5):
+          if r[j].value == "":
+            break
+
+          for k in range(4):
+            totals[k] += int(r[j+k+1].value)
+        
+        log_embed = discord.Embed() # send to log
+        log_embed.color = int("0xFFFFFE", 16)
+        log_embed.set_author(name="Vote Submission", icon_url=logos["cotm_white_trans"])
+        options = RandomSupport.getValueFromField(vote_embed, "Options")
+        log_embed.add_field(
+          name=member.display_name,
+          value=options,
+          inline=False
+        )
+        options = options.split("\n")
+        for j in range(0, len(options)-1): # space char at end
+          options[j] = options[j][:-1] + str(totals[j])
+
+        log_embed.add_field(
+          name="Votes",
+          value="\n".join(options),
+          inline=False
+        )
+
+        count = RandomSupport.numberToEmojiNumbers(i // 5 + 1)
+        log_embed.add_field(
+          name="Count",
+          value=count
+        )
+
+        voting_log = message.guild.get_channel(VOTING_LOG)
+        await voting_log.send(embed=log_embed)
+
+        voting = message.guild.get_channel(VOTING) # update total voters
+        voting_msg = await voting.fetch_message(VOTING_EMBED)
+        voting_embed = voting_msg.embeds[0]
+        voting_embed = RandomSupport.updateFieldValue(voting_embed, "Total Voters", count)
+        await voting_msg.edit(embed=vote_embed)
+
+        await message.channel.delete() # delete channel
+        break
+  except gspread.exceptions.APIError:
+    await message.channel.send(f"**<@{member.id}>, there were technical difficulties submitting your vote. Wait a copule seconds, then click the {CHECKMARK_EMOJI} again.**", delete_after=10)
+    return
+# end submitVotes
 
 
 
@@ -673,7 +908,7 @@ async def memberStartedStreaming(member, client):
     twitchStreamers = streamEmbed["fields"][0]["value"]
     #multiStreams = streamEmbed["fields"][3]["value"]
   except:
-    await client.get_member(moID).send(str(traceback.format_exc()))
+    await client.get_member(mo).send(str(traceback.format_exc()))
 # end startedStreaming
 
 async def getReserveDiv(member):
@@ -855,219 +1090,6 @@ async def reserveNotAvailable(message, member):
   await setReservesAvailable(embed, workbook)
   await updateStartOrders(message.guild, workbook)
 # end reserveNotAvailable
-
-async def resetVotes(message):
-  await message.clear_reactions()
-  await message.channel.purge(after=message)
-  await message.add_reaction(CHECKMARK_EMOJI)
-  await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
-# end resetVotes
-
-async def votingProcess(message, member, client):
-  await message.clear_reactions()
-  await message.add_reaction(ARROWS_COUNTERCLOCKWISE_EMOJI)
-  numberEmojis = ["0⃣", "1⃣", "2⃣", "3⃣", "4⃣", "5⃣", "6⃣", "7⃣", "8⃣", "9⃣", "🔟"]
-  undoEmoji = "↩"
-
-  votingChannel = message.channel
-
-  # get vote options
-  voteOptionsMsg = await getCurrentVotersVoteOptionsMsg(message)
-  voteOptionsEmbed = voteOptionsMsg.embeds[0].to_dict()
-  voteOptions = voteOptionsEmbed["fields"][1]["value"].split("\n")
-  del voteOptions[-1]
-
-  voteOptionsDict = {}
-  for i in range(len(voteOptions)):
-    voteOptions[i] = voteOptions[i].split("**__")[1].split("__**")[0]
-    voteOptionsDict[voteOptions[i]] = 0
-
-  def checkSpent(payload):
-    return (payload.emoji.name in numberEmojis or payload.emoji.name == undoEmoji) and payload.channel_id == votingChannel.id and payload.user_id == member.id
-
-  reply = ""
-  reply += "**Voting Options:**"
-  for option in voteOptions:
-    reply += "\n  - " + option + ": 0"
-  reply += "\n\nVotes Remaining: " + str(len(voteOptions))
-
-  voteOptionsMsg = await votingChannel.send(reply)
-
-  async def getVoteSpent(payload):
-    for i in range(len(numberEmojis)):
-      if (payload.emoji.name == numberEmojis[i]):
-        return i
-  # end getVoteSpent
-
-  async def updateVoteOptions(option, votesRemaining):
-    reply = "**Vote Options:**"
-    for option in voteOptions:
-      reply += "\n - " + option + ": " + str(voteOptionsDict[option])
-    reply += "\n\nVotes Remaining: " + str(votesRemaining)
-    await voteOptionsMsg.edit(content=reply)
-  # end updateVoteOptions
-  
-  votesRemaining = len(voteOptions)
-  i = 0
-  moBotMessage = await votingChannel.send("**Loading options...**")
-  await asyncio.sleep(3)
-  while (i < len(voteOptions) and votesRemaining > 0):
-    option = voteOptions[i]
-    await moBotMessage.edit(content="**How many votes would you like to spend on `" + option + "`?**")
-    
-    for j in range(votesRemaining + 1):
-      await moBotMessage.add_reaction(numberEmojis[j])
-
-    try:
-      payload = await client.wait_for("raw_reaction_add", timeout=120.0, check=checkSpent)
-      await moBotMessage.clear_reactions()
-      if (payload.emoji.name in numberEmojis):
-        votesSpent = await getVoteSpent(payload)
-        votesRemaining -= votesSpent
-        voteOptionsDict[option] += votesSpent
-        await updateVoteOptions(option, votesRemaining)
-        i += 1
-    except asyncio.TimeoutError:
-      await moBotMessage.clear_reactions()
-      await message.channel.send("**TIMED OUT**\n\n**Click the 🔄 at the top to restart the voting process.**")
-      return
-
-    if (votesRemaining > 0 and i == len(voteOptions)):
-      await moBotMessage.edit(content="**Please use all of your votes.**")
-      await asyncio.sleep(2)
-      i = 0
-
-  moBotMessage = await message.channel.send("**All votes have been used, would you like to submit?**\nIf not, click the 🔄 at the top to restart the voting process.")
-  await moBotMessage.add_reaction(CHECKMARK_EMOJI)
-  def check(payload):
-    return payload.message_id == moBotMessage.id and payload.user_id == member.id
-  try:
-    payload = await client.wait_for("raw_reaction_add", timeout=120.0, check=check)
-    await moBotMessage.clear_reactions()
-  except asyncio.TimeoutError:
-    await moBotMessage.clear_reactions()
-    await message.channel.send("**TIMED OUT**\n\n**Click the 🔄 at the top to restart the voting process.**")
-    return
-
-  await message.channel.send("**Submitting Your Votes**")
-  await message.channel.trigger_typing()
-
-  workbook = await openSpreadsheet()
-  votingSheet = workbook.worksheet("Voting")
-  voterRange = votingSheet.range("D3:H" + str(votingSheet.row_count))
-  totalVoters = 0
-  log = {member.display_name : [], "Total Votes" : []}
-  for i in range(0, len(voterRange), 5):
-    totalVoters += 1
-    if (voterRange[i].value == ""):
-      voterRange[i].value = str(member.id)
-      for j in range(0, len(voteOptions)):
-        voterRange[j+i+1].value = str(voteOptionsDict[voteOptions[j]])
-        log[member.display_name].append([voteOptions[j], voterRange[j+i+1].value])
-      break
-  votingSheet.update_cells(voterRange, value_input_option="USER_ENTERED")
-  log["Total Votes"] = votingSheet.range("E2:H2")
-
-  await message.channel.send("**Thank you for voting.**")
-  await asyncio.sleep(3)
-  await closeVotingChannel(message, member, totalVoters, log)
-# end votingProcess
-
-async def closeVotingChannel(message, member, totalVoters, log):
-  await message.channel.delete()
-  totalVotersEmojiNumbers = RandomSupport.numberToEmojiNumbers(totalVoters)
-  currentVotersMsg = await getCurrentVotersVoteOptionsMsg(message)
-  currentVotersEmbed = currentVotersMsg.embeds[0].to_dict()
-  currentVoters = (currentVotersEmbed["fields"][2]["value"] + "\n").split("\n")
-  value = ""
-  for voter in currentVoters:
-    if (str(member.id) not in voter and "@" in voter):
-      value += "\n" + voter
-  if (value.split(spaceChar)[0].strip() == ""):
-    value = "None" 
-  value += "\n" + spaceChar
-  currentVotersEmbed["fields"][2]["value"] = value
-  currentVotersEmbed["fields"][3]["value"] = totalVotersEmojiNumbers
-  await currentVotersMsg.edit(embed=discord.Embed.from_dict(currentVotersEmbed))
-
-  embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
-  embed.add_field(name=member.display_name + ":", value="", inline=False)
-  embed.add_field(name="Total Votes:", value="", inline=False)
-  embed.add_field(name="Total Voters:", value=totalVotersEmojiNumbers)
-  embed = embed.to_dict()
-  for i in range(len(log["Total Votes"])):
-    embed["fields"][0]["value"] += "\n" + spaceChar + log[member.display_name][i][0] + " - " + log[member.display_name][i][1]
-    embed["fields"][1]["value"] += "\n" + spaceChar + log[member.display_name][i][0] + " - " + log["Total Votes"][i].value
-  embed["fields"][0]["value"] += "\n" + spaceChar
-  embed["fields"][1]["value"] += "\n" + spaceChar
-  await message.guild.get_channel(530284914071961619).send(embed=discord.Embed.from_dict(embed))
-# end closeVotingChannel
-
-async def getCurrentVotersVoteOptionsMsg(message):
-  channel = message.guild.get_channel(608472349712580608)
-  currentVotersMsg = await channel.fetch_message(620778154197385256)
-  return currentVotersMsg
-# end getCurrentVotersVoteOptionsMsg
-
-async def openVotingChannel(message, member):
-  await message.channel.trigger_typing()
-  async def getVotingCategory(message):
-    categories = message.guild.by_category()
-  
-    for category in categories:
-      try:
-        if ("voting" in category[0].name.lower()):
-          return category[0]
-      except AttributeError:
-        pass
-  # end getVotingCategory
-
-  # get current voters
-  currentVotersMsg = await getCurrentVotersVoteOptionsMsg(message)
-  currentVotersEmbed = currentVotersMsg.embeds[0].to_dict()
-  currentVoters = currentVotersEmbed["fields"][2]["value"]
-
-  # get past voters
-  workbook = await openSpreadsheet()
-  votingSheet = workbook.worksheet("Voting")
-  pastVotersRange = votingSheet.range("D3:D" + str(votingSheet.row_count))
-  isPastVoter = findDriver(pastVotersRange, str(member.id)) >= 0
-
-  # create voting channel
-  if (str(member.id) not in currentVoters and not isPastVoter):
-    votingChannel = await message.guild.create_text_channel(name="voting " + member.display_name)
-
-    # udpate current voters
-    currentVotersEmbed["fields"][2]["value"] = "" if ("None" in currentVoters) else currentVoters.split(spaceChar)[0].strip() 
-    currentVotersEmbed["fields"][2]["value"] += "\n" + member.display_name + " - <#" + str(votingChannel.id) + ">"
-    currentVotersEmbed["fields"][2]["value"] += "\n" + spaceChar
-    await currentVotersMsg.edit(embed=discord.Embed.from_dict(currentVotersEmbed))
-
-    # set permissions
-    await votingChannel.edit(category=await getVotingCategory(message), sync_permissions=True)
-    await votingChannel.set_permissions(member, read_messages=True, send_messages=False, add_reactions=False)
-    for role in message.guild.roles:
-      if (role.name == "@everyone"):
-        await votingChannel.set_permissions(role, read_messages=False)
-        break
-
-    # get vote options
-    voteOptionsMsg = await getCurrentVotersVoteOptionsMsg(message)
-    voteOptionsEmbed = voteOptionsMsg.embeds[0].to_dict()
-    voteOptions = voteOptionsEmbed["fields"][1]["value"].split("\n")
-    del voteOptions[-1]
-
-    await votingChannel.send("This season there's been a change to how the voting works. As you can see there are " + str(len(voteOptions)) + " options to vote from. You have " + str(len(voteOptions)) + " votes to 'spend'. You can use them all on one option, or spread them out.")
-
-    moBotMessage = await votingChannel.send("**" + member.mention + ", are you ready to vote?**")
-    await moBotMessage.add_reaction(CHECKMARK_EMOJI)
-
-  else:
-    msg = await message.channel.send("**Cannot open a voting channel.**\n**" + member.mention + ", you either already have a voting channel open, or you have already voted.**")
-    await asyncio.sleep(10)
-    await msg.delete()
-# end openVotingChannel
 
 async def waitForQualiTime(message, member, payload, qualifyingChannel, client):
   def check(msg):
@@ -1458,7 +1480,7 @@ async def updateStartOrders(guild, workbook):
           driverName = driverMember.display_name
           embed["fields"][0]["value"] += ("%d. %s - %d - D%s\n" % (i+1, driverName, driver.totalPoints, driver.lastWeeksDiv))
       except AttributeError: # when driverMember or reserveMember is None
-        await guild.get_member(moID).send("**SOMEONE MAY HAVE LEFT COTM**\nDriver:%s\nReserve:%s" % (driver.driverID, driver.reserveID))
+        await guild.get_member(mo).send("**SOMEONE MAY HAVE LEFT COTM**\nDriver:%s\nReserve:%s" % (driver.driverID, driver.reserveID))
     startOrderEmbeds.append(embed)
 
   await startOrdersChannel.purge()
@@ -1885,7 +1907,7 @@ async def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
   creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('cotmS4_client_secret.json'), scope)
   clientSS = gspread.authorize(creds)  
-  season5Key = "11MpOJikj0UyxtlNN502Yq0wavG57AYAjtUlUFgeQUQs"
-  workbook = clientSS.open_by_key(season5Key)
+  season6Key = "1WgGMgiUF4NVZyFCo-8DW2gnY3kwhXB8l02ov0Cp4pRQ"
+  workbook = clientSS.open_by_key(season6Key)
   return workbook
 # end openSpreadsheet
