@@ -146,8 +146,9 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.handleFormSignup(await message.guild.get_channel(527355464216739866).fetch_message(700658656953499729))
-        await message.channel.send("done", delete_after=3)
+        
+        await COTM.openVotingChannel(message, message.author)
+        #await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
       elif (args[1] == "nrt"):
@@ -427,6 +428,8 @@ async def on_raw_reaction_add(payload):
           await Reservations.mainReactionAdd(message, payload, client)
       if ("EventScheduler" in message.embeds[0].author.url):
         pass'''
+      if "Voting" in embedAuthor:
+        await COTM.mainReactionAdd(message, payload, client)
     else:
       #if (message.guild.id == 527156310366486529 or "are you ready to vote" in message.content.lower() or "do you need to vote" in message.content.lower()): # cotm
         #await COTM.mainReactionAdd(message, payload, client)
