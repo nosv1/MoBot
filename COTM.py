@@ -253,7 +253,7 @@ async def memberRemove(member, client):
 
 
 async def handleFormSignup(message):
-  if not message.webhook_id or True: # is not from webhook
+  if not message.webhook_id: # is not from webhook
     return
 
   args = message.content.split("[")[1:]
