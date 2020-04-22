@@ -2,8 +2,12 @@ import discord
 import asyncio
 from datetime import datetime
 import random
+from requests_html import HTMLSession
+import RandomSupport
 
-moBot = "449247895858970624"
+
+moBot = 449247895858970624
+mo = 405944496665133058
 spaceChar = "⠀"
 
 async def main(args, message, client):
@@ -30,6 +34,10 @@ async def mainReactionRemove(message, payload, client):
 
 async def newGame(message, client):
   word = await getWord()
+  try:
+    defintion = await getDefinition(word)
+  except:
+    await RandomSupport.sendErrorToMo("Hangman", client, mo)
   embed = discord.Embed(color=int("0xd1d1d1", 16))
   embed.set_author(name="MoBot Hangman", url="https://google.come/word=" + word) # will be more hidden later
   hangmanBoard = [
@@ -80,15 +88,17 @@ async def newGame(message, client):
 
     embed = embed.to_dict()
     embed["fields"][0]["value"] = "```\n" + await getHangMan(winner, trashLetters, hangmanBoard) + wordLocation + trashLetters + "```"
-    if (winner):
-      embed["color"] = int("0x008000", 16)
-      embed["fields"][1]["value"] = "**Winner**"
-    elif (loser):
-      if (outOfTime):
-        embed["fields"][1]["value"] = "**Out of Time**"
-      else:
-        embed["fields"][1]["value"] = "**Loser**"
-      embed["color"] = int("0xFF0000", 16)
+    if winner or loser:
+      if (winner):
+        embed["color"] = int("0x008000", 16)
+        embed["fields"][1]["value"] = "**Winner**"
+      elif (loser):
+        if (outOfTime):
+          embed["fields"][1]["value"] = "**Out of Time**"
+        else:
+          embed["fields"][1]["value"] = "**Loser**"
+        embed["color"] = int("0xFF0000", 16)
+      embed["fields"][1]["value"] += f"\n*{defintion}*"
 
     embed = discord.Embed.from_dict(embed)
     try:
@@ -157,3 +167,10 @@ async def getWord():
   word = words[int(random.random() * len(words)) % len(words)]
   return word
 # end getWord
+
+async def getDefinition(word):
+  session = HTMLSession()
+  r = session.get(f"https://www.dictionary.com/browse/{word}")
+  html = r.html.html
+  return html.split('<meta name="description"')[1].split("See more.")[0].split("content=\"")[1].strip()
+# end getDefinition
