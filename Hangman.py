@@ -127,7 +127,7 @@ async def newGame(message, client):
 
         if player.games_played >= 10:
           server_position = str(leaderboard.index(player) + 1)
-          server_position += "st" if server_position[-1] == "1" else ("nd" if server_position[-1] == "2" else "th")
+          server_position += "st" if server_position[-1] == "1" else ("nd" if server_position[-1] == "2" else ("rd" if server_position[-1] == "3" else "th"))
 
         embed = discord.Embed.from_dict(embed)
         embed.add_field(
