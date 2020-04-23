@@ -4,11 +4,24 @@ from datetime import datetime
 import random
 from requests_html import HTMLSession
 import RandomSupport
+import MoBotDatabase
 
 
 moBot = 449247895858970624
 mo = 405944496665133058
 spaceChar = "⠀"
+
+class Player:
+  def __init__(self, user_id, guild_id, percent_correct, wins, losses, games_played):
+    self.user_id = user_id
+    self.guild_id = guild_id
+    self.percent_correct = percent_correct
+    self.wins = wins
+    self.losses = losses
+    self.games_played = games_played
+# end Player
+
+
 
 async def main(args, message, client):
   now = datetime.now()
@@ -31,6 +44,8 @@ async def mainReactionAdd(message, payload, cilent):
 async def mainReactionRemove(message, payload, client):
   pass
 # end mainReactionRemove
+
+
 
 async def newGame(message, client):
   word = await getWord()
@@ -59,7 +74,7 @@ async def newGame(message, client):
   def check(letterMsg):
     return len(letterMsg.content) == 1 and (letterMsg.author == message.author or str(letterMsg.author.id) in message.content) and letterMsg.channel == message.channel
 
-  correctLetters = []
+  correctLetters = set()
   trashLetters = "\n\n"
   winner = False
   loser = False
@@ -73,7 +88,7 @@ async def newGame(message, client):
 
     letter = letterMsg.content.lower()
     if (letter in word):
-      correctLetters.append(letter)
+      correctLetters.add(letter)
       winner = len(correctLetters) == len(set(word))
     else:
       trashLetters += letter
@@ -100,6 +115,29 @@ async def newGame(message, client):
         embed["color"] = int("0xFF0000", 16)
       embed["fields"][1]["value"] += f"\n*{defintion}*"
 
+      if len(message.mentions) <= 1:
+        player, leaderboard = await updateLeaderboard(message.author.id, message.guild.id, winner)
+        
+        i = len(leaderboard) - 1
+        while i >= 0:
+          p = leaderboard[i]
+          if p.games_played < 10:
+            del leaderboard[i]
+          i -= 1
+
+        embed = discord.Embed.from_dict(embed)
+        embed.add_field(
+          name=spaceChar,
+          value=f"""
+          **Stat Line**
+          Win %: `{str(player.percent_correct) + "%"}`
+          Wins/Losses: `{player.wins}/{player.losses}`
+          Games Played: `{player.games_played}`
+          Server Position: `TBD - {leaderboard.index(player) + 1 if player.games_played >= 10 else str(10 - player.games_played) + " games left"}`
+          """,
+          inline=False)
+        embed = embed.to_dict()
+
     embed = discord.Embed.from_dict(embed)
     try:
       await msg.edit(embed=embed)
@@ -109,7 +147,7 @@ async def newGame(message, client):
 
     if (winner or loser):
       break
-  # end newGame
+# end newGame
 
 async def getHangMan(winner, trashLetters, hangmanBoard):
   trashLetters = trashLetters.replace("\n", "")
@@ -174,3 +212,81 @@ async def getDefinition(word):
   html = r.html.html
   return html.split('<meta name="description"')[1].split("See more.")[0].split("content=\"")[1].strip()
 # end getDefinition
+
+async def updateLeaderboard(user_id, guild_id, is_winner):
+  leaderboard = await getLeaderboard(guild_id)
+
+  player_found = None
+  for player in leaderboard:
+    if player.user_id == str(user_id):
+      if is_winner:
+        player.wins += 1
+      else:
+        player.losses += 1
+      player.games_played += 1
+      player.percent_correct = int((player.wins / player.games_played) * 1000) / 10 # .987 -> 987 -> 98.7
+      player_found = player
+      break
+  
+  moBotDB = await connectDatabase()
+
+  if player_found:
+    moBotDB.cursor.execute(f"""
+      UPDATE hangman_leaderboard
+      SET 
+        percent_correct = '{player_found.percent_correct}',
+        {"wins" if is_winner else "losses"} = '{player_found.wins if is_winner else  player_found.losses}',
+        games_played = '{player_found.games_played}'
+      WHERE 
+        user_id = '{player_found.user_id}' AND
+        guild_id = '{player_found.guild_id}';
+    """)
+
+  else:
+    leaderboard.append(Player(
+      user_id, guild_id,
+      100 if is_winner else 0,  # perc correct
+      1 if is_winner else 0,  # wins
+      0 if is_winner else 1,  # losses
+      1)) # games played
+    player_found = leaderboard[-1]
+    moBotDB.cursor.execute(f"""
+    INSERT INTO hangman_leaderboard (
+      `user_id`, `guild_id`, `percent_correct`, `wins`, `losses`, `games_played`
+    ) VALUES (
+      '{player_found.user_id}',
+      '{player_found.guild_id}',
+      '{player_found.percent_correct}',
+      '{player_found.wins}',
+      '{player_found.losses}',
+      '{player_found.games_played}'
+    );
+    """)
+
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
+
+  leaderboard.sort(key=lambda x : x.percent_correct)
+  return player_found, leaderboard
+
+# end updateLeaderboard
+
+async def getLeaderboard(guild_id):
+  players = []
+  moBotDB = await connectDatabase()
+  moBotDB.cursor.execute(f"""
+    SELECT *
+    FROM hangman_leaderboard
+    WHERE guild_id = '{guild_id}'
+  """)
+  for record in moBotDB.cursor:
+    players.append(Player(*record))
+  moBotDB.connection.close()
+  return players
+# end getLeaderboard
+
+
+
+async def connectDatabase():
+  return MoBotDatabase.connectDatabase("MoBot")
+# end getLeaderboard
