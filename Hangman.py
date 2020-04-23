@@ -271,7 +271,6 @@ async def updateLeaderboard(user_id, guild_id, is_winner):
   moBotDB.connection.close()
 
   leaderboard.sort(key=lambda x : float(x.percent_correct), reverse=True)
-  [print(vars(p)) for p in leaderboard]
   return player_found, leaderboard
 
 # end updateLeaderboard
