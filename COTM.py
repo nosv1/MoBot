@@ -1,19 +1,3 @@
-'''
-NOTES FOR NEXT SEASON
-Issues:
-  Reserves:
-    Manual Reserves - Use dates to order reserves in database
-    Ping the resereve even if they are full time reserve
-    Show if a reserve was requested
-  Voting:
-    Get more fellers to vote 
-    Better voting code
-  General Information:
-    Easier to find slightly less information
-      better faq?
-
-'''
-
 import discord
 from datetime import datetime, timedelta
 import time
@@ -33,6 +17,7 @@ import re
 import SecretStuff
 
 import RandomSupport
+import MoBotDatabase
 
 GUILD_ID = 527156310366486529
 
@@ -94,15 +79,26 @@ logos = {
   "d7" : "https://i.gyazo.com/33e6ec2a82539f251a66aa8f2c6ee2fa.png",
 }
 divisionEmojis = {
-  "1" : 527285368240734209,
-  "2" : 527285430526148618,
-  "3" : 527285478764969984,
-  "4" : 527285532099870730,
-  "5" : 527285566501552129,
-  "6" : 527285612160614410,
-  "7" : 527285647837364244,
+  "1" : 702654860801081474,
+  "2" : 702654861006602299,
+  "3" : 702654861065322526,
+  "4" : 702655539112443997,
+  "5" : 702654861086294086,
+  "6" : 702655538831425547,
+  "7" : 702654860478251128,
 }
 
+''' CLASSES '''
+class Pit_Marshall:
+  def __init__(self, member_id, div, host_pm):
+    self.member_id = member_id
+    self.div = div
+    self.host_pm = host_pm # host = 1, pm = 0
+# end Pit_Marshall
+
+
+
+''' DISCORD FUNCTIONS '''
 async def main(args, message, client):
   try:
     authorPerms = message.channel.permissions_for(message.author)
@@ -128,24 +124,24 @@ async def main(args, message, client):
         driverID = int(message.content.split("<@")[-1].split(">")[0].replace("!", ""))
       else:
         driverID = message.author.id
-      await updateDriverHistory(message, driverID, await openSpreadsheet())
+      await updateDriverHistory(message, driverID, openSpreadsheet())
     if (message.author.id == mo):
       try:
         if (args[1] == "update"):
           if (args[2] == "standings"):
             await message.channel.trigger_typing()
-            await updateStandings(message.guild, await openSpreadsheet())
+            await updateStandings(message.guild, openSpreadsheet())
             await message.delete()
           elif (args[2] == "start" and args[3] == "orders"):
             await message.channel.trigger_typing()
-            await updateStartOrders(message.guild, await openSpreadsheet())
+            await updateStartOrders(message.guild, openSpreadsheet())
             await message.delete()
           elif (args[2] == "divlist"):
             await message.channel.trigger_typing()
-            await updateDriverRoles(message.guild, getDivList(await openSpreadsheet()))
+            await updateDriverRoles(message.guild, getDivList(openSpreadsheet()))
             await message.delete()
           elif (args[2] == "driver" and args[3] == "history"):
-            await updateDriverHistory(message, None, await openSpreadsheet())
+            await updateDriverHistory(message, None, openSpreadsheet())
         elif (args[1] == "reset"):
           if (args[2] == "pitmarshalls"):
             await message.channel.trigger_typing()
@@ -200,7 +196,7 @@ async def mainReactionAdd(message, payload, client):
         await message.channel.send(".", delete_after=0)
       elif (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
         if (member.id == mo):
-          workbook = await openSpreadsheet()
+          workbook = openSpreadsheet()
           await getReserves(workbook)
           await updateStartOrders(message.guild, workbook)
           await message.channel.send(content="Remember to remove any reserve roles, if necessary.\n*(deleting in 10 sec)*", delete_after=10)
@@ -210,14 +206,8 @@ async def mainReactionAdd(message, payload, client):
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
         await addStreamer(message, member, payload, client)
       if (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
-        await refreshStreamers(message, await openSpreadsheet())
+        await refreshStreamers(message, openSpreadsheet())
         await message.remove_reaction(payload.emoji.name, member)
-
-    if (message.id == 622831151320662036): # message id for pit marshall signup embed
-      if (payload.emoji.name == CROWN):
-        await addHost(message, payload, member, client)
-      elif (payload.emoji.name == WRENCH):
-        await addPitMarshall(message, payload, member, client)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
@@ -234,12 +224,6 @@ async def mainReactionRemove(message, payload, client):
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
         await removeStreamer(message, member, payload)
-
-    if (message.id == 622831151320662036): # message id for pit marshall signup embed
-      if (payload.emoji.name == CROWN):
-        await removeHost(message, member)
-      elif (payload.emoji.name == WRENCH):
-        await removePitMarshall(message, member)
 # end mainReactionRemove
 
 async def mainMemberUpdate(before, after, client):
@@ -262,7 +246,7 @@ async def memberRemove(member, client):
 # end memberRemove
 
 
-
+''' SIGNUP '''
 async def handleFormSignup(message):
   if not message.webhook_id: # is not from webhook
     return
@@ -292,7 +276,7 @@ async def handleFormSignup(message):
 # end handleFormSignup
 
 
-
+''' QUALIFYING '''
 async def updateQualiRoles(message):
   await message.remove_reaction(RandomSupport.EXCLAMATION_EMOJI, message.guild.get_member(moBot))
 
@@ -301,7 +285,7 @@ async def updateQualiRoles(message):
   await message.edit(embed=embed)
 
   try:
-    workbook = await openSpreadsheet()
+    workbook = openSpreadsheet()
     quali_sheet = workbook.worksheet("Qualifying")
     r = quali_sheet.range(f"C4:D{quali_sheet.row_count}")
 
@@ -423,7 +407,7 @@ async def handleQualiSubmission(message):
 # end handleQualiSubmission
 
 
-
+''' VOTING '''
 async def openVotingChannel(message, member):
   await message.channel.trigger_typing()
 
@@ -581,7 +565,7 @@ async def submitVotes(message, member):
   await message.channel.trigger_typing()
 
   try:
-    workbook = await openSpreadsheet()
+    workbook = openSpreadsheet()
     sheets = workbook.worksheets()
     sheet = [sheet for sheet in sheets if sheet.id == 242811195][0] # Voting Sheet
     r = sheet.range(f"C4:G{sheet.row_count}")
@@ -652,13 +636,44 @@ async def submitVotes(message, member):
     return
 # end submitVotes
 
+''' PIT-MARSHALLS '''
+def getPitMarshalls():
+  moBotDB = connectDatabase()
+  marshalls = []
+  moBotDB.cursor.execute(f"""
+    SELECT *
+    FROM pit_marshalls
+  """)
+  for record in moBotDB.cursor:
+    marshalls.append(Marshall(*record))
+  moBotDB.connection.close()
+  return marshalls
+
+# end getCurrentPitMarshalls
+
+async def handlePitMarshallReaction(message, payload, member):
+  '''if payload.emoji.name not in [CROWN, WRENCH]:
+    return'''
+
+  await message.channel.trigger_typing()
+
+  embed = message.embeds[0]
+  pit_marshalls = getPitMarshalls()
+  reactions = []
+  for reaction in message.reactions:
+    async for user in reaction.users():
+      if user.id == member.id:
+        reactions.append(reaction.emoji)
+
+  print(reactions)
+# end handlePitMarshallReaction
 
 
 
 async def addDriver(message):
   divisionUpdatesChannel = message.guild.get_channel(DIVISION_UPDATES)
 
-  workbook = await openSpreadsheet()
+  workbook = openSpreadsheet()
 
   moBotMessage = await message.channel.send("*Getting Number of Divisions*")
   driverHistorySheet = workbook.worksheet("Driver History")
@@ -1012,7 +1027,7 @@ async def addStreamer(message, member, payload, client):
     await failed(moBotMessage)
     return None
   
-  workbook = await openSpreadsheet()
+  workbook = openSpreadsheet()
   driversRange, driverSheet = getDriversRange(workbook)
   driverIDs = driverSheet.range("B3:B" + str(driverSheet.row_count))
   streamLinks = driverSheet.range("H3:H" + str(driverSheet.row_count))
@@ -1028,7 +1043,7 @@ async def addStreamer(message, member, payload, client):
 async def removeStreamer(message, member, payload):
   await message.channel.trigger_typing()
 
-  workbook = await openSpreadsheet()
+  workbook = openSpreadsheet()
   driversRange, driverSheet = getDriversRange(workbook)
   driverIDs = driverSheet.range("B3:B" + str(driverSheet.row_count))
   streamLinks = driverSheet.range("H3:H" + str(driverSheet.row_count))
@@ -1052,186 +1067,6 @@ async def memberStartedStreaming(member, client):
   except:
     await client.get_member(mo).send(str(traceback.format_exc()))
 # end startedStreaming
-
-async def getReserveDiv(member):
-  workbook = await openSpreadsheet()
-  driversSheet = workbook.worksheet("Drivers")
-  driversRange = driversSheet.range("B3:F" + str(driversSheet.row_count))
-  for i in range(len(driversRange)):
-    if (driversRange[i].value == str(member.id)):
-      return int(driversRange[i+4].value)
-  return -1
-# end getReserveDiv
-
-async def setManualReserve(message):
-  reserve = message.content.split("for")[0].split("<@")[-1].split(">")[0].replace("!", "")
-  driver = message.content.split("for")[-1].split("<@")[-1].split(">")[0].replace("!", "")
-
-  reserve = message.guild.get_member(int(reserve))
-  driver = message.guild.get_member(int(driver))
-
-  msg = await message.guild.get_channel(RESERVE_SEEKING).fetch_message(620811567210037253)
-  embed = msg.embeds[0]
-  embed = embed.to_dict()
-  embed["fields"][0]["value"] = "%s\n%s" % (driver.display_name, embed["fields"][0]["value"].replace(driver.display_name + "\n", ""))
-
-  
-  reserveDiv = driver.display_name.split("]")[0][-1]
-  for i in range(len(embed["fields"])):
-    if ("D%s" % reserveDiv in embed["fields"][i]["name"]):
-      embed["fields"][i]["value"] = "%s\n%s" % (reserve.display_name, embed["fields"][i]["value"].replace(reserve.display_name + "\n", ""))
-      break
-
-  workbook = await openSpreadsheet()
-  moBotMessage = await message.channel.send(content="**Setting Reserves Needed**")
-  await setReservesNeeded(driver, embed["fields"][0]["value"], workbook)
-  await moBotMessage.edit(content="**Setting Reserves Available**")
-  await setReservesAvailable(embed, workbook)
-  await moBotMessage.edit(content="**Updating Start Orders**")
-  await updateStartOrders(message.guild, workbook)
-
-  await msg.edit(embed=discord.Embed().from_dict(embed))
-  await message.delete()
-  await moBotMessage.delete()
-# end setManualReserve
-
-async def resetReserves(guild):
-  message = await guild.get_channel(RESERVE_SEEKING).fetch_message(620811567210037253)
-  divUpdatesChannel = guild.get_channel(DIVISION_UPDATES)
-  embed = message.embeds[0].to_dict()
-  embed["fields"][0]["value"] = spaceChar
-  for i in range(len(embed["fields"])):
-    if ("Available for" in embed["fields"][i]["name"]):
-      embed["fields"][i]["value"] = spaceChar
-  await message.edit(embed=discord.Embed().from_dict(embed))
-
-  for member in guild.members:
-    if ("[R]" not in member.display_name):
-      for role in member.roles:
-        if ("Reserve" in role.name):
-          await member.remove_roles(role)
-          await divUpdatesChannel.send("%s has been removed from %s." % (member.mention, role.name))
-
-  await message.clear_reactions()
-  await message.add_reaction(WAVE_EMOJI)
-  await message.add_reaction(FIST_EMOJI)
-# end resetReserves
-
-async def reserveNeeded(message, member):
-  embed = message.embeds[0].to_dict()
-  reservesNeeded = embed["fields"][0]["value"][:-1].strip()
-  if (member.display_name not in reservesNeeded):
-    embed["fields"][0]["value"] = reservesNeeded + "\n" + member.display_name + "\n" + spaceChar
-  await message.edit(embed=discord.Embed.from_dict(embed))
-
-  workbook = await openSpreadsheet()
-  await setReservesNeeded(member, embed["fields"][0]["value"], workbook)
-  await updateStartOrders(message.guild, workbook)
-# end reserveNeeded
-
-async def reserveNotNeeded(message, member):
-  embed = message.embeds[0].to_dict()
-  reservesNeeded = embed["fields"][0]["value"][:-1].strip().split("\n")
-  newReservesNeeded = ""
-  for reserve in reservesNeeded:
-    if (member.display_name not in reserve):
-      newReservesNeeded += reserve + "\n"
-  newReservesNeeded += spaceChar
-  embed["fields"][0]["value"] = newReservesNeeded
-  await message.edit(embed=discord.Embed.from_dict(embed))
-
-  workbook = await openSpreadsheet()
-  await setReservesNeeded(member, embed["fields"][0]["value"], workbook)
-  await updateStartOrders(message.guild, workbook)
-# end reserveNotNeeded
-
-async def reserveAvailable(message, member, payload, client):
-  await message.channel.trigger_typing()
-  
-  def checkCheckmarkEmoji(payload):
-    return payload.user_id == member.id and message.channel.id == payload.channel_id and payload.emoji.name == CHECKMARK_EMOJI
-  # end checkCheckmarkEmoji
-
-  reserveDiv = await getReserveDiv(member)
-  divEmojisToAdd = []
-  if (reserveDiv == -1):
-    await message.remove_reaction(payload.emoji.name, member)
-    return -1
-  else:
-    if (reserveDiv == 1): # d1 driver
-      divEmojisToAdd.append(client.get_emoji(int(divisionEmojis[str(reserveDiv+1)])))
-    elif (reserveDiv == 0): # full time reserve
-      for role in member.roles:
-        if ("Reserve Division" in role.name):
-          divEmojisToAdd.append(client.get_emoji(int(divisionEmojis[str(role.name.split("Division")[1].strip())])))
-    else:
-      for i in range(reserveDiv-1, reserveDiv+2, 2):
-        emoji = client.get_emoji(int(divisionEmojis[str(i)]))
-        divEmojisToAdd.append(emoji)
-
-  moBotMessage = await message.channel.send(member.mention + ", which division(s) are you available to reserve for?\n*Click all that apply, then click the " + CHECKMARK_EMOJI + ".*")
-  for emoji in divEmojisToAdd:
-    await moBotMessage.add_reaction(emoji)
-  await moBotMessage.add_reaction(CHECKMARK_EMOJI)
-
-  try:
-    payload = await client.wait_for("raw_reaction_add", timeout=60.0, check=checkCheckmarkEmoji)
-    moBotMessage = await message.channel.fetch_message(payload.message_id)
-    embed = message.embeds[0].to_dict()
-
-    reserveMember = None  
-    divs = []
-    for reaction in moBotMessage.reactions:
-      if (str(reaction.emoji) != CHECKMARK_EMOJI):
-        async for user in reaction.users():
-          if (user.id == member.id):
-            reserveMember = member
-            divs.append(str(reaction.emoji).split(":")[1][-1])
-    if (divs != []):
-      for i in range(len(embed["fields"])):
-        for div in divs:
-          if ("D" + div in embed["fields"][i]["name"]):
-            if (reserveMember.display_name not in embed["fields"][i]["value"]):
-              embed["fields"][i]["value"] = embed["fields"][i]["value"][:-1] + reserveMember.display_name + "\n" + spaceChar
-      await message.edit(embed=discord.Embed.from_dict(embed))
-
-      workbook = await openSpreadsheet()
-      await setReservesAvailable(embed, workbook)
-      await moBotMessage.edit(content="**Updating Reserve List**")
-      await moBotMessage.clear_reactions()
-      await updateStartOrders(message.guild, workbook)
-    else:
-      await message.remove_reaction(payload.emoji.name, member)
-    await moBotMessage.delete()
-
-  except asyncio.TimeoutError:
-    await message.channel.send("**TIMED OUT**", delete_after=10.0)
-    await moBotMessage.delete()
-    await message.remove_reaction(payload.emoji.name, member)
-# end reserveAvailable
-
-async def reserveNotAvailable(message, member):
-  embed = message.embeds[0].to_dict()
-  for i in range(len(embed["fields"])):
-    if ("Available" in embed["fields"][i]["name"]):
-      newValue = ""
-      value = embed["fields"][i]["value"][:-1].strip()
-      for line in value.split("\n"):
-        if (member.display_name not in line):
-          newValue += line + "\n"
-      newValue += spaceChar
-      embed["fields"][i]["value"] = newValue
-  await message.edit(embed=discord.Embed.from_dict(embed))
-  
-  for role in member.roles:
-    if ("Reserve Division" in role.name and "[R]" not in member.display_name):
-      await member.remove_roles(role)
-      await message.guild.get_channel(DIVISION_UPDATES).send(member.mention + " has been removed from " + role.name)
-
-  workbook = await openSpreadsheet()
-  await setReservesAvailable(embed, workbook)
-  await updateStartOrders(message.guild, workbook)
-# end reserveNotAvailable
 
 async def waitForQualiTime(message, member, payload, qualifyingChannel, client):
   def check(msg):
@@ -1290,7 +1125,7 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
     lapTime = lapTime.replace(":", ".")
     await message.channel.send(user.mention + ", your lap has been submitted.")
 
-  workbook = await openSpreadsheet()
+  workbook = openSpreadsheet()
   driversRange, driversSheet = getDriversRange(workbook)
   qualifyingSheet = workbook.worksheet("Qualifying")
   qualifyingRange = qualifyingSheet.range("G3:I" + str(qualifyingSheet.row_count))
@@ -1826,165 +1661,6 @@ def getDivList(workbook):
   return divList
 # end getDivList
 
-def getReserves(workbook):
-  class Reserve:
-    def __init__(self, division, driverID, reserveID):
-      self.division = division
-      self.driverID = driverID
-      self.reserveID = reserveID
-  # end Reserve
-
-  reservesSheet = workbook.worksheet("Reserves")
-  reservesNeeded = reservesSheet.range("B4:C" + str(reservesSheet.row_count))
-  reservesAvailable = reservesSheet.range("D4:E" + str(reservesSheet.row_count))
-  driversRange, driverSheet = getDriversRange(workbook)
-  reserves = {}
-  reservesAdded = {
-    "1" : [],
-    "2" : [],
-    "3" : [],
-    "4" : [],
-    "5" : [],
-    "6" : [],
-    "7" : []
-  }
-  for i in range(0, len(reservesNeeded), 2):
-    if (reservesNeeded[i].value != ""):
-      driverID = int(driversRange[findDriver(driversRange, reservesNeeded[i+1].value)-1].value)
-      division = int(reservesNeeded[i].value)
-      for j in range(0, len(reservesAvailable), 2):
-        if (reservesAvailable[j].value == ""):
-          break
-        elif (int(reservesAvailable[j].value) == division):
-          reserveID = int(driversRange[findDriver(driversRange, reservesAvailable[j+1].value)-1].value)
-          if (reserveID not in reservesAdded[str(division)]):
-            reservesAdded[str(division)].append(reserveID)
-            reserves[driverID] = Reserve(division, driverID, reserveID)
-            break
-  return reserves    
-# end getReserve
-
-def getDriverHistory(workbook):
-  class Driver:
-    def __init__(self, driverID, totalPoints, divisions, startPositions, finishPositions, points):
-      self.driverID = int(driverID)
-      self.totalPoints = totalPoints
-      self.divisions = divisions
-      self.startPositions = startPositions
-      self.finishPositions = finishPositions
-      self.points = points # per race
-  # end Driver
-
-  driverHistorySheet = workbook.worksheet("Driver History")
-  driverHistoryRange = driverHistorySheet.range("B3:CH%s"  % (driverHistorySheet.row_count))
-  driverHistoryRangeCols = 85
-  driversRange, driversSheet = getDriversRange(workbook)
-  currentWeek = int(driverHistorySheet.range("B1:B1")[0].value)
-
-  drivers = []
-
-  for i in range(driverHistoryRangeCols, len(driverHistoryRange), driverHistoryRangeCols):
-    if (driverHistoryRange[i].value == ""):
-      break
-
-    driverID = None
-    totalPoints = 0
-    divisions = []
-    startPositions = []
-    finishPositions = []
-    points = []
-    for j in range(driverHistoryRangeCols):
-      
-      if (driverHistoryRange[j].value == "Driver"):
-        driverName = driverHistoryRange[i+j].value
-        driverID = driversRange[findDriver(driversRange, driverName)-1].value
-
-      elif (driverHistoryRange[j].value == "Div"):
-        div = driverHistoryRange[i+j].value
-        if (div != "OUT"):
-          div = div.split("D")[-1]
-        else:
-          break
-        try:
-          divisions.append(int(div))
-        except ValueError:
-          divisions.append(0)
-          startPositions.append(0)
-          finishPositions.append(0)
-          points.append(0)
-      try:
-        if (divisions[-1] == 0):
-          continue
-      except IndexError: # still looping to get to the first week
-        continue
-
-      if (driverHistoryRange[j].value == "Total Points"):
-        totalPoints = int(driverHistoryRange[i+j].value.split(".")[0])
-      if (driverHistoryRange[j].value == "Start"):
-        startPositions.append(int(driverHistoryRange[i+j].value))
-      elif (driverHistoryRange[j].value == "Finish"):
-        finishPositions.append(int(driverHistoryRange[i+j].value))
-      elif (driverHistoryRange[j].value == "Points"):
-        points.append(int(driverHistoryRange[i+j].value))
-
-      if (len(points) + 1 == currentWeek):
-        break
-    
-    if (len(divisions) != 0):
-      drivers.append(Driver(driverID, totalPoints, divisions[1:], startPositions, finishPositions, points))
-
-  return drivers
-# end getDriverHistory
-
-async def setReservesNeeded(member, reservesNeededValue, workbook):
-  reservesSheet = workbook.worksheet("Reserves")
-  reservesNeededRange = reservesSheet.range("B4:C" + str(reservesSheet.row_count))
-  reserves = getReserves(workbook)
-  reservesNeeded = []
-  for line in reservesNeededValue.split("\n"):
-    if (spaceChar in line):
-      break
-    reservesNeeded.append(line.split("]")[0][-1])
-    reservesNeeded.append(line.split("]")[1].strip())
-
-  for i in range(len(reservesNeededRange)):
-    try:
-      reservesNeededRange[i].value = reservesNeeded[i]
-    except IndexError: # when reserve is not needed
-      reservesNeededRange[i].value = ""
-      reservesNeededRange[i+1].value = ""
-      if (member.id in reserves):
-        reserveMember = member.guild.get_member(reserves[member.id].reserveID)
-        driverMember = member.guild.get_member(reserves[member.id].driverID)
-        await member.guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " is no longer reserving for " + driverMember.mention + ".")
-        for role in reserveMember.roles:
-          if (role.name == "Reserve Division " + str(reserves[member.id].division) and "[R]" not in reserveMember.display_name):
-            await reserveMember.remove_roles(role)
-            break
-      break
-  reservesSheet.update_cells(reservesNeededRange, value_input_option="USER_ENTERED")
-# end setReservesNeeded
-
-async def setReservesAvailable(embed, workbook):
-  reservesSheet = workbook.worksheet("Reserves")
-  reservesAvailableRange = reservesSheet.range("D4:E" + str(reservesSheet.row_count))
-  reservesAvailable = []
-  for i in range(len(embed["fields"])):
-    if ("Available" in embed["fields"][i]["name"]):
-      for line in embed["fields"][i]["value"].split("\n"):
-        if ("]" not in line):
-          break
-        reservesAvailable.append(embed["fields"][i]["name"].split(":")[1][-1])
-        reservesAvailable.append(line.split("]")[1].strip())
-
-  for i in range(len(reservesAvailableRange)):
-    try:
-      reservesAvailableRange[i].value = reservesAvailable[i]
-    except IndexError: # when reserve is not available
-      reservesAvailableRange[i].value = ""
-  reservesSheet.update_cells(reservesAvailableRange, value_input_option="USER_ENTERED")
-# end setReservesAvailable
-
 def getStartOrders(workbook):
   class Driver:
     def __init__(self, driverID, totalPoints, lastWeeksDiv, reserveID):
@@ -2045,7 +1721,14 @@ def findDriver(table, driver):
   return driverFound
 # end findDriver
 
-async def openSpreadsheet():
+
+
+''' RESOURCES '''
+def connectDatabase():
+  return MoBotDatabase.connectDatabase("COTM")
+# end connectDatabase
+
+def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
   creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('cotmS4_client_secret.json'), scope)
   clientSS = gspread.authorize(creds)  
