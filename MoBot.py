@@ -213,8 +213,6 @@ async def on_message(message):
           await ticketManager.main(args, message, client)
         elif ("schedule message" in mc):
             await MessageScheduler.main(args, message, client)
-        elif ("sheets" in args[1]):
-          await DiscordSheets.main(args, message, client)
         elif (args[1] in ["countdown", "clock"] and authorPerms.manageChannels):
           await ClocksAndCountdowns.main(args, message, client)
         elif ("scrims" in args[1]):
@@ -622,39 +620,6 @@ async def on_raw_reaction_add(payload):
 
       if (str(message.guild.id) in servers):
         await eval(servers[str(message.guild.id)] + ".mainReactionAdd(message, payload, client)")
-
-      if (payload.emoji.name == "🔄"):
-        tableExists = False
-        try:
-          moBotTables = await DiscordSheets.getAllTables()
-        except gspread.exceptions.APIError:
-          await message.remove_reaction(payload.emoji, client.get_user(payload.user_id))
-          msg = await message.channel.send("**Error Getting Table**\nTry again in a minute or so...")
-          await asyncio.sleep(10)
-          try:
-            await msg.delete()
-          except discord.errors.Forbidden:
-            pass
-        try:
-          for table in moBotTables[str(guildID)]:
-            for msgId in table["msgIds"].split(","):
-              if (messageID == int(msgId)):
-                tableExists = True
-                await DiscordSheets.updateTable(message, table)
-                await message.remove_reaction(payload.emoji, client.get_user(payload.user_id))
-                msg = await message.channel.send("**Table Updated**")
-                await asyncio.sleep(3)
-                try:
-                  await msg.delete()
-                except discord.errors.Forbidden:
-                  pass
-                break
-            if (tableExists):
-              break
-        except KeyError:
-          pass
-        except UnboundLocalError: # when there was error in previous try catch...
-          pass
   except discord.errors.Forbidden:
     pass
 # end on_reaction_add
