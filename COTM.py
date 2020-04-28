@@ -115,6 +115,9 @@ async def main(args, message, client):
   if str(moBot) in args[0]:
     if "newsignup" in args[1]:
       await handleFormSignup(message)
+    elif "newqualitime" in args[1]:
+      await handleQualiSubmission(message)
+
     if (args[1] == "quali" and authorPerms.administrator):
       await submitQualiTime(message, qualifyingChannel, None, None, client)
     if (args[1] == "reserve" and authorPerms.administrator):
@@ -167,7 +170,7 @@ async def mainReactionAdd(message, payload, client):
   qualiScreenshotsChannel = message.guild.get_channel(QUALI_SCREENSHOTS)
 
   if ("MoBot" not in member.name):
-    if (payload.emoji.name == CHECKMARK_EMOJI):
+    if payload.emoji.name == CHECKMARK_EMOJI:
       if (message.id == VOTING_CHECKMARK): # track-voting
         await openVotingChannel(message, member)
         await message.remove_reaction(payload.emoji.name, member)
@@ -179,6 +182,14 @@ async def mainReactionAdd(message, payload, client):
         await resetVotes(message)
       elif payload.emoji.name == CHECKMARK_EMOJI:
         await submitVotes(message, member)
+
+    if payload.emoji.name == RandomSupport.EXCLAMATION_EMOJI:
+      if message.embeds:
+        if message.embeds[0].author == "New Lap Time": # roles weren't updated
+          await updateQualiRoles(message)
+          
+
+
 
     if (message.id == 620811567210037253): # message id for Reserves Embed
       if (payload.emoji.name == WAVE_EMOJI):
@@ -272,13 +283,144 @@ async def handleFormSignup(message):
       embed = discord.Embed()
       embed.color = int("0xFFFFFE", 16)
       embed.set_author(name=f"Child #{number}", icon_url=logos["cotm_white_trans"])
-      embed.description = f"We welcome {member.mention}."
+      embed.description = f"We welcome {member.display_name}."
 
-      await message.guild.get_channel(EVENT_CHAT).send(embed=embed)
+      await message.guild.get_channel(EVENT_CHAT).send(content=member.mention, embed=embed)
       await member.remove_roles(message.guild.get_role(PEEKER_ROLE))
       await member.add_roles(message.guild.get_role(CHILDREN_ROLE))
       return
 # end handleFormSignup
+
+
+
+async def updateQualiRoles(message):
+  await message.remove_reaction(RandomSupport.EXCLAMATION_EMOJI, message.guild.get_member(moBot))
+
+  embed = message.embeds[0]
+  embed.set_footer(text="updating roles...")
+  await message.edit(embed=embed)
+
+  try:
+    workbook = await openSpreadsheet()
+    quali_sheet = workbook.worksheet("Qualifying")
+    r = quali_sheet.range(f"C4:D{quali_sheet.row_count}")
+
+    def getMember(gamertag):
+      return [member for member in message.guild.members if member.display_name.lower() == gamertag.lower()][0]
+    
+    def getRole(name):
+      return [role for role in message.guild.roles if role.name == name][0]
+
+    def getChannel(div):
+      return [channel for channel in message.guild.channels if channel.name == f"division-{div}"][0]
+
+    for i in range(0, len(r), 2):
+      div = r[i].value
+      gamertag = r[i+1].value
+
+      if div == "":
+        break
+
+      member = getMember(gamertag)
+
+      role = getRole(f"Division {div}")
+      if role not in member.roles: # outdated role
+        await memebr.edit(nick=f"[D{div}] {gamertag}")
+        
+        for m_role in member.roles: # remove incorrect roles
+          if "Division" in m_role.name and m_role != role:
+            channel = getChannel(str(m_role)[-1])
+            await member.remove_roles(m_role)
+            await channel.send(f"> Toodles {member.mention}")
+
+        channel = getChannel(div)
+        await member.add_roles(role)
+        await channel.send(f"> Welcome {member.mention}")
+
+    embed = embed.to_dict()
+    del embed["footer"]
+    embed = discord.Embed.from_dict(embed)
+  except:
+    embed.set_footer(text=f"{RandomSupport.EXCLAMATION_EMOJI} error updating roles")
+    await message.add_reaction(RandomSupport.EXCLAMATION_EMOJI)
+  
+  await message.edit(embed=embed)
+# end updateQualiRoles
+
+async def handleQualiSubmission(message):
+  if not message.webhook_id: # is not from webhook
+    return
+
+  class Driver:
+    def __init__(self, cell_link, screenshot_link, position, div, gamertag, lap_time, leader, division, interval, invalidated, reason):
+      self.cell_link = cell_link
+      self.screenshot_link = screenshot_link
+      self.position = position
+      self.div = div
+      self.gamertag = gamertag
+      self.lap_time = lap_time
+      self.leader = leader
+      self.division = division
+      self.interval = interval
+      self.invalidated = invalidated
+      self.reason = reason
+  # end Driver
+
+  args = message.content.split("{")[1].split("}")[0].replace("\":", ",").replace("\"", "").split(",")
+
+  def getArg(arg):
+    for i, x in enumerate(args):
+      if x == arg:
+        return args[i+1]
+  # end getArg
+
+  driver = Driver(
+    getArg("cell_link"),
+    getArg("screenshot_link"),
+    getArg("position"),
+    getArg("div"),
+    getArg("gamertag"),
+    getArg("lap_time"),
+    getArg("leader"),
+    getArg("division"),
+    getArg("interval"),
+    getArg("invalidated").lower(),
+    getArg("reason")
+  )
+
+  embed = discord.Embed()
+  for member in message.guild.members: # only looping names to make sure guy is in server and to ping him
+    if driver.gamertag.lower() == member.display_name.lower():# or member.id == mo:
+
+      if driver.position != "null" and driver.invalidated == "false": # valid lap time
+        embed.color = [role.color for role in message.guild.roles if role.name == f"Division {driver.div}"][0]
+        embed.set_author(name="New Lap Time", icon_url=logos["cotm_white_trans"])
+
+        embed.description = f"""
+        **Driver:** [{driver.gamertag}]({driver.cell_link})
+        **Lap Time:** [{driver.lap_time}]({driver.screenshot_link})
+        **Division:** {driver.div}
+        **Position:** {driver.position}
+
+        Gaps
+        To Leader: {driver.leader}
+        To Div Leader: {driver.division}
+        To Driver Ahead: {driver.interval}
+        """
+
+      if driver.position == "null" and driver.invalidated == "true": # invalid lap time
+        embed.color = int("0x000000", 16)
+        embed.set_author(name="Invalid Lap Time", icon_url=logos["cotm_white_trans"])
+
+        embed.description = f"""
+        **Driver:** {driver.gamertag}
+        **Lap Time:** [{driver.lap_time}]({driver.screenshot_link})
+        """
+        
+      msg = await message.guild.get_channel(EVENT_CHAT).send(content=member.mention, embed=embed)
+      await updateQualiRoles(msg)
+      break
+# end handleQualiSubmission
 
 
 

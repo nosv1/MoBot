@@ -1793,9 +1793,13 @@ async def tournamentCheckin(message):
   workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
   registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
 
-  gameType = await getGameType(workbook)
-  numPlayers = gameType[1]
-  gameType = gameType[0]
+  try:
+    gameType = await getGameType(workbook)
+    numPlayers = gameType[1]
+    gameType = gameType[0]
+  except IndexError: # no game type
+    await message.channel.send(f"**Canceling Checkin**\nGame type is not set for the current week.")
+    return
 
   for sheet in workbook.worksheets():
     if sheet.id == sheetIDs[numPlayers-1]:
@@ -1829,9 +1833,13 @@ async def tournamentSignup(message):
   userIDs = [int(userID.split("@")[1]) for userID in mc.split(">")[:-1]]
   usernames = [getUserName(str(userID), registeredIDsRange) for userID in userIDs]
 
-  gameType = await getGameType(workbook)
-  numPlayers = gameType[1]
-  gameType = gameType[0]
+  try:
+    gameType = await getGameType(workbook)
+    numPlayers = gameType[1]
+    gameType = gameType[0]
+  except IndexError: # no game type
+    await message.channel.send(f"**Canceling Signup**\nGame type is not set for the current week.")
+    return
 
   for userID in userIDs:
     member = message.guild.get_member(userID)
@@ -1890,9 +1898,13 @@ async def tournamentRetire(message):
   workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
   registeredIDsRange, registeredIDsSheet = getRegisteredIDRange(workbook)
 
-  gameType = await getGameType(workbook)
-  numPlayers = gameType[1]
-  gameType = gameType[0]
+  try:
+    gameType = await getGameType(workbook)
+    numPlayers = gameType[1]
+    gameType = gameType[0]
+  except IndexError: # no game type // shouldn't happen when retiring, just copying and pasting from signup and checkin
+    await message.channel.send(f"**Canceling Retirement**\nGame type is not set for the current week.")
+    return
 
   for sheet in workbook.worksheets():
     if sheet.id == sheetIDs[numPlayers-1]:
@@ -1934,6 +1946,7 @@ async def getGameType(workbook):
   for i, cell in enumerate(weeksRange):
     if str(cell.value) == str(weekNumber):
       gameType = weeksRange[i+2].value
+      break
 
   if "1" in gameType:
     gameType = ["1v1", 1]
