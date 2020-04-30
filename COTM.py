@@ -78,15 +78,15 @@ logos = {
   "d6" : "https://i.gyazo.com/91d5cb3aa8688fe885a4e907fbf3bb78.png",
   "d7" : "https://i.gyazo.com/33e6ec2a82539f251a66aa8f2c6ee2fa.png",
 }
-divisionEmojis = {
-  "1" : 702654860801081474,
-  "2" : 702654861006602299,
-  "3" : 702654861065322526,
-  "4" : 702655539112443997,
-  "5" : 702654861086294086,
-  "6" : 702655538831425547,
-  "7" : 702654860478251128,
-}
+divisionEmojis = [
+  702654860801081474,
+  702654861006602299,
+  702654861065322526,
+  702655539112443997,
+  702654861086294086,
+  702655538831425547,
+  702654860478251128,
+]
 
 ''' CLASSES '''
 class Pit_Marshall:
@@ -309,7 +309,7 @@ async def updateQualiRoles(message):
 
       role = getRole(f"Division {div}")
       if role not in member.roles: # outdated role
-        await memebr.edit(nick=f"[D{div}] {gamertag}")
+        await member.edit(nick=f"[D{div}] {gamertag}")
         
         for m_role in member.roles: # remove incorrect roles
           if "Division" in m_role.name and m_role != role:
@@ -325,6 +325,7 @@ async def updateQualiRoles(message):
     del embed["footer"]
     embed = discord.Embed.from_dict(embed)
   except:
+    print(traceback.format_exc())
     embed.set_footer(text=f"{RandomSupport.EXCLAMATION_EMOJI} error updating roles")
     await message.add_reaction(RandomSupport.EXCLAMATION_EMOJI)
   
@@ -651,7 +652,69 @@ def getPitMarshalls():
 
 # end getCurrentPitMarshalls
 
-async def handlePitMarshallReaction(message, payload, member):
+async def addPitMarshall(host_pm, pit_marshalls, member_divs, member):
+
+  def refineAvail(avail, member_divs): # when user is in more than once race, need to refine the avail lists to get only unique values, values without duplicates
+    t = []
+    refined = []
+    if member_divs:
+      for div in member_divs:
+        t += avail[div-1]
+      
+      for i, div in enumerate(t): # remove dupes and the ogs, leaving non dupes
+        if div not in t[0:i] + t[i+1:]:
+          refined.append(div)
+      return refined
+      
+    else: # user can host any div
+      return list(range(1,7+1))
+  if host_pm == 1: # if host
+    hosts_needed = list(range(1,7+1)) # get the divs where a host is needed
+    for pit_marshall in pit_marshalls:
+      if pit_marshall.host_pm == 1:
+        del hosts_needed[pit_marshall.div-1]
+    
+    for div in hosts_needed:
+      if div in refineAvail(host_avail, member_divs) and div in divs:
+        moBotDB = connectDatabase()
+        moBotDB.cursor.execute(f"""
+          INSERT INTO pit_marshalls (
+            `id`, `div`, `host_pm`
+          ) VALUES (
+            '{member.id}',
+            '{div}',
+            '1'
+          );
+        """)
+        moBotDB.commit()
+        moBotDB.connection.close()
+        break
+
+  else: # if pm
+    pm_needed = list(range(1,7+1)) # get the divs where a pm is needed
+    for pit_marshall in pit_marshalls:
+      if pit_marshall.host_pm == 0:
+        del pm_needed[pit_marshall.div-1]
+      
+    for div in pm_needed:
+      if div in refineAvail(pm_avail, member_divs) and div in divs:
+        member_divs.append(div)
+
+        moBotDB = connectDatabase()
+        moBotDB.cursor.execute(f"""
+          INSERT INTO pit_marshalls (
+            `id`, `div`, `host_pm`
+          ) VALUES (
+            '{member.id}',
+            '{div}',
+            '0'
+          );
+        """)
+        moBotDB.commit()
+        moBotDB.connection.close()
+# end addPitMarshall
+
+async def handlePitMarshallReaction(message, payload, member, add_remove):
   '''if payload.emoji.name not in [CROWN, WRENCH]:
     return'''
 
@@ -659,13 +722,63 @@ async def handlePitMarshallReaction(message, payload, member):
 
   embed = message.embeds[0]
   pit_marshalls = getPitMarshalls()
-  reactions = []
+
+  member_divs = [] # get the divs the member is racing in
+  for role in member.roles:
+    if "Division" in role.name:
+      member_divs.append(int(role.name[-1]))
+  
+  # figure out what the user wants to do, host/pm and what divs
+  host_pm = -1 # host = 1 // pm = 0
+  divs = []
   for reaction in message.reactions:
     async for user in reaction.users():
       if user.id == member.id:
-        reactions.append(reaction.emoji)
+        if reaction.emoji == CROWN:
+          host_pm = 1
+        elif reaction.emoji == WRENCH:
+          host_pm = 0
+        elif reaction.emoji.id in divisionEmojis:
+          divs.append(divisionEmojis.index(reaction.emoji.id) + 1)
+        break
 
-  print(reactions)
+  # host div availability
+  host_avail = [
+    [2, 3, 5, 6], # div 1
+    [3, 6], # div 2
+    [1, 4, 7], # div 3
+    [2, 3, 5, 6], # 4
+    [3, 6], # 5 
+    [1, 4, 7], # 6
+    [2, 3, 5, 6]
+  ]
+
+  # pit marshall availability
+  pm_avail = [
+    [2, 3, 5, 6],
+    [1, 3, 4, 6, 7],
+    [1, 2, 4, 5, 7],
+    [2, 3, 5, 6],
+    [1, 3, 4, 6, 7],
+    [1, 2, 4, 5, 7],
+    [2, 3, 5, 6],
+  ]
+
+  if divs: # if user actually selected div
+    if add_remove == 1: # add
+      await addPitMarshall(host_pm, pit_marshalls, member_divs, member)
+    else: # remove
+      pass
+      ############ await removePitMarshall(host_pm, pit_marshalls, member)
+
+  else:
+    await message.channel.send(f"**{member.mention}, please select the division(s) before selecting the {CROWN} or the {WRENCH}.**", delete_after=7)
+
+  for reaction in message.reactions:
+    async for user in reaction.users():
+      if user.id == member.id:
+        await message.remove_reaction(reaction.emoji, member)
+        break
 # end handlePitMarshallReaction
 
 
