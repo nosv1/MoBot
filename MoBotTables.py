@@ -597,8 +597,13 @@ def createTable(tableDetails, workbook):
 
       maxWidths = [1 for cell in table[0]] # set widths to 1
       for i in range(len(table)): # loop rows, skipping the headers
-        if ("".join([table[i][k].value for k in range(len(table[i]))]) == ""):
-          break
+        if ("".join([table[i][k].value for k in range(len(table[i]))]) == ""): # if blank row
+          if i <= len(table) - 2:
+            if "".join([table[i+1][k].value for k in range(len(table[i+1]))]) == "": # if 2 blank rows back to back
+              break
+          else:
+            break
+
         for j in range(len(table[0])): # loop columns
           maxWidths[j] = len(table[i][j].value) if len(table[i][j].value) > maxWidths[j] else maxWidths[j]
 
@@ -623,10 +628,17 @@ def createTable(tableDetails, workbook):
       tables = [] # will be completed tables seperated to fit in a single message
       lines = []
 
-      for row in table:
+      for o, row in enumerate(table):
         isHeader = table.index(row) < tableDetails.headers
-        if ("".join([cell.value for cell in row]) == ""): # if blank row
-          break
+        blank_row = False
+        if "".join([cell.value for cell in row]) == "": # if blank row
+          if o <= len(table) - 2:
+            if "".join([cell.value for cell in table[o+1]]) == "": # if 2 blank rows in a row
+              break
+            else:
+              blank_row = True # force it to put a line
+          else:
+            break
         line = ""
         for cell in row:
           tempLines = [["" for i in range(3)] for i in range(3)] # templines[i][0 and 1] are for top and bottom border, but not in use right now...
