@@ -179,7 +179,7 @@ async def mainReactionAdd(message, payload, client):
       elif payload.emoji.name == CHECKMARK_EMOJI:
         await submitVotes(message, member)
 
-    if payload.emoji.name == RandomSupport.EXCLAMATION_EMOJI:
+    if payload.emoji.name == RandomSupport.EXCLAMATION_EMOJI: # error updating quali roles
       if message.embeds:
         if message.embeds[0].author == "New Lap Time": # roles weren't updated
           await updateQualiRoles(message)
@@ -375,7 +375,8 @@ async def handleQualiSubmission(message):
 
   embed = discord.Embed()
   for member in message.guild.members: # only looping names to make sure guy is in server and to ping him
-    if driver.gamertag.lower() == member.display_name.lower():# or member.id == mo:
+    member_name = member.display_name if "[D" not in member.display_name else member.display_name.split("] ")[1].strip()
+    if driver.gamertag.lower() == member_name.lower():# or member.id == mo:
 
       if driver.position != "null" and driver.invalidated == "false": # valid lap time
         embed.color = [role.color for role in message.guild.roles if role.name == f"Division {driver.div}"][0]
