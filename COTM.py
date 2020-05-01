@@ -381,26 +381,24 @@ async def handleQualiSubmission(message):
         embed.color = [role.color for role in message.guild.roles if role.name == f"Division {driver.div}"][0]
         embed.set_author(name="New Lap Time", icon_url=logos["cotm_white_trans"])
 
-        embed.description = f"""
-        **Driver:** [{driver.gamertag}]({driver.cell_link})
-        **Lap Time:** [{driver.lap_time}]({driver.screenshot_link})
-        **Division:** {driver.div}
-        **Position:** {driver.position}
-
-        Gaps
-        To Leader: {driver.leader}
-        To Div Leader: {driver.division}
-        To Driver Ahead: {driver.interval}
-        """
+        embed.description = "" + 
+        f"**Driver:** [{driver.gamertag}]({driver.cell_link})" + 
+        f"**Lap Time:** [{driver.lap_time}]({driver.screenshot_link})" +
+        f"**Division:** {driver.div}" +
+        f"**Position:** {driver.position}" +
+        "" +
+        "Gaps" +
+        f"To Leader: {driver.leader}" +
+        f"To Div Leader: {driver.division}" +
+        f"To Driver Ahead: {driver.interval}"
 
       if driver.position == "null" and driver.invalidated == "true": # invalid lap time
         embed.color = int("0x000000", 16)
         embed.set_author(name="Invalid Lap Time", icon_url=logos["cotm_white_trans"])
 
-        embed.description = f"""
-        **Driver:** {driver.gamertag}
-        **Lap Time:** [~~{driver.lap_time}~~]({driver.screenshot_link})
-        """
+        embed.description = "" + 
+        f"**Driver:** {driver.gamertag}" +
+        f"**Lap Time:** [~~{driver.lap_time}~~]({driver.screenshot_link})"
         await member.edit(nick=driver.gamertag)
 
         
