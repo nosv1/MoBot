@@ -49,6 +49,7 @@ DRIVER_HISTORY = 631556653174620160
 EVENT_CHAT = 527156400908926978
 VOTING = 608472349712580608
 VOTING_LOG = 530284914071961619
+QUALI_TIMES = 705787893364555785
 
 # common emojis
 X_EMOJI = "❌"
@@ -401,7 +402,7 @@ async def handleQualiSubmission(message):
         embed.description += f"**Lap Time:** [~~{driver.lap_time}~~]({driver.screenshot_link})\n"
         await member.edit(nick=driver.gamertag)
         
-      msg = await message.guild.get_channel(EVENT_CHAT).send(content=member.mention, embed=embed)
+      msg = await message.guild.get_channel(QUALI_TIMES).send(content=member.mention, embed=embed)
       await updateQualiRoles(msg)
       break
 # end handleQualiSubmission
