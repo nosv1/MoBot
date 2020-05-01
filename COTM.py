@@ -304,7 +304,7 @@ async def updateQualiRoles(message):
         d = r[i].value # div
         if d == "":
           continue
-        if d != div:
+        if d != div and div != "1":
           return r[i+2].value # lap time
       return r[2].value # leader time
     # end getCutoffTime
