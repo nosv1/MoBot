@@ -281,9 +281,10 @@ async def handleFormSignup(message):
 async def updateQualiRoles(message):
   await message.remove_reaction(RandomSupport.EXCLAMATION_EMOJI, message.guild.get_member(moBot))
 
-  embed = message.embeds[0]
-  embed.set_footer(text="updating roles...")
-  await message.edit(embed=embed)
+  if message.author.id == moBot:
+    embed = message.embeds[0]
+    embed.set_footer(text="updating roles...")
+    await message.edit(embed=embed)
 
   try:
     workbook = openSpreadsheet()
@@ -396,6 +397,7 @@ async def handleQualiSubmission(message):
     member_name = member.display_name if "[D" not in member.display_name else member.display_name.split("] ")[1].strip()
     if driver.gamertag.lower() == member_name.lower():# or member.id == mo:
 
+      edit_message = False
       if driver.position != "null" and driver.invalidated == "false": # valid lap time
         embed.color = [role.color for role in message.guild.roles if role.name == f"Division {driver.div}"][0]
         embed.set_author(name="New Lap Time", icon_url=logos["cotm_white_trans"])
@@ -410,6 +412,8 @@ async def handleQualiSubmission(message):
         embed.description += f"to Leader: {driver.leader}\n"
         embed.description += f"to Div Leader: {driver.division}\n"
         embed.description += f"to Driver Ahead: {driver.interval}\n"
+        
+        edit_message = True
 
       if driver.position == "null" and driver.invalidated == "true": # invalid lap time
         embed.color = int("0x000000", 16)
@@ -419,9 +423,13 @@ async def handleQualiSubmission(message):
         embed.description += f"**Driver:** {driver.gamertag}\n"
         embed.description += f"**Lap Time:** [~~{driver.lap_time}~~]({driver.screenshot_link})\n"
         await member.edit(nick=driver.gamertag)
+
+        edit_message = True
         
-      msg = await message.guild.get_channel(QUALI_TIMES).send(content=member.mention, embed=embed)
-      await updateQualiRoles(msg)
+      if edit_message:
+        message = await message.guild.get_channel(QUALI_TIMES).send(content=member.mention, embed=embed)
+      
+      await updateQualiRoles(message)
       break
 # end handleQualiSubmission
 
