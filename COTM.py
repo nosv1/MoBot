@@ -288,7 +288,7 @@ async def updateQualiRoles(message):
   try:
     workbook = openSpreadsheet()
     quali_sheet = workbook.worksheet("Qualifying")
-    r = quali_sheet.range(f"C4:D{quali_sheet.row_count}")
+    r = quali_sheet.range(f"C4:E{quali_sheet.row_count}") # div, driver, lap time
 
     def getMember(gamertag):
       return [member for member in message.guild.members if gamertag.lower() in member.display_name.lower()][0]
@@ -299,7 +299,17 @@ async def updateQualiRoles(message):
     def getChannel(div):
       return [channel for channel in message.guild.channels if channel.name == f"division-{div}"][0]
 
-    for i in range(0, len(r), 2):
+    def getCutoffTime(div):
+      for i in range(len(r)-3, -1, -3): # start at the back
+        d = r[i].value # div
+        if d == "":
+          continue
+        if d != div:
+          return r[i+2].value # lap time
+      return r[2].value # leader time
+    # end getCutoffTime
+
+    for i in range(0, len(r), 3):
       div = r[i].value
       gamertag = r[i+1].value
 
@@ -308,7 +318,9 @@ async def updateQualiRoles(message):
 
       member = getMember(gamertag)
 
-      role = getRole(f"Division {div}")
+      role = getRole(f"Division {div}") # current div of driver
+
+
       if role not in member.roles: # outdated role
         await member.edit(nick=f"[D{div}] {gamertag}")
         
@@ -320,7 +332,13 @@ async def updateQualiRoles(message):
 
         channel = getChannel(div)
         await member.add_roles(role)
-        await channel.send(f"> Welcome {member.mention}")
+        t = ""
+        t += f">>> Welcome {member.mention}\n"
+        if div == "1":
+          t += f"Division 1 Leader: {getCutoffTime(div)}"
+        else:
+          t += f"Division {int(div)-1} Cut-off: {getCutoffTime(div)}"
+        await channel.send(t)
 
     embed = embed.to_dict()
     del embed["footer"]
