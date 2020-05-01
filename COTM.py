@@ -381,26 +381,25 @@ async def handleQualiSubmission(message):
         embed.color = [role.color for role in message.guild.roles if role.name == f"Division {driver.div}"][0]
         embed.set_author(name="New Lap Time", icon_url=logos["cotm_white_trans"])
 
-        embed.description = "" + 
-        f"**Driver:** [{driver.gamertag}]({driver.cell_link})" + 
-        f"**Lap Time:** [{driver.lap_time}]({driver.screenshot_link})" +
-        f"**Division:** {driver.div}" +
-        f"**Position:** {driver.position}" +
-        "" +
-        "Gaps" +
-        f"To Leader: {driver.leader}" +
-        f"To Div Leader: {driver.division}" +
-        f"To Driver Ahead: {driver.interval}"
+        embed.description = "" 
+        embed.description += f"**Driver:** [{driver.gamertag}]({driver.cell_link})\n"
+        embed.description += f"**Lap Time:** [{driver.lap_time}]({driver.screenshot_link})\n"
+        embed.description += f"**Division:** {driver.div}\n"
+        embed.description += f"**Position:** {driver.position}\n"
+        embed.description += "\n"
+        embed.description += "__Gaps__\n"
+        embed.description += f"to Leader: {driver.leader}\n"
+        embed.description += f"to Div Leader: {driver.division}\n"
+        embed.description += f"to Driver Ahead: {driver.interval}\n"
 
       if driver.position == "null" and driver.invalidated == "true": # invalid lap time
         embed.color = int("0x000000", 16)
         embed.set_author(name="Invalid Lap Time", icon_url=logos["cotm_white_trans"])
 
-        embed.description = "" + 
-        f"**Driver:** {driver.gamertag}" +
-        f"**Lap Time:** [~~{driver.lap_time}~~]({driver.screenshot_link})"
+        embed.description = ""
+        embed.description += f"**Driver:** {driver.gamertag}\n"
+        embed.description += f"**Lap Time:** [~~{driver.lap_time}~~]({driver.screenshot_link})\n"
         await member.edit(nick=driver.gamertag)
-
         
       msg = await message.guild.get_channel(EVENT_CHAT).send(content=member.mention, embed=embed)
       await updateQualiRoles(msg)
