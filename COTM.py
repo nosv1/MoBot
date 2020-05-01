@@ -181,7 +181,7 @@ async def mainReactionAdd(message, payload, client):
 
     if payload.emoji.name == RandomSupport.EXCLAMATION_EMOJI: # error updating quali roles
       if message.embeds:
-        if message.embeds[0].author == "New Lap Time": # roles weren't updated
+        if message.embeds[0].author.name == "New Lap Time": # roles weren't updated
           await updateQualiRoles(message)
           
 
@@ -290,7 +290,7 @@ async def updateQualiRoles(message):
     r = quali_sheet.range(f"C4:D{quali_sheet.row_count}")
 
     def getMember(gamertag):
-      return [member for member in message.guild.members if member.display_name.lower() == gamertag.lower()][0]
+      return [member for member in message.guild.members if gamertag.lower() in member.display_name.lower()][0]
     
     def getRole(name):
       return [role for role in message.guild.roles if role.name == name][0]
@@ -325,7 +325,6 @@ async def updateQualiRoles(message):
     del embed["footer"]
     embed = discord.Embed.from_dict(embed)
   except:
-    print(traceback.format_exc())
     embed.set_footer(text=f"{RandomSupport.EXCLAMATION_EMOJI} error updating roles")
     await message.add_reaction(RandomSupport.EXCLAMATION_EMOJI)
   
@@ -400,8 +399,10 @@ async def handleQualiSubmission(message):
 
         embed.description = f"""
         **Driver:** {driver.gamertag}
-        **Lap Time:** [{driver.lap_time}]({driver.screenshot_link})
+        **Lap Time:** [~~{driver.lap_time}~~]({driver.screenshot_link})
         """
+        await member.edit(nick=driver.gamertag)
+
         
       msg = await message.guild.get_channel(EVENT_CHAT).send(content=member.mention, embed=embed)
       await updateQualiRoles(msg)
