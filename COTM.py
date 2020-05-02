@@ -347,8 +347,11 @@ async def updateQualiRoles(message):
     embed = discord.Embed.from_dict(embed)
   except:
     print(traceback.format_exc())
-    embed.set_footer(text=f"{RandomSupport.EXCLAMATION_EMOJI} error updating roles")
-    await message.add_reaction(RandomSupport.EXCLAMATION_EMOJI)
+    try:
+      embed.set_footer(text=f"{RandomSupport.EXCLAMATION_EMOJI} error updating roles")
+      await message.add_reaction(RandomSupport.EXCLAMATION_EMOJI)
+    except: # when there's invalid time but no embed cause they still got a position
+      pass
   
   await message.edit(embed=embed)
 # end updateQualiRoles
