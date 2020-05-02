@@ -147,8 +147,8 @@ async def on_message(message):
     if (len(args) > 1):
       if (args[1] == "test"):
         #await COTM.handlePitMarshallReaction(await message.channel.fetch_message(622831151320662036), COTM.CROWN, message.author)
-        await COTM.handleQualiSubmission(await message.channel.fetch_message(705567178912432148))
-        #await COTM.updateQualiRoles(await message.channel.fetch_message(705561830390628443))
+        #await COTM.handleQualiSubmission(await message.channel.fetch_message(705567178912432148))
+        await COTM.updateQualiRoles(await message.channel.fetch_message(706117739751931994))
         #await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
