@@ -292,6 +292,7 @@ async def updateQualiRoles(message):
     r = quali_sheet.range(f"C4:E{quali_sheet.row_count}") # div, driver, lap time
 
     def getMember(gamertag):
+      print(gamertag)
       return [member for member in message.guild.members if gamertag.lower() in member.display_name.lower()][0]
     
     def getRole(name):
@@ -345,6 +346,7 @@ async def updateQualiRoles(message):
     del embed["footer"]
     embed = discord.Embed.from_dict(embed)
   except:
+    print(traceback.format_exc())
     embed.set_footer(text=f"{RandomSupport.EXCLAMATION_EMOJI} error updating roles")
     await message.add_reaction(RandomSupport.EXCLAMATION_EMOJI)
   
