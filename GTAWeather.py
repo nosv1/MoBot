@@ -181,13 +181,18 @@ async def sendWeatherForecast(message):
   embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar_url)
 
   currentWeather = getForecast(n)
-  currentWeatherStr = "**The time is `%s`, and it is `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
-  currentRainStr = "**Rain will `%s` in `%s`.**" % ("end" if (currentWeather.isRaining) else "begin", currentWeather.rainEtaStr.strip())
-  futurecast = "**3-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%a %b %d %H:%M UTC"), getFuturecast(n))
-  futureRainStr = "**Rain in the next 12 hours:```%s```**" % getFutureRain(n)
+  currentWeatherStr = "**The in-game time is `%s`, and it is currently `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)
+  currentRainStr = "**Rain will `%s` in `%s`.**" % ("end" if currentWeather.isRaining else "begin", currentWeather.rainEtaStr.strip())
+
+  future_weather = getForecast(n + timedelta(seconds=currentWeather.rainEtaSec, minutes=1))
+  future_weather_str = "**The roads will be `%s` for `%s`.**" % ("dry" if currentWeather.isRaining else "wet", future_weather.rainEtaStr.strip())
+
+  '''futurecast = "**3-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%a %b %d %H:%M UTC"), getFuturecast(n))
+  futureRainStr = "**Rain in the next 12 hours:```%s```**" % getFutureRain(n)'''
+  
   specificDateInstructions = "**To use a specific date:**\n1. Type a date in the format `dd mm yy hh:mm`\n2. Click the %s\n*The numbers MUST BE zero-padded, and the time zone used is UTC.*\n__Example:__\n`1 February 2003 04:05 UTC` -> `01 02 03 04:05`" % CALENDEAR_EMOJI
 
-  embed.description = "`%s UTC`\n%s\n%s\n\n%s\n%s\n%s" % (n.strftime("%a %b %d %H:%M"), currentWeatherStr, currentRainStr, futurecast, futureRainStr, specificDateInstructions)
+  embed.description = "`%s UTC`\n\n%s\n%s\n%s\n\n%s" % (n.strftime("%a %b %d %H:%M"), currentWeatherStr, currentRainStr, future_weather_str, specificDateInstructions)
   embed.set_footer(text="| %s Refresh |" % COUNTER_CLOCKWISE_EMOJI)
 
   if (message.author.id != moBot):
