@@ -117,7 +117,8 @@ async def main(args, message, client):
 
     if args[1] == "quali" and len(args) > 2:
       if args[2] == "missing" and authorPerms.administrator:
-        await message.channel.send(f"```{', '.join(getMissingQualifiers(message.guild))}```")
+        missing_qualifiers = getMissingQualifiers(message.guild)
+        await message.channel.send(f"{len(missing_qualifiers)}```{', '.join(missing_qualifiers)}```")
 
     if (args[1] == "reserve" and authorPerms.administrator):
       await setManualReserve(message)
