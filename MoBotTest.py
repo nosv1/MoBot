@@ -146,7 +146,9 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await GTAWeather.sendWeatherForecast(message)
+        #await GTAWeather.sendWeatherForecast(message)
+        missing_qualifiers = COTM.getMissingQualifiers(message.guild)
+        await message.channel.send(f"```{', '.join(missing_qualifiers)}```")
         #await COTM.handlePitMarshallReaction(await message.channel.fetch_message(622831151320662036), COTM.CROWN, message.author)
         #await COTM.handleQualiSubmission(await message.channel.fetch_message(705567178912432148))
         #await COTM.updateQualiRoles(await message.channel.fetch_message(706117739751931994))

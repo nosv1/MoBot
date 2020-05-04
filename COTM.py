@@ -109,14 +109,16 @@ async def main(args, message, client):
   qualifyingChannel = message.guild.get_channel(QUALIFYING)
   qualiScreenshotsChannel = message.guild.get_channel(QUALI_SCREENSHOTS)
 
-  if str(moBot) in args[0]:
+  if str(moBot) in args[0] and len(args) > 1:
     if "newsignup" in args[1]:
       await handleFormSignup(message)
     elif "newqualitime" in args[1]:
       await handleQualiSubmission(message)
 
-    if (args[1] == "quali" and authorPerms.administrator):
-      await submitQualiTime(message, qualifyingChannel, None, None, client)
+    if args[1] == "quali" and len(args) > 2:
+      if args[2] == "missing" and authorPerms.administrator:
+        await message.channel.send(f"```{', '.join(getMissingQualifiers(message.guild))}```")
+
     if (args[1] == "reserve" and authorPerms.administrator):
       await setManualReserve(message)
     elif (args[1] == "history"):
@@ -273,7 +275,9 @@ async def handleFormSignup(message):
       await message.guild.get_channel(EVENT_CHAT).send(content=member.mention, embed=embed)
       await member.remove_roles(message.guild.get_role(PEEKER_ROLE))
       await member.add_roles(message.guild.get_role(CHILDREN_ROLE))
-      return
+      break
+
+  await getRoster(message.guild) # just updating discord ids
 # end handleFormSignup
 
 
@@ -290,13 +294,6 @@ async def updateQualiRoles(message):
     workbook = openSpreadsheet()
     quali_sheet = workbook.worksheet("Qualifying")
     r = quali_sheet.range(f"C4:E{quali_sheet.row_count}") # div, driver, lap time
-
-    def getMember(gamertag):
-      print(gamertag)
-      return [member for member in message.guild.members if gamertag.lower() in member.display_name.lower()][0]
-    
-    def getRole(name):
-      return [role for role in message.guild.roles if role.name == name][0]
 
     def getChannel(div):
       return [channel for channel in message.guild.channels if channel.name == f"division-{div}"][0]
@@ -318,10 +315,9 @@ async def updateQualiRoles(message):
       if div == "":
         break
 
-      member = getMember(gamertag)
+      member = getMember(gamertag, message.guild.members)
 
-      role = getRole(f"Division {div}") # current div of driver
-
+      role = getRole(f"Division {div}", message.guild.roles) # current div of driver
 
       if role not in member.roles: # outdated role
         await member.edit(nick=f"[D{div}] {gamertag}")
@@ -668,6 +664,7 @@ async def submitVotes(message, member):
     return
 # end submitVotes
 
+
 ''' PIT-MARSHALLS '''
 def getPitMarshalls():
   moBotDB = connectDatabase()
@@ -811,6 +808,64 @@ async def handlePitMarshallReaction(message, payload, member, add_remove):
         await message.remove_reaction(reaction.emoji, member)
         break
 # end handlePitMarshallReaction
+
+
+''' SUPPORT '''
+def getMember(gamertag, members):
+  print(gamertag)
+  return [member for member in members if gamertag.lower() in member.display_name.lower()][0]
+# end getMember
+    
+def getRole(name, roles):
+  return [role for role in roles if role.name == name][0]
+# end getRole
+
+def getRoster(guild): # gamertag, discord_id, q_pos, status, youtube, stream
+  workbook = openSpreadsheet()
+  sheet = workbook.worksheet("Roster")
+  roster_range = sheet.range(f"C4:H{sheet.row_count}") 
+  discord_range = sheet.range(f"D4:D{sheet.row_count}")
+
+  roster = [[] for i in range(6)]
+  for i in range(0, len(roster_range), len(roster)):
+    if roster_range[i].value == "":
+      break
+
+    for j in range(len(roster)):
+      roster[j].append(roster_range[i+j]) # append cell object
+    
+  for i, cell in enumerate(roster[0]): # gamertag_range
+    if cell.value == "":
+      break
+    
+    if roster[3][i].value != "Retired":
+      try:
+        member = getMember(cell.value, guild.members)
+        discord_range[i].value = f"<@{member.id}>"
+      except IndexError: # member could not be found
+        discord_range[i].value = "Inaccurate GT"
+    else:
+      discord_range[i].value = ""
+
+  sheet.update_cells(discord_range, value_input_option="USER_ENTERED")
+
+  for i in range(len(roster)):
+    for j in range(len(roster[i])):
+      roster[i][j] = roster[i][j].value
+
+  return roster
+# end getRoster
+
+def getMissingQualifiers(guild):
+  roster = getRoster(guild)
+
+  missing_qualifiers = []
+  for i, q_pos in enumerate(roster[2]): # q_pos
+    if q_pos == "TBD":
+      missing_qualifiers.append(roster[1][i]) # discord_id
+
+  return missing_qualifiers
+# end getMissingQualifiers
 
 
 
@@ -1226,29 +1281,6 @@ async def waitForQualiTime(message, member, payload, qualifyingChannel, client):
         await moBotMessage.delete()
       break
 # end waitForQualiTime
-
-async def getMissingQualifiers(driversRange, guild):
-  members = guild.members
-  driverIDs = []
-  missingDrivers = []
-  for i in range(len(driversRange)):
-    if (driversRange[i].value != ""):
-      try:
-        driverIDs.append(int(driversRange[i].value))
-      except ValueError:
-        pass
-    else:
-      break
-  for member in members:
-    isCOTM = False
-    for role in member.roles:
-      if (role.name == "COTM"):
-        isCOTM = True
-    if (isCOTM):
-      if (member.id not in driverIDs):
-        missingDrivers.append(member)
-  return missingDrivers
-# end getMissingQualifiers
 
 async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, client):  
   await message.channel.trigger_typing()
