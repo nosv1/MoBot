@@ -876,14 +876,13 @@ async def handlePitMarshallReaction(message, payload, member):
           divs.append(division_emojis.index(reaction.emoji.id) + 1)
         break
 
-  is_pit_marshalling = False
   if divs: # if user actually selected div
-    is_pit_marshalling = addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs)
+    addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs)
   else:
     await message.channel.send(f"**{member.mention}, please select the division(s) before selecting the {CROWN} or the {WRENCH}.**", delete_after=7)
 
   pm_role = getRole("Pit-Marshall", message.guild.roles)
-  if is_pit_marshalling:
+  if member.id in [pm.member_id for pm in getPitMarshalls() if pm.member_id == member.id]:
     await member.add_roles(pm_role)
   else:
     await member.remove_roles(pm_role)
