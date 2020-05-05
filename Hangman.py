@@ -134,18 +134,20 @@ async def newGame(message, client):
         v += f"Win %: `{str(player.percent_correct)}%`"
         v += f"Wins/Losses: `{player.wins}/{player.losses}`"
         v += f"Games Played: `{player.games_played}`"
-        v += f"Server Position: `{server_position if player.games_played >= 10 else str(10 - player.games_played) + " games left"}`"
+        v += f"Server Position: `{server_position if player.games_played >= 10 else str(10 - player.games_played) + ' games left'}`"
 
         embed = discord.Embed.from_dict(embed)
         embed.add_field(name=spaceChar, value=v, inline=False)
         embed = embed.to_dict()
 
-        leader = leaderboard[0]
-        try:
-          leader_name = message.guild.get_member(leader.user_id)
-        except:
-          leader_name = "unkown..."
-        await message.channel.edit(topic=f"Leader: {leader_name}\nWin: % {leader.percent_correct}%\nGames Played: {leader.games_played}")
+
+        if message.channel.name == "hangman":
+          leader = leaderboard[0]
+          try:
+            leader_name = message.guild.get_member(leader.user_id)
+          except:
+            leader_name = "unkown..."
+          await message.channel.edit(topic=f"Leader: {leader_name}\nWin: % {leader.percent_correct}%\nGames Played: {leader.games_played}")
 
     embed = discord.Embed.from_dict(embed)
     try:
