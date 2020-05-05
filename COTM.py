@@ -43,7 +43,7 @@ TOT_POS_GAIN_LOST = 628766947709812756
 DIVISION_UPDATES = 527319768911314944
 RESERVE_SEEKING = 620811051335680013
 ACTION_LOG = 527355464216739866
-PIT_MARSHALL_SIGNUP = 605985462502555679
+PIT_MARSHALL_SIGNUP = 622831151320662036
 MINI_CHAMPIONSHIPS = 630610458029588480
 DRIVER_HISTORY = 631556653174620160
 EVENT_CHAT = 527156400908926978
@@ -67,7 +67,7 @@ EVERYONE = 527156310366486529
 PEEKER_ROLE = 534230087244185601
 CHILDREN_ROLE = 529112570448183296
 
-spaceChar = "⠀"
+space_char = "⠀"
 logos = {
   "cotmFaded" : "https://i.gyazo.com/e720604af6507b3fc905083e8c92edf7.png",
   "cotm_white_trans" : "https://i.gyazo.com/226faa8d1f43c56d579faa9d81ff9e86.png",
@@ -79,7 +79,7 @@ logos = {
   "d6" : "https://i.gyazo.com/91d5cb3aa8688fe885a4e907fbf3bb78.png",
   "d7" : "https://i.gyazo.com/33e6ec2a82539f251a66aa8f2c6ee2fa.png",
 }
-divisionEmojis = [
+division_emojis = [
   702654860801081474,
   702654861006602299,
   702654861065322526,
@@ -88,13 +88,16 @@ divisionEmojis = [
   702655538831425547,
   702654860478251128,
 ]
+num_divs = 7
+
+
 
 ''' CLASSES '''
 class Pit_Marshall:
   def __init__(self, member_id, div, host_pm):
-    self.member_id = member_id
-    self.div = div
-    self.host_pm = host_pm # host = 1, pm = 0
+    self.member_id = int(member_id)
+    self.div = int(div)
+    self.host_pm = int(host_pm) # host = 1, pm = 0
 # end Pit_Marshall
 
 
@@ -117,6 +120,7 @@ async def main(args, message, client):
 
     if args[1] == "quali" and len(args) > 2:
       if args[2] == "missing" and authorPerms.administrator:
+        await message.channel.trigger_typing()
         missing_qualifiers = getMissingQualifiers(message.guild)
         await message.channel.send(f"{len(missing_qualifiers)}```{', '.join(missing_qualifiers)}```")
 
@@ -188,6 +192,14 @@ async def mainReactionAdd(message, payload, client):
         if message.embeds[0].author.name == "New Lap Time": # roles weren't updated
           await updateQualiRoles(message)
           
+    if message.id == PIT_MARSHALL_SIGNUP:
+      if payload.emoji.name in [CROWN, WRENCH]:
+        await handlePitMarshallReaction(message, payload, member)
+      elif payload.emoji.name in [X_EMOJI, ARROWS_COUNTERCLOCKWISE_EMOJI] and member.id == mo:
+        if payload.emoji.name == X_EMOJI:
+          await clear_pit_marshalls(message.guild)
+        await updatePitMarshallEmbed(message)
+        await message.remove_reaction(payload.emoji.name, member)
 
 
 
@@ -250,6 +262,7 @@ async def memberRemove(member, client):
 # end memberRemove
 
 
+
 ''' SIGNUP '''
 async def handleFormSignup(message):
   if not message.webhook_id: # is not from webhook
@@ -278,8 +291,9 @@ async def handleFormSignup(message):
       await member.add_roles(message.guild.get_role(CHILDREN_ROLE))
       break
 
-  await getRoster(message.guild) # just updating discord ids
+  getRoster(message.guild) # just updating discord ids
 # end handleFormSignup
+
 
 
 ''' QUALIFYING '''
@@ -436,6 +450,7 @@ async def handleQualiSubmission(message):
 # end handleQualiSubmission
 
 
+
 ''' VOTING '''
 async def openVotingChannel(message, member):
   await message.channel.trigger_typing()
@@ -482,7 +497,7 @@ async def createOgVotingEmbed(message):
 
   embed.add_field(
     name="**Instructions**",
-    value=f"Select the number-button below to cast your vote. You have 4 votes to spend total. Spread them out, or stack them all on one option. Click the {X_EMOJI} to clear all your votes.\n{spaceChar}",
+    value=f"Select the number-button below to cast your vote. You have 4 votes to spend total. Spread them out, or stack them all on one option. Click the {X_EMOJI} to clear all your votes.\n{space_char}",
     inline=False
   )
 
@@ -491,16 +506,16 @@ async def createOgVotingEmbed(message):
     og_voting_embed.embeds[0], 
     "Options"
   ).split("\n")
-  options = [f"{i+1}. {option} - 0" for i, option in enumerate(options) if spaceChar not in option]
+  options = [f"{i+1}. {option} - 0" for i, option in enumerate(options) if space_char not in option]
   embed.add_field(
     name="**Options**", 
-    value= "\n".join(options) + "\n" + spaceChar,
+    value= "\n".join(options) + "\n" + space_char,
     inline=False
   )
 
   embed.add_field(
     name="**Current Option**",
-    value=f"{options[0]}\n{spaceChar}",
+    value=f"{options[0]}\n{space_char}",
     inline=False
   )
 
@@ -563,7 +578,7 @@ async def votePlaced(message, member):
 
   embed = RandomSupport.updateFieldValue( # update current option
     embed, "Current Option", 
-    f"{options[new_option_number-1]}\n{spaceChar}"
+    f"{options[new_option_number-1]}\n{space_char}"
   )
 
   if votes_remaining == 0:
@@ -666,7 +681,29 @@ async def submitVotes(message, member):
 # end submitVotes
 
 
+
 ''' PIT-MARSHALLS '''
+# what divs not available if in race
+host_not_avail = [
+  [1, 4, 7, 2, 5], # in div 1, can't host for these
+  [2, 5, 1, 4, 7],
+  [3, 6, 2, 5],
+  [1, 4, 7, 2, 5],
+  [2, 5, 1, 4, 7],
+  [3, 6, 2, 5],
+  [1, 4, 7, 2, 5]
+]
+
+pm_not_avail = [
+  [1, 4, 7], # in div 1, can't pit marshall for these
+  [2, 5],
+  [3, 6],
+  [1, 4, 7],
+  [2, 5],
+  [3, 6],
+  [1, 4, 7]
+]
+
 def getPitMarshalls():
   moBotDB = connectDatabase()
   marshalls = []
@@ -675,36 +712,68 @@ def getPitMarshalls():
     FROM pit_marshalls
   """)
   for record in moBotDB.cursor:
-    marshalls.append(Marshall(*record))
+    marshalls.append(Pit_Marshall(*record))
   moBotDB.connection.close()
   return marshalls
-
 # end getCurrentPitMarshalls
 
-async def addPitMarshall(host_pm, pit_marshalls, member_divs, member):
+async def clear_pit_marshalls(guild):
+  pit_marshalls = getPitMarshalls()
+  pm_role = getRole("Pit-Marshall", guild)
+  for pm in pit_marshalls:
+    member = guild.get_member(pm.member_id)
+    await member.remove_roles(pm_role)
 
-  def refineAvail(avail, member_divs): # when user is in more than once race, need to refine the avail lists to get only unique values, values without duplicates
-    t = []
-    refined = []
-    if member_divs:
-      for div in member_divs:
-        t += avail[div-1]
-      
-      for i, div in enumerate(t): # remove dupes and the ogs, leaving non dupes
-        if div not in t[0:i] + t[i+1:]:
-          refined.append(div)
-      return refined
-      
-    else: # user can host any div
-      return list(range(1,7+1))
+  moBotDB = connectDatabase()
+  moBotDB.cursor.execute(f"""
+    DELETE FROM pit_marshalls
+  """)
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
+# end clear_pit_marshalls
+
+def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
+
+  ## remove 
+  for pm in pit_marshalls:
+    if pm.member_id == member.id and pm.host_pm == host_pm:
+      if pm.div in divs: # if previously clicked div is clicked again, remove
+        moBotDB = connectDatabase()
+        moBotDB.cursor.execute(f"""
+          DELETE FROM pit_marshalls
+          WHERE 
+            `id` = '{pm.member_id}' AND
+            `div` = '{pm.div}' AND
+            `host_pm` = '{host_pm}'
+        """)
+        moBotDB.connection.commit()
+        moBotDB.connection.close()
+
+        del member_divs[member_divs.index(pm.div)]
+      else:
+        member_divs.append(pm.div)
+
+
+  ## add
+  def refineAvail(not_avail, member_divs):
+    new_not_avail = []
+    for div in member_divs:
+      new_not_avail += not_avail[div-1]
+    
+    return [i for i in range(1, num_divs+1) if i not in new_not_avail]
+  # end refineAvail
+
+  is_pit_marshalling = False
   if host_pm == 1: # if host
-    hosts_needed = list(range(1,7+1)) # get the divs where a host is needed
+    hosts_needed = list(range(1,num_divs+1)) # get the divs where a host is needed
     for pit_marshall in pit_marshalls:
       if pit_marshall.host_pm == 1:
         del hosts_needed[pit_marshall.div-1]
     
     for div in hosts_needed:
-      if div in refineAvail(host_avail, member_divs) and div in divs:
+      if div in refineAvail(host_not_avail, member_divs) and div in divs:
+        is_pit_marshalling = True
+
         moBotDB = connectDatabase()
         moBotDB.cursor.execute(f"""
           INSERT INTO pit_marshalls (
@@ -715,18 +784,20 @@ async def addPitMarshall(host_pm, pit_marshalls, member_divs, member):
             '1'
           );
         """)
-        moBotDB.commit()
+        moBotDB.connection.commit()
         moBotDB.connection.close()
         break
 
   else: # if pm
-    pm_needed = list(range(1,7+1)) # get the divs where a pm is needed
+    pm_needed = list(range(1,num_divs+1)) # get the divs where a pm is needed
     for pit_marshall in pit_marshalls:
       if pit_marshall.host_pm == 0:
         del pm_needed[pit_marshall.div-1]
       
     for div in pm_needed:
-      if div in refineAvail(pm_avail, member_divs) and div in divs:
+      if div in refineAvail(pm_not_avail, member_divs) and div in divs:
+        is_pit_marshalling = True
+
         member_divs.append(div)
 
         moBotDB = connectDatabase()
@@ -739,23 +810,55 @@ async def addPitMarshall(host_pm, pit_marshalls, member_divs, member):
             '0'
           );
         """)
-        moBotDB.commit()
+        moBotDB.connection.commit()
         moBotDB.connection.close()
-# end addPitMarshall
 
-async def handlePitMarshallReaction(message, payload, member, add_remove):
-  '''if payload.emoji.name not in [CROWN, WRENCH]:
-    return'''
+  return is_pit_marshalling
+# end addRemovePitMarshall
 
+async def updatePitMarshallEmbed(pm_message):
+  message = pm_message
   await message.channel.trigger_typing()
 
   embed = message.embeds[0]
   pit_marshalls = getPitMarshalls()
 
-  member_divs = [] # get the divs the member is racing in
-  for role in member.roles:
+  embed = embed.to_dict()
+
+  div_lines = [
+    "Host -",
+    "Pit-Marshall -",
+    space_char
+  ]
+
+  for i in range(7):
+    embed["fields"][i]["value"] = "\n".join(div_lines)
+
+  for pm in pit_marshalls:
+    pm_name = message.guild.get_member(pm.member_id).display_name
+    div_lines = embed["fields"][pm.div-1]["value"].split("\n")
+    if pm.host_pm == 1:
+      div_lines[0] = f"Host - {pm_name}"
+    else:
+      div_lines[1] = f"Pit-Marshall - {pm_name}"
+    embed["fields"][pm.div-1]["value"] = "\n".join(div_lines)
+
+  await message.edit(embed=discord.Embed().from_dict(embed))
+# end updatePitMarshallEmbed
+
+async def handlePitMarshallReaction(message, payload, member):
+  await message.channel.trigger_typing()
+
+  pit_marshalls = getPitMarshalls()
+
+  member_divs = [] # get the divs the member is in
+  for role in member.roles: # racing in 
     if "Division" in role.name:
       member_divs.append(int(role.name[-1]))
+
+  for pm in pit_marshalls: # already pit marshalling
+    if pm.member_id == member.id:
+      member_divs.append(pm.div)
   
   # figure out what the user wants to do, host/pm and what divs
   host_pm = -1 # host = 1 // pm = 0
@@ -767,41 +870,23 @@ async def handlePitMarshallReaction(message, payload, member, add_remove):
           host_pm = 1
         elif reaction.emoji == WRENCH:
           host_pm = 0
-        elif reaction.emoji.id in divisionEmojis:
-          divs.append(divisionEmojis.index(reaction.emoji.id) + 1)
+        elif reaction.emoji.id in division_emojis:
+          divs.append(division_emojis.index(reaction.emoji.id) + 1)
         break
 
-  # host div availability
-  host_avail = [
-    [2, 3, 5, 6], # div 1
-    [3, 6], # div 2
-    [1, 4, 7], # div 3
-    [2, 3, 5, 6], # 4
-    [3, 6], # 5 
-    [1, 4, 7], # 6
-    [2, 3, 5, 6]
-  ]
-
-  # pit marshall availability
-  pm_avail = [
-    [2, 3, 5, 6],
-    [1, 3, 4, 6, 7],
-    [1, 2, 4, 5, 7],
-    [2, 3, 5, 6],
-    [1, 3, 4, 6, 7],
-    [1, 2, 4, 5, 7],
-    [2, 3, 5, 6],
-  ]
-
+  is_pit_marshalling = False
   if divs: # if user actually selected div
-    if add_remove == 1: # add
-      await addPitMarshall(host_pm, pit_marshalls, member_divs, member)
-    else: # remove
-      pass
-      ############ await removePitMarshall(host_pm, pit_marshalls, member)
-
+    is_pit_marshalling = addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs)
   else:
     await message.channel.send(f"**{member.mention}, please select the division(s) before selecting the {CROWN} or the {WRENCH}.**", delete_after=7)
+
+  pm_role = getRole("Pit-Marshall", message.guild.roles)
+  if is_pit_marshalling:
+    await member.add_roles(pm_role)
+  else:
+    await member.remove_roles(pm_role)
+
+  await updatePitMarshallEmbed(message)
 
   for reaction in message.reactions:
     async for user in reaction.users():
@@ -809,6 +894,7 @@ async def handlePitMarshallReaction(message, payload, member, add_remove):
         await message.remove_reaction(reaction.emoji, member)
         break
 # end handlePitMarshallReaction
+
 
 
 ''' SUPPORT '''
@@ -870,247 +956,6 @@ def getMissingQualifiers(guild):
 
 
 
-async def addDriver(message):
-  divisionUpdatesChannel = message.guild.get_channel(DIVISION_UPDATES)
-
-  workbook = openSpreadsheet()
-
-  moBotMessage = await message.channel.send("*Getting Number of Divisions*")
-  driverHistorySheet = workbook.worksheet("Driver History")
-  numberOfDivs = driverHistorySheet.range("D1:D1")[0].value
-
-  await moBotMessage.edit(content="*Getting Driver ID and Gamertag*")
-  driverID = message.content.split("<@")[-1].split(">")[0].replace("!", "")
-  driverGT = message.content.split(driverID)[-1].split(">")[-1].strip()
-  driverMember = message.guild.get_member(int(driverID))
-  
-  await moBotMessage.edit(content="*Saving Driver ID and Gamertag*")
-  driversRange, driversSheet = getDriversRange(workbook)
-  driverIndex = findDriver(driversRange, driverID) 
-  if (driverIndex == -1):
-    for i in range(len(driversRange)):
-      if (driversRange[i].value == ""):
-        driversRange[i].value = str(driverID)
-        driversRange[i+1].value = driverGT
-        break
-  else:
-    driversRange[driverIndex+1].value = driverGT
-  driversSheet.update_cells(driversRange, value_input_option="USER_ENTERED")
-
-  await moBotMessage.edit(content="*Adding Driver Gamertag to Standings*")
-  standingsSheet = workbook.worksheet("Standings")
-  standingsRange = standingsSheet.range("C4:C%s" % standingsSheet.row_count)
-  if (findDriver(standingsRange, driverGT) == -1):
-    for i in range(len(standingsRange)-1, 0-1, -1):
-      if (standingsRange[i-1].value != ""):
-        standingsRange[i].value = driverGT
-
-        await driverMember.edit(nick="[D%s] %s" % (numberOfDivs, driverGT))
-
-        for role in message.guild.roles:
-          if (role.name == "Division %s" % numberOfDivs):
-            await driverMember.add_roles(role)
-            await divisionUpdatesChannel.send("%s has been added to %s." % (driverMember.mention, role.name))
-          elif (role.name == "COTM"):
-            await driverMember.add_roles(role)
-          elif (role.name == "Peeker"):
-            await driverMember.remove_roles(role)
-
-        await message.channel.send("**Driver Added**\nRemember to update the standings and the start orders.")
-        break
-  else:
-    await message.channel.send("**Cannot Add Driver**\nDriver is already in the standings.")
-
-  await moBotMessage.delete()
-  standingsSheet.update_cells(standingsRange, value_input_option="USER_ENTERED")
-# end addDriver
-
-async def resetPitMarshalls(guild):
-  message = await guild.get_channel(PIT_MARSHALL_SIGNUP).fetch_message(622831151320662036)
-  await message.clear_reactions()
-
-  embed = message.embeds[0].to_dict()
-  for i in range(len(embed["fields"])):
-    if ("Division" in embed["fields"][i]["name"]):
-      embed["fields"][i]["value"] = "Host -\nPit-Marshall -\n" + spaceChar
-
-  for member in message.guild.members:
-    for role in member.roles:
-      if ("Pit-Marshalls" in role.name):
-        await member.remove_roles(role)
-        await message.channel.send("%s has been removed from Pit-Marshalls." % (member.mention), delete_after=3)
-        break
-  
-  #await message.channel.purge(after=message)
-  await message.edit(embed=discord.Embed().from_dict(embed))
-  await message.add_reaction(CROWN)
-  await message.add_reaction(WRENCH)
-# end resetPitMarshalls
-
-async def addPitMarshall(message, payload, member, client):
-  
-  def checkCheckmarkEmoji(payload):
-    return payload.user_id == member.id and message.channel.id == payload.channel_id and payload.emoji.name == CHECKMARK_EMOJI
-  # end checkCheckmarkEmoji
-
-  embed = message.embeds[0].to_dict()
-
-  try:
-    div = int(member.display_name[2])
-  except ValueError: # when user is not racing, but is pit marshalling
-    div = 0
-
-  divEmojisToAdd = []
-  for i in range(1, len(embed["fields"])-2+1):
-    if (i != div or div == 0):
-      emoji = client.get_emoji(int(divisionEmojis[str(i)]))
-      divEmojisToAdd.append(emoji)
-
-  moBotMessage = await message.channel.send(member.mention + ", which division(s) are you available to pit-marshall?\n*Click all that apply, then click the " + CHECKMARK_EMOJI + ".\nDO NOT CLICK DIVISIONS WITH THE SAME START TIME*")
-  for emoji in divEmojisToAdd:
-    await moBotMessage.add_reaction(emoji)
-  await moBotMessage.add_reaction(CHECKMARK_EMOJI)
-
-  try:
-    payload = await client.wait_for("raw_reaction_add", timeout=60.0, check=checkCheckmarkEmoji)
-    moBotMessage = await message.channel.fetch_message(payload.message_id)
-
-    divs = []
-    for reaction in moBotMessage.reactions:
-      if (str(reaction.emoji) != CHECKMARK_EMOJI):
-        async for user in reaction.users():
-          if (user.id == member.id):
-            divs.append(int(str(reaction.emoji).split(":")[1][-1]))
-            
-    
-    for i in range(len(embed["fields"])):
-      if (i+1 in divs):
-        value = ""
-        if (member.display_name in embed["fields"][i]["value"]):
-          continue
-        for line in embed["fields"][i]["value"].split("\n"):
-          if ("Pit-Marshall" in line and "[" not in line):
-            value += "Pit-Marshall - " + member.display_name + "\n"
-
-            for role in message.guild.roles:
-              if (role.name == "Pit-Marshalls"):
-                await member.add_roles(role)
-                break
-          else:
-            value += line + "\n"
-        embed["fields"][i]["value"] = value
-    await message.edit(embed=discord.Embed.from_dict(embed))
-    await moBotMessage.delete()
-
-  except asyncio.TimeoutError:
-    await message.channel.send("**TIMED OUT**", delete_after=10.0)
-    await moBotMessage.delete()
-    await message.remove_reaction(payload.emoji.name, member)
-# end addPitMarshall
-
-async def removePitMarshall(message, member):
-  embed = message.embeds[0].to_dict()
-  for i in range(len(embed["fields"])):
-    value = ""
-    for line in embed["fields"][i]["value"].split("\n"):
-      if ("Pit-Marshall" in line and member.display_name in line):
-        value += "Pit-Marshall - \n"
-        for role in member.roles:
-          if (role.name == "Pit-Marshalls"):
-            await member.remove_roles(role)
-            break
-      else:
-        value += line + "\n"
-    embed["fields"][i]["value"] = value
-  await message.edit(embed=discord.Embed.from_dict(embed))
-# end removePitMarshall
-
-async def addHost(message, payload, member, client):
-  
-  def checkCheckmarkEmoji(payload):
-    return payload.user_id == member.id and message.channel.id == payload.channel_id and payload.emoji.name == CHECKMARK_EMOJI
-  # end checkCheckmarkEmoji
-
-  embed = message.embeds[0].to_dict()
-
-  try:
-    div = int(member.display_name[2])
-  except ValueError: # when user is not racing, but is pit marshalling
-    div = 0
-
-  divHosts = {
-    "0" : [1, 2, 3, 4, 5, 6],
-    "1" : [2, 3, 5, 6],
-    "2" : [3, 6],
-    "3" : [1, 4, 7],
-    "4" : [2, 3, 5, 6],
-    "5" : [3, 6],
-    "6" : [1, 4, 7],
-    "7" : [2, 3, 5, 6]
-  }
-  divEmojisToAdd = []
-  for i in range(1, len(embed["fields"])-2+1):
-    if ((i in divHosts[str(div)] or div == 0) and i != div):
-      emoji = client.get_emoji(int(divisionEmojis[str(i)]))
-      divEmojisToAdd.append(emoji)
-
-  moBotMessage = await message.channel.send(member.mention + ", which division(s) are you available to Host?\n*Click all that apply, then click the " + CHECKMARK_EMOJI + ".\nDO NOT CLICK DIVISIONS WITH THE SAME START TIME\nDO NOT CLICK MORE THAN ONE DIVISION*")
-  for emoji in divEmojisToAdd:
-    await moBotMessage.add_reaction(emoji)
-  await moBotMessage.add_reaction(CHECKMARK_EMOJI)
-
-  try:
-    payload = await client.wait_for("raw_reaction_add", timeout=60.0, check=checkCheckmarkEmoji)
-    moBotMessage = await message.channel.fetch_message(payload.message_id)
-
-    divs = []
-    for reaction in moBotMessage.reactions:
-      if (str(reaction.emoji) != CHECKMARK_EMOJI):
-        async for user in reaction.users():
-          if (user.id == member.id):
-            divs.append(int(str(reaction.emoji).split(":")[1][-1]))
-    
-    for i in range(len(embed["fields"])):
-      if (i+1 in divs):
-        value = ""
-        if (member.display_name in embed["fields"][i]["value"]):
-          continue
-        for line in embed["fields"][i]["value"].split("\n"):
-          if ("Host" in line and "[" not in line):
-            value += "Host  - " + member.display_name + "\n"
-
-            for role in message.guild.roles:
-              if (role.name == "Pit-Marshalls"):
-                await member.add_roles(role)
-                break
-          else:
-            value += line + "\n"
-        embed["fields"][i]["value"] = value
-    await message.edit(embed=discord.Embed.from_dict(embed))
-    await moBotMessage.delete()
-
-  except asyncio.TimeoutError:
-    await message.channel.send("**TIMED OUT**", delete_after=10.0)
-    await moBotMessage.delete()
-    await message.remove_reaction(payload.emoji.name, member)
-# end addHost
-
-async def removeHost(message, member):
-  embed = message.embeds[0].to_dict()
-  for i in range(len(embed["fields"])):
-    value = ""
-    for line in embed["fields"][i]["value"].split("\n"):
-      if ("Host" in line and member.display_name in line):
-        value += "Host - \n"
-        for role in member.roles:
-          if (role.name == "Pit-Marshalls"):
-            await member.remove_roles(role)
-            break
-      else:
-        value += line + "\n"
-    embed["fields"][i]["value"] = value
-  await message.edit(embed=discord.Embed.from_dict(embed))
-# end addHost
 
 async def refreshStreamers(message, workbook):
   await message.channel.trigger_typing()
@@ -1191,7 +1036,7 @@ async def refreshStreamers(message, workbook):
     if (multiStreams[str(i+1)] != multiStreamLink):
       embed["fields"][i]["value"] += multiStreams[str(i+1)] + "\n"
     if (i != len(embed["fields"]) - 1):
-      embed["fields"][i]["value"] += spaceChar
+      embed["fields"][i]["value"] += space_char
   await message.edit(embed=discord.Embed().from_dict(embed))
 # end refreshStreamers
 
@@ -1511,9 +1356,9 @@ async def submitQualiTime(message, qualifyingChannel, lapTime, reactionPayload, 
   value += "\n**Time:** " + floatTimeToStringTime(lapTime)
   value += "\n**Division:** " + str(int((position - 1) / 15) + 1)
   value += "\n**Position:** " + str(position)
-  value += "\n\n**Fastest Overall:**\n" + spaceChar + floatTimeToStringTime(fastestOverall[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestOverall[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestOverall[0])-1].value + ">"
-  value += "\n**Fastest In Division:**\n" + spaceChar + floatTimeToStringTime(fastestInDiv[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestInDiv[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestInDiv[0])-1].value + ">"
-  value += "\n**Driver Ahead:**\n" + spaceChar + floatTimeToStringTime(driverAhead[2]) + " (" + lapTimeDifferenceToString(lapTime - driverAhead[2]) + ") by <@" + driversRange[findDriver(driversRange, driverAhead[0])-1].value + ">"
+  value += "\n\n**Fastest Overall:**\n" + space_char + floatTimeToStringTime(fastestOverall[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestOverall[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestOverall[0])-1].value + ">"
+  value += "\n**Fastest In Division:**\n" + space_char + floatTimeToStringTime(fastestInDiv[2]) + " (" + lapTimeDifferenceToString(lapTime - fastestInDiv[2]) + ") by <@" + driversRange[findDriver(driversRange, fastestInDiv[0])-1].value + ">"
+  value += "\n**Driver Ahead:**\n" + space_char + floatTimeToStringTime(driverAhead[2]) + " (" + lapTimeDifferenceToString(lapTime - driverAhead[2]) + ") by <@" + driversRange[findDriver(driversRange, driverAhead[0])-1].value + ">"
   embed.add_field(name="__New Qualifying Time__", value=value, inline=False)
   await moBotMessage.delete()
   await message.channel.send(embed=embed)
