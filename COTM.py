@@ -86,9 +86,10 @@ division_emojis = [
   702655539112443997,
   702654861086294086,
   702655538831425547,
-  702654860478251128,
+  702654859983454318,
+  702654860478251128
 ]
-num_divs = 7
+num_divs = 7 # active div count
 
 
 
@@ -431,13 +432,14 @@ async def handleQualiSubmission(message):
         
         edit_message = True
 
-      if driver.position == "null" and driver.invalidated == "true": # invalid lap time
+      if driver.invalidated == "true": # invalid lap time
         embed.color = int("0x000000", 16)
         embed.set_author(name="Invalid Lap Time", icon_url=logos["cotm_white_trans"])
 
         embed.description = ""
         embed.description += f"**Driver:** {driver.gamertag}\n"
         embed.description += f"**Lap Time:** [~~{driver.lap_time}~~]({driver.screenshot_link})\n"
+        embed.description += f"**Reason:** {driver.reason}\n"
         await member.edit(nick=driver.gamertag)
 
         edit_message = True
