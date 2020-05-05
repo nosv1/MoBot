@@ -85,6 +85,9 @@ async def main(args, message, client):
       await registerID(None, message, args)
     elif (args[1].lower() == "nrt"):
       await sendNRT(message, args)
+    elif args[1].lower() == "dsn":
+      import Imperial
+      await Imperial.sendDSN(message, args)
 
   if (args[0] == "!t"):
     if (args[1] == "delete"):
