@@ -134,7 +134,11 @@ async def newGame(message, client):
         v += f"Win %: `{str(player.percent_correct)}%`\n"
         v += f"Wins/Losses: `{player.wins}/{player.losses}`\n"
         v += f"Games Played: `{player.games_played}`\n"
-        v += f"Server Position: `{server_position if player.games_played >= 10 else str(10 - player.games_played) + ' games left'}`"
+        v += f"Server Position: `{server_position if player.games_played >= 10 else str(10 - player.games_played) + ' games left'}`\n"
+        try:
+          v += f"Player Ahead Win %: `{leaderboard[index(player)-1].percent_correct}%`"
+        except IndexError:
+          pass
 
         embed = discord.Embed.from_dict(embed)
         embed.add_field(name=spaceChar, value=v, inline=False)
