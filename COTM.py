@@ -301,7 +301,7 @@ async def handleFormSignup(message):
 async def updateQualiRoles(message):
   await message.remove_reaction(RandomSupport.EXCLAMATION_EMOJI, message.guild.get_member(moBot))
 
-  if message.author.id == moBot:
+  if message.author.id == moBot: # not really necessary, but for testing with mobottest
     embed = message.embeds[0]
     embed.set_footer(text="updating roles...")
     await message.edit(embed=embed)
@@ -335,9 +335,10 @@ async def updateQualiRoles(message):
 
       role = getRole(f"Division {div}", message.guild.roles) # current div of driver
 
-      if role not in member.roles: # outdated role
+      if role not in member.roles or not re.match(r"(^\[D\d\] )", member.display_name): # outdated role or name is missing [D\d]
         await member.edit(nick=f"[D{div}] {gamertag}")
-        
+
+      if role not in member.roles: # outdated role
         for m_role in member.roles: # remove incorrect roles
           if "Division" in m_role.name and m_role != role:
             channel = getChannel(str(m_role)[-1])
