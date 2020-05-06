@@ -137,7 +137,9 @@ async def newGame(message, client):
         v += f"Server Position: `{server_position if player.games_played >= 10 else str(10 - player.games_played) + ' games left'}`\n"
         try:
           v += f"Player Ahead Win %: `{leaderboard[leaderboard.index(player)-1].percent_correct}%`"
-        except IndexError:
+        except IndexError: # is leader
+          pass
+        except ValueError: # not placed yet
           pass
 
         embed = discord.Embed.from_dict(embed)
