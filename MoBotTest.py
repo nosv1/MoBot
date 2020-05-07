@@ -147,7 +147,7 @@ async def on_message(message):
     if (len(args) > 1):
       if (args[1] == "test"):
         #await GTAWeather.sendWeatherForecast(message)
-        await COTM.handlePitMarshallReaction(await message.channel.fetch_message(622831151320662036), COTM.WRENCH, message.author, 1)
+        await COTM.handleReserveReaction(await message.channel.fetch_message(620811567210037253), COTM.WAVE_EMOJI, message.author)
         #await COTM.handleQualiSubmission(await message.channel.fetch_message(705567178912432148))
         #await COTM.updateQualiRoles(await message.channel.fetch_message(706117739751931994))
         #await message.channel.send("done", delete_after=3)
@@ -430,7 +430,7 @@ async def on_raw_reaction_add(payload):
           await Reservations.mainReactionAdd(message, payload, client)
       if ("EventScheduler" in message.embeds[0].author.url):
         pass'''
-      if "Voting" in embedAuthor:
+      if "Reserves" in embedAuthor:
         await COTM.mainReactionAdd(message, payload, client)
     else:
       #if (message.guild.id == 527156310366486529 or "are you ready to vote" in message.content.lower() or "do you need to vote" in message.content.lower()): # cotm
@@ -489,15 +489,11 @@ async def on_raw_reaction_remove(payload):
   if (not member.bot):    
     logMessageToConsole(message, member, "reaction")
 
-    if (message.id == 620740642443886611): # message id for Reserves Embed
-      if (payload.emoji.name == "👋"):
-        await COTM.reserveNotNeeded(message, member)
-      elif (payload.emoji.name == "✊"):
-        await COTM.reserveNotAvailable(message, member)
-
     if (len(message.embeds) > 0):
       if ("MoBot Commands" in embedAuthor):
         await Help.mainReactionAdd(message, payload, client)
+      if "Reserves" in embedAuthor:
+        await COTM.mainReactionAdd(message, payload, client)
       '''if (("MoBotCollection" in message.embeds[0].author.url or "MoBotReservation" in message.embeds[0].author.url) and message.author.id == moBotTest):
         await Collections.mainReactionRemove(message, payload, message.embeds[0], client)'''
       pass
