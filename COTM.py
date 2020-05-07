@@ -27,7 +27,6 @@ moBot = 449247895858970624
 moBotTest = 476974462022189056
 
 # common messages 
-RESERVES_EMBED = 620811567210037253
 VOTING_EMBED = 620778154197385256
 VOTING_CHECKMARK = 620778190767390721
 
@@ -96,20 +95,11 @@ num_divs = 7 # active div count
 
 ''' CLASSES '''
 class Pit_Marshall:
-  def __init__(self, pm_id, member_id, div, host_pm):
-    self.pm_id = int(pm_id)
+  def __init__(self, member_id, div, host_pm):
     self.member_id = int(member_id)
     self.div = int(div)
     self.host_pm = int(host_pm) # host = 1, pm = 0
 # end Pit_Marshall
-
-class Reserve:
-  def __init__(self, reserve_id, member_id, div, need_avail):
-    self.reserve_id = int(reserve_id)
-    self.member_id = int(member_id)
-    self.div = int(div)
-    self.need_avail = int(need_avail) # need = 1, avail = 0
-# end Reserve
 
 
 
@@ -211,16 +201,23 @@ async def mainReactionAdd(message, payload, client):
           await clear_pit_marshalls(message.guild)
         await updatePitMarshallEmbed(message)
         await message.remove_reaction(payload.emoji.name, member)
-      
-    if message.id == RESERVES_EMBED:
-      if payload.emoji.name == WAVE_EMOJI or payload.emoji.id in division_emojis:
-        await handleReserveReaction(message, payload, member)
-      else:
-        await message.remove_reaction(payload.emoji.name, member)
 
 
 
-    
+    if (message.id == 620811567210037253): # message id for Reserves Embed
+      if (payload.emoji.name == WAVE_EMOJI):
+        await reserveNeeded(message, member)
+        await message.channel.send(".", delete_after=0)
+      elif (payload.emoji.name == FIST_EMOJI):
+        await reserveAvailable(message, member, payload, client)
+        await message.channel.send(".", delete_after=0)
+      elif (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
+        if (member.id == mo):
+          workbook = openSpreadsheet()
+          await getReserves(workbook)
+          await updateStartOrders(message.guild, workbook)
+          await message.channel.send(content="Remember to remove any reserve roles, if necessary.\n*(deleting in 10 sec)*", delete_after=10)
+          await message.remove_reaction(payload.emoji.name, member)
 
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
@@ -233,11 +230,13 @@ async def mainReactionAdd(message, payload, client):
 async def mainReactionRemove(message, payload, client):
   member = message.guild.get_member(payload.user_id)
   if ("MoBot" not in member.name):
-    if message.id == RESERVES_EMBED:
-      if payload.emoji.name == WAVE_EMOJI or payload.emoji.id in division_emojis:
-        await handleReserveReaction(message, payload, member)
-      else:
-        await message.remove_reaction(payload.emoji.name, member)
+    if (message.id == 620811567210037253): # message id for Reserves Embed
+      if (payload.emoji.name == WAVE_EMOJI):
+        await reserveNotNeeded(message, member)
+        await message.channel.send(".", delete_after=0)
+      elif (payload.emoji.name == FIST_EMOJI):
+        await reserveNotAvailable(message, member)
+        await message.channel.send(".", delete_after=0)
 
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
@@ -506,8 +505,11 @@ async def createOgVotingEmbed(message):
   )
 
   og_voting_embed = await (message.guild.get_channel(VOTING)).fetch_message(VOTING_EMBED)
-  options = [f"Track{c}" for c in "ABCD"]
-  options = [f"{option} - 0" for option in options]
+  options = RandomSupport.getValueFromField(
+    og_voting_embed.embeds[0], 
+    "Options"
+  ).split("\n")
+  options = [f"{i+1}. {option} - 0" for i, option in enumerate(options) if space_char not in option]
   embed.add_field(
     name="**Options**", 
     value= "\n".join(options) + "\n" + space_char,
@@ -894,123 +896,6 @@ async def handlePitMarshallReaction(message, payload, member):
         await message.remove_reaction(reaction.emoji, member)
         break
 # end handlePitMarshallReaction
-
-
-
-''' RESERVES '''
-def getReserves():
-  moBotDB = connectDatabase()
-  reserves = []
-  moBotDB.cursor.execute(f"""
-    SELECT *
-    FROM reserves
-  """)
-  for record in moBotDB.cursor:
-    reserves.append(Reserve(*record))
-  moBotDB.connection.close()
-  return reserves
-# end getReserves
-
-def handleNeedReserve(t_need, need, member): # just updating the database
-  moBotDB = connectDatabase()
-  if t_need == -1 and need == -1: # doesn't need and didn't need
-    pass
-
-  elif t_need > -1 and need == -1: # does need and didn't need
-    moBotDB.cursor.execute(f"""
-      INSERT INTO reserves
-        (`reserve_id`, `id`, `div`, `need_avail`)
-      VALUES
-        ('{member.id}{t_need}{1}', '{member.id}', '{t_need}', '{1}')
-    """)
-
-  elif t_need > -1 and need > -1: # does need and did need
-    pass
-
-  elif t_need == -1 and need > -1: # doesn't and did need
-    moBotDB.cursor.execute(f"""
-      DELETE FROM reserves
-      WHERE
-        `reserve_id` = '{member.id}{need}{1}'
-    """)
-
-  moBotDB.connection.commit()
-  moBotDB.connection.close()
-# end handleNeedReserve
-
-def handleAvailReserve(reserves, avail, member): 
-  moBotDB = connectDatabase()
-  remove = []
-  for r in reserves:
-    if r.member_id == member.id and r.need_avail == 0:
-      if r.div not in avail: # in database, not clicked
-        remove.append(r.div)
-      elif r.div in avail: # in database, already clicked
-        del avail[avail.index(r.div)] # don't need to add
-
-  for d in remove:
-    moBotDB.cursor.execute(f"""
-      DELETE FROM reserves
-      WHERE 
-        `reserve_id` = '{member.id}{d}{0}'
-    """)
-    moBotDB.connection.commit()
-
-  for d in avail:
-    try:
-      moBotDB.cursor.execute(f"""
-        INSERT INTO reserves
-          (`reserve_id`, `id`, `div`, `need_avail`)
-        VALUES
-          ('{member.id}{d}{0}', '{member.id}', '{d}', '{0}')
-      """)
-      moBotDB.connection.commit()
-    except:
-      traceback.format_exc()
-  
-  moBotDB.connection.close()
-# end handleAvailReserve
-
-async def handleReserveReaction(message, payload, member):
-  await message.channel.trigger_typing()
-
-  reserves = getReserves() # both reserves needed and available
-
-  member_divs = [] # get the divs the member is in
-  for role in member.roles: # racing in 
-    if "Division" in role.name:
-      member_divs.append(int(role.name[-1]))
-
-  need = -1
-  for r in reserves:
-    if r.member_id == member.id:
-      if r.need_avail == 1:
-        need = r.div
-
-  # figure out what the user has clicked currently
-  t_need = -1
-  avail = []
-  for reaction in message.reactions:
-    async for user in reaction.users():
-      if user.id == member.id:
-        if reaction.emoji == WAVE_EMOJI:
-          t_need = member_divs[0]
-        elif reaction.emoji.id in division_emojis:
-          d = division_emojis.index(reaction.emoji.id) + 1
-          driver_div = member_divs[0]
-          if d in [driver_div-1, driver_div+1]: # user can reserve for div
-            avail.append(d)
-          else:
-            await message.remove_reaction(reaction.emoji, member)
-
-  handleNeedReserve(t_need, need, member)
-  handleAvailReserve(reserves, avail, member)
-
-  reserves = getReserves()
-  #await updateReserveEmbed(message, getReserves())
-  #await updateReserveRoles(message, reserves)
-  #updateSpreadsheet(reserves)
-# end handleReserveReaction
 
 
 
