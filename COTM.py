@@ -1055,7 +1055,7 @@ async def updateReserveEmbed(message, reserves, reserve_combos):
   for i, v in enumerate(values):
     embed["fields"][i]["value"] = v + space_char
 
-  #await message.edit(embed=discord.Embed().from_dict(embed))
+  await message.edit(embed=discord.Embed().from_dict(embed))
 # end updateReserveEmbed
 
 def updateReservesSpreadsheet(guild, reserve_combos):
