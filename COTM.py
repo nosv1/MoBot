@@ -508,7 +508,7 @@ async def createOgVotingEmbed(message):
   )
 
   og_voting_embed = await (message.guild.get_channel(VOTING)).fetch_message(VOTING_EMBED)
-  options = [f"Track{c}" for c in "ABCD"]
+  options = [f"Track {c}" for c in "ABCD"]
   options = [f"{option} - 0" for option in options]
   embed.add_field(
     name="**Options**", 
