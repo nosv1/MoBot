@@ -48,7 +48,8 @@ async def mainReactionRemove(message, payload, client):
 
 
 async def newGame(message, client):
-  word = await getWord().lower()
+  word = await getWord()
+  word = word.lower()
   try:
     defintion = await getDefinition(word)
   except:
