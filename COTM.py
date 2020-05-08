@@ -214,8 +214,7 @@ async def mainReactionAdd(message, payload, client):
       
     if message.id == RESERVES_EMBED:
       if payload.emoji.name == WAVE_EMOJI or payload.emoji.id in division_emojis:
-        #await handleReserveReaction(message, payload, member)
-        pass
+        await handleReserveReaction(message, payload, member)
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
@@ -236,8 +235,7 @@ async def mainReactionRemove(message, payload, client):
   if ("MoBot" not in member.name):
     if message.id == RESERVES_EMBED:
       if payload.emoji.name == WAVE_EMOJI or payload.emoji.id in division_emojis:
-        #await handleReserveReaction(message, payload, member)
-        pass
+        await handleReserveReaction(message, payload, member)
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
@@ -508,8 +506,7 @@ async def createOgVotingEmbed(message):
   )
 
   og_voting_embed = await (message.guild.get_channel(VOTING)).fetch_message(VOTING_EMBED)
-  options = [f"Track {c}" for c in "ABCD"]
-  options = [f"{option} - 0" for option in options]
+  options = [f"Track {c} - 0" for c in "ABCD"]
   embed.add_field(
     name="**Options**", 
     value= "\n".join(options) + "\n" + space_char,
@@ -994,6 +991,39 @@ def handleAvailReserve(reserves, avail, member):
   moBotDB.connection.close()
 # end handleAvailReserve
 
+async def updateReserveRoles(guild, before_reserve_combos, after_reserve_combos):
+  # remove fellers who have role that shouldn't
+  for i, before_r in enumerate(before_reserve_combos["avail"]):
+    reserve = before_r
+    reservee = before_reserve_combos["need"][i]
+    div = before_reserve_combos["div"][i]
+
+    no_longer_reserving = False # could be but for diff person, would still be false
+    for j, after_r in enumerate(after_reserve_combos["avail"]):
+      if (
+        after_reserve_combos["need"][j] == reservee and
+        after_reserve_combos["avail"][j] == reserve and
+        after_reserve_combos["div"][j] == div
+      ):
+        no_longer_reserving = True
+        break
+
+    if not no_longer_reserving:
+      reserve = guild.get_member(reserve)
+      await guild.get_channel(DIVISION_UPDATES).send(f"{reserve.mention} is no longer reserving for {guild.get_member(reservee).mention}.")
+      await reserve.remove_roles(getRole(f"Reserve Division {div}", guild.roles))
+    
+  for i, r in enumerate(after_reserve_combos["avail"]):
+    reserve = guild.get_member(r)
+    reservee = after_reserve_combos["need"][i]
+    div = after_reserve_combos["div"][i]
+    role = getRole(f"Reserve Division {div}", guild.roles)
+
+    if role not in reserve.roles:
+      await guild.get_channel(DIVISION_UPDATES).send(f"{reserve.mention} is now reserving for {guild.get_member(reservee).mention}.")
+      await reserve.add_roles(role)
+# end updateReserveRoles
+
 async def updateReserveEmbed(message, reserves, reserve_combos):
   embed = message.embeds[0].to_dict()
 
@@ -1012,7 +1042,7 @@ async def updateReserveEmbed(message, reserves, reserve_combos):
       reserve = message.guild.get_member(r.member_id)
 
       reservee = None
-      for i, r_avail in reserve_combos["avail"]:
+      for i, r_avail in enumerate(reserve_combos["avail"]):
         if r_avail == reserve.id:
           if reserve_combos["div"] == r.div:
             reservee = message.guild.get_member(reserve_combos["need"][i])
@@ -1028,10 +1058,26 @@ async def updateReserveEmbed(message, reserves, reserve_combos):
   #await message.edit(embed=discord.Embed().from_dict(embed))
 # end updateReserveEmbed
 
+def updateReservesSpreadsheet(guild, reserve_combos):
+  workbook = openSpreadsheet()
+  sheet = [sheet for sheet in workbook.worksheets() if sheet.id == 762852343][0] # 'my sheet'
+  r = sheet.range(f"M2:N{sheet.row_count}")
+
+  for cell in r:
+    cell.value = ""
+
+  for i in range(len(reserve_combos["need"])):
+    r[i].value = guild.get_member(reserve_combos["need"][i]).display_name.split("]")[-1].strip()
+    r[i+1].value = guild.get_member(reserve_combos["avail"][i]).display_name.split("]")[-1].strip()
+
+  sheet.update_cells(r, value_input_option="USER_ENTERED")
+# end updateReservesSpreadsheet
+
 async def handleReserveReaction(message, payload, member):
   await message.channel.trigger_typing()
 
-  reserves = getReserves() # both reserves needed and available
+  before_reserves = getReserves() # both reserves needed and available
+  before_reserve_combos = getReserveCombos(before_reserves)
 
   member_divs = [] # get the divs the member is in
   for role in member.roles: # racing in 
@@ -1047,7 +1093,7 @@ async def handleReserveReaction(message, payload, member):
     return
 
   need = -1
-  for r in reserves:
+  for r in before_reserves:
     if r.member_id == member.id:
       if r.need_avail == 1:
         need = r.div
@@ -1059,24 +1105,24 @@ async def handleReserveReaction(message, payload, member):
     async for user in reaction.users():
       if user.id == member.id:
         if reaction.emoji == WAVE_EMOJI:
-          t_need = member_divs[0]
+          t_need = member_divs[-1]
         elif reaction.emoji.id in division_emojis:
           d = division_emojis.index(reaction.emoji.id) + 1
-          driver_div = member_divs[0]
+          driver_div = member_divs[-1]
           if d in [driver_div-1, driver_div+1]: # user can reserve for div
             avail.append(d)
           else:
             await message.remove_reaction(reaction.emoji, member)
 
   handleNeedReserve(t_need, need, member)
-  handleAvailReserve(reserves, avail, member)
+  handleAvailReserve(before_reserves, avail, member)
 
-  reserves = getReserves()
-  reserve_combos = getReserveCombos(reserves)
+  after_reserves = getReserves()
+  after_reserve_combos = getReserveCombos(after_reserves)
 
-  await updateReserveEmbed(message, reserves, reserve_combos)
-  #await updateReserveRoles(message, reserves)
-  #updateSpreadsheet(reserves)
+  await updateReserveRoles(message.guild, before_reserve_combos, after_reserve_combos)
+  await updateReserveEmbed(message, after_reserves, after_reserve_combos)
+  updateReservesSpreadsheet(message.guild, after_reserve_combos)
 # end handleReserveReaction
 
 
