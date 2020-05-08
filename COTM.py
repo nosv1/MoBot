@@ -214,7 +214,8 @@ async def mainReactionAdd(message, payload, client):
       
     if message.id == RESERVES_EMBED:
       if payload.emoji.name == WAVE_EMOJI or payload.emoji.id in division_emojis:
-        await handleReserveReaction(message, payload, member)
+        #await handleReserveReaction(message, payload, member)
+        pass
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
@@ -235,7 +236,8 @@ async def mainReactionRemove(message, payload, client):
   if ("MoBot" not in member.name):
     if message.id == RESERVES_EMBED:
       if payload.emoji.name == WAVE_EMOJI or payload.emoji.id in division_emojis:
-        await handleReserveReaction(message, payload, member)
+        #await handleReserveReaction(message, payload, member)
+        pass
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
@@ -613,7 +615,7 @@ async def submitVotes(message, member):
     workbook = openSpreadsheet()
     sheets = workbook.worksheets()
     sheet = [sheet for sheet in sheets if sheet.id == 242811195][0] # Voting Sheet
-    r = sheet.range(f"C4:G{sheet.row_count}")
+    r = sheet.range(f"C8:G{sheet.row_count}")
     user_found = findDriver(r, member.display_name)
 
     if user_found != -1:
@@ -911,6 +913,27 @@ def getReserves():
   return reserves
 # end getReserves
 
+def getReserveCombos(reserves):
+  reserve_combos = {"need" : [], "avail" : [], "div" : []} # only complete pairs
+
+  for r_need in reserves:
+    if r_need.need_avail == 1: # needs reserve
+      for r_avail in reserves:
+        if r_avail.div == r_need.div and r_avail.need_avail == 0:
+          is_avail = True
+          for i, r in enumerate(reserve_combos["avail"]): # see if thre is a a matching div for this driver
+            if r == r_avail.member_id and reserve_combos["div"][i] == r_need.div: # already reserving for someone in this div
+              is_avail = False
+              break
+          if is_avail:
+            reserve_combos["need"].append(r_need.member_id)
+            reserve_combos["avail"].append(r_avail.member_id)
+            reserve_combos["div"].append(r_need.div)
+            break
+
+  return reserve_combos
+# end getReserveCombos
+
 def handleNeedReserve(t_need, need, member): # just updating the database
   moBotDB = connectDatabase()
   if t_need == -1 and need == -1: # doesn't need and didn't need
@@ -971,6 +994,40 @@ def handleAvailReserve(reserves, avail, member):
   moBotDB.connection.close()
 # end handleAvailReserve
 
+async def updateReserveEmbed(message, reserves, reserve_combos):
+  embed = message.embeds[0].to_dict()
+
+  values = ["" for i in range(num_divs)]
+  for r in reserves:
+    if r.need_avail == 1: # needs reserve
+      reservee = message.guild.get_member(r.member_id)
+
+      if r.member_id in reserve_combos["need"]:
+        reserve = message.guild.get_member(reserve_combos["avail"][reserve_combos["need"].index(reservee.id)])
+        values[0] += f"{reservee.display_name} rsv. by {reserve.display_name}\n"
+      else:
+        values[0] += reservee.display_name + "\n"
+    
+    else: # is avail
+      reserve = message.guild.get_member(r.member_id)
+
+      reservee = None
+      for i, r_avail in reserve_combos["avail"]:
+        if r_avail == reserve.id:
+          if reserve_combos["div"] == r.div:
+            reservee = message.guild.get_member(reserve_combos["need"][i])
+            values[r.div] += f"{reserve.display_name} rsv. for {reservee.display_name}\n"
+            break
+      
+      if not reservee:
+        values[r.div] += reserve.display_name + "\n"
+
+  for i, v in enumerate(values):
+    embed["fields"][i]["value"] = v + space_char
+
+  #await message.edit(embed=discord.Embed().from_dict(embed))
+# end updateReserveEmbed
+
 async def handleReserveReaction(message, payload, member):
   await message.channel.trigger_typing()
 
@@ -980,6 +1037,14 @@ async def handleReserveReaction(message, payload, member):
   for role in member.roles: # racing in 
     if "Division" in role.name:
       member_divs.append(int(role.name[-1]))
+  
+  if not member_divs:
+    for reaction in message.reactions:
+      async for user in reaction.users():
+        if user.id == member.id:
+          await message.remove_reaction(reaction.emoji, member)
+          break
+    return
 
   need = -1
   for r in reserves:
@@ -1007,7 +1072,9 @@ async def handleReserveReaction(message, payload, member):
   handleAvailReserve(reserves, avail, member)
 
   reserves = getReserves()
-  #await updateReserveEmbed(message, getReserves())
+  reserve_combos = getReserveCombos(reserves)
+
+  await updateReserveEmbed(message, reserves, reserve_combos)
   #await updateReserveRoles(message, reserves)
   #updateSpreadsheet(reserves)
 # end handleReserveReaction
