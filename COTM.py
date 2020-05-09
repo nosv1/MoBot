@@ -473,7 +473,7 @@ async def openVotingChannel(message, member):
       guild.get_role(EVERYONE) : discord.PermissionOverwrite(read_messages=False),
       member : discord.PermissionOverwrite(
         read_messages=True,
-        send_messages=False
+        send_messages=True
       ),
     },
     category=message.channel.category,
@@ -625,7 +625,7 @@ async def submitVotes(message, member):
       if cell.value == "": # append vote
         vote_embed = message.embeds[0]
         votes = [int(RandomSupport.getDetailFromURL(vote_embed.author.url, str(j))) for j in range(1, 5)]
-        if sum(votes) > 4: # if user spams, they sometimes can get more than 4 total votes in...
+        if sum(votes) != 4: # if user spams, they sometimes can get more than 4 total votes in...
           await resetVotes(message)
           return
         r[i].value = member.display_name
@@ -685,7 +685,7 @@ async def submitVotes(message, member):
 
 
 
-''' PIT-MARSHALLS '''
+''' PIT MARSHALLS '''
 # what divs not available if in race
 host_not_avail = [
   [1, 4, 7, 2, 5], # in div 1, can't host for these
@@ -722,7 +722,7 @@ def getPitMarshalls():
 
 async def clear_pit_marshalls(guild):
   pit_marshalls = getPitMarshalls()
-  pm_role = getRole("Pit-Marshall", guild)
+  pm_role = getRole("Pit Marshall", guild)
   for pm in pit_marshalls:
     member = guild.get_member(pm.member_id)
     await member.remove_roles(pm_role)
@@ -830,7 +830,7 @@ async def updatePitMarshallEmbed(pm_message):
 
   div_lines = [
     "Host -",
-    "Pit-Marshall -",
+    "Pit Marshall -",
     space_char
   ]
 
@@ -843,7 +843,7 @@ async def updatePitMarshallEmbed(pm_message):
     if pm.host_pm == 1:
       div_lines[0] = f"Host - {pm_name}"
     else:
-      div_lines[1] = f"Pit-Marshall - {pm_name}"
+      div_lines[1] = f"Pit Marshall - {pm_name}"
     embed["fields"][pm.div-1]["value"] = "\n".join(div_lines)
 
   await message.edit(embed=discord.Embed().from_dict(embed))
@@ -882,7 +882,7 @@ async def handlePitMarshallReaction(message, payload, member):
   else:
     await message.channel.send(f"**{member.mention}, please select the division(s) before selecting the {CROWN} or the {WRENCH}.**", delete_after=7)
 
-  pm_role = getRole("Pit-Marshall", message.guild.roles)
+  pm_role = getRole("Pit Marshall", message.guild.roles)
   if member.id in [pm.member_id for pm in getPitMarshalls() if pm.member_id == member.id]:
     await member.add_roles(pm_role)
   else:
