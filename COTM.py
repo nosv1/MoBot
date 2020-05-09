@@ -462,8 +462,8 @@ async def openVotingChannel(message, member):
   guild = message.guild
   category_channels = message.channel.category.channels
 
-  for channel in category_channels:
-    if member.display_name.lower() in channel.name.replace("-", " "): # channel already created
+  for channel in category_channels:re.sub(r"[\[\]]", "", "[t] test")
+    if re.sub(r"[\[\]]", "", member.display_name.lower()) in channel.name.replace("-", " "): # channel already created
       await message.channel.send(f"{channel.mention}", delete_after=10)
       return
 
@@ -625,6 +625,9 @@ async def submitVotes(message, member):
       if cell.value == "": # append vote
         vote_embed = message.embeds[0]
         votes = [int(RandomSupport.getDetailFromURL(vote_embed.author.url, str(j))) for j in range(1, 5)]
+        if sum(votes) > 4: # if user spams, they sometimes can get more than 4 total votes in...
+          await resetVotes(message)
+          return
         r[i].value = member.display_name
         for j in range(1, 5):
           r[i+j].value = votes[j-1]
