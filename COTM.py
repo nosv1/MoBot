@@ -462,7 +462,7 @@ async def openVotingChannel(message, member):
   guild = message.guild
   category_channels = message.channel.category.channels
 
-  for channel in category_channels:re.sub(r"[\[\]]", "", "[t] test")
+  for channel in category_channels:
     if re.sub(r"[\[\]]", "", member.display_name.lower()) in channel.name.replace("-", " "): # channel already created
       await message.channel.send(f"{channel.mention}", delete_after=10)
       return
