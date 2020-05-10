@@ -53,6 +53,7 @@ async def newGame(message, client):
   try:
     defintion = await getDefinition(word)
   except:
+    defintion = ""
     await RandomSupport.sendErrorToMo("Hangman", client, mo)
   embed = discord.Embed(color=int("0xd1d1d1", 16))
   embed.set_author(name="MoBot Hangman", url="https://google.come/word=" + word) # will be more hidden later
