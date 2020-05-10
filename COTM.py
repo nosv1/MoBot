@@ -795,7 +795,7 @@ def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
     pm_needed = list(range(1,num_divs+1)) # get the divs where a pm is needed
     for pit_marshall in pit_marshalls:
       if pit_marshall.host_pm == 0:
-        del pm_needed[pit_marshall.div-1]
+        del pm_needed[pit_marshall.div]
       
     for div in pm_needed:
       if div in refineAvail(pm_not_avail, member_divs) and div in divs:
