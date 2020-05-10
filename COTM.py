@@ -753,6 +753,7 @@ def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
         moBotDB.connection.close()
 
         del member_divs[member_divs.index(pm.div)]
+        del divs[divs.index(pm.div)]
       else:
         member_divs.append(pm.div)
 
@@ -771,7 +772,7 @@ def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
     hosts_needed = list(range(1,num_divs+1)) # get the divs where a host is needed
     for pit_marshall in pit_marshalls:
       if pit_marshall.host_pm == 1:
-        del hosts_needed[pit_marshall.div]
+        del hosts_needed[hosts_needed.index(pit_marshall.div)]
     
     for div in hosts_needed:
       if div in refineAvail(host_not_avail, member_divs) and div in divs:
@@ -795,7 +796,7 @@ def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
     pm_needed = list(range(1,num_divs+1)) # get the divs where a pm is needed
     for pit_marshall in pit_marshalls:
       if pit_marshall.host_pm == 0:
-        del pm_needed[pit_marshall.div]
+        del pm_needed[pm_needed.index(pit_marshall.div)]
       
     for div in pm_needed:
       if div in refineAvail(pm_not_avail, member_divs) and div in divs:
@@ -876,7 +877,7 @@ async def handlePitMarshallReaction(message, payload, member):
         elif reaction.emoji.id in division_emojis:
           divs.append(division_emojis.index(reaction.emoji.id) + 1)
         break
-
+        
   if divs: # if user actually selected div
     addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs)
   else:
