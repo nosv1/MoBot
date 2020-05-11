@@ -1012,7 +1012,7 @@ def handleAvailReserve(reserves, avail, member):
       """)
       moBotDB.connection.commit()
     except:
-      traceback.format_exc()
+      print(traceback.format_exc())
   
   moBotDB.connection.close()
 # end handleAvailReserve
