@@ -147,10 +147,10 @@ async def on_message(message):
     if (len(args) > 1):
       if (args[1] == "test"):
         #await GTAWeather.sendWeatherForecast(message)
-        await COTM.handleReserveReaction(await message.channel.fetch_message(620811567210037253), COTM.WAVE_EMOJI, message.author)
+        #await COTM.handleReserveReaction(await message.channel.fetch_message(620811567210037253), COTM.WAVE_EMOJI, message.author)
         #await COTM.handleQualiSubmission(await message.channel.fetch_message(705567178912432148))
         #await COTM.updateQualiRoles(await message.channel.fetch_message(706117739751931994))
-        #await message.channel.send("done", delete_after=3)
+        await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
       elif (args[1] == "nrt"):

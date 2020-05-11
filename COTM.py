@@ -30,6 +30,15 @@ moBotTest = 476974462022189056
 RESERVES_EMBED = 620811567210037253
 VOTING_EMBED = 620778154197385256
 VOTING_CHECKMARK = 620778190767390721
+START_ORDER_EMBEDS = [
+  709412554119708762,
+  709412559211593828,
+  709412567386161195,
+  709412576370360326,
+  709412582133465150,
+  709412597383954512,
+  709412602819772509,
+]
 
 # common channels
 COTM_STREAMS = 527161746473877504
@@ -135,6 +144,12 @@ async def main(args, message, client):
         missing_qualifiers = getMissingQualifiers(message.guild)
         await message.channel.send(f"{len(missing_qualifiers)}```{', '.join(missing_qualifiers)}```")
 
+    if message.author.id == mo:
+      if args[1] == "update":
+        if args[2] == "startorder":
+          await updateStartOrderEmbed(message.guild, int(args[3]))
+
+    '''
     if (args[1] == "reserve" and authorPerms.administrator):
       await setManualReserve(message)
     elif (args[1] == "history"):
@@ -150,10 +165,6 @@ async def main(args, message, client):
           if (args[2] == "standings"):
             await message.channel.trigger_typing()
             await updateStandings(message.guild, openSpreadsheet())
-            await message.delete()
-          elif (args[2] == "start" and args[3] == "orders"):
-            await message.channel.trigger_typing()
-            await updateStartOrders(message.guild, openSpreadsheet())
             await message.delete()
           elif (args[2] == "divlist"):
             await message.channel.trigger_typing()
@@ -175,6 +186,7 @@ async def main(args, message, client):
           await addDriver(message)
       except IndexError:
         pass
+      '''
   # end main
 # end main
 
@@ -215,6 +227,10 @@ async def mainReactionAdd(message, payload, client):
     if message.id == RESERVES_EMBED:
       if payload.emoji.name == WAVE_EMOJI or payload.emoji.id in division_emojis:
         await handleReserveReaction(message, payload, member)
+      elif payload.emoji.name in [X_EMOJI, ARROWS_COUNTERCLOCKWISE_EMOJI] and member.id == mo:
+        reserves = getReserves()
+        await updateReserveEmbed(message, reserves, getReserveCombos(reserves))
+        await message.remove_reaction(payload.emoji.name, member)
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
@@ -258,7 +274,7 @@ async def mainMemberUpdate(before, after, client):
 
 async def memberRemove(member, client):
   guild = client.get_guild(GUILD_ID)
-  mo = guild.get_member(mo)
+  mo_member = guild.get_member(mo)
   channel = guild.get_channel(EVENT_CHAT)
   await channel.send("%s has jumped(?) off the mountain... :eyes: %s, was he important?" % (member.display_name, mo.mention))
 # end memberRemove
@@ -911,6 +927,8 @@ def getReserves():
   for record in moBotDB.cursor:
     reserves.append(Reserve(*record))
   moBotDB.connection.close()
+
+  reserves.sort(key=lambda r:r.reserve_id)
   return reserves
 # end getReserves
 
@@ -943,9 +961,9 @@ def handleNeedReserve(t_need, need, member): # just updating the database
   elif t_need > -1 and need == -1: # does need and didn't need
     moBotDB.cursor.execute(f"""
       INSERT INTO reserves
-        (`reserve_id`, `id`, `div`, `need_avail`)
+        (`id`, `div`, `need_avail`)
       VALUES
-        ('{member.id}{t_need}{1}', '{member.id}', '{t_need}', '{1}')
+        ('{member.id}', '{t_need}', '{1}')
     """)
 
   elif t_need > -1 and need > -1: # does need and did need
@@ -954,8 +972,10 @@ def handleNeedReserve(t_need, need, member): # just updating the database
   elif t_need == -1 and need > -1: # doesn't and did need
     moBotDB.cursor.execute(f"""
       DELETE FROM reserves
-      WHERE
-        `reserve_id` = '{member.id}{need}{1}'
+      WHERE 
+        `id` = '{member.id}' AND
+        `div` = '{need}' AND
+        `need_avail` = '{1}'
     """)
 
   moBotDB.connection.commit()
@@ -976,7 +996,9 @@ def handleAvailReserve(reserves, avail, member):
     moBotDB.cursor.execute(f"""
       DELETE FROM reserves
       WHERE 
-        `reserve_id` = '{member.id}{d}{0}'
+        `id` = '{member.id}' AND
+        `div` = '{d}' AND
+        `need_avail` = '{0}'
     """)
     moBotDB.connection.commit()
 
@@ -984,9 +1006,9 @@ def handleAvailReserve(reserves, avail, member):
     try:
       moBotDB.cursor.execute(f"""
         INSERT INTO reserves
-          (`reserve_id`, `id`, `div`, `need_avail`)
+          (`id`, `div`, `need_avail`)
         VALUES
-          ('{member.id}{d}{0}', '{member.id}', '{d}', '{0}')
+          ('{member.id}', '{d}', '{0}')
       """)
       moBotDB.connection.commit()
     except:
@@ -1031,7 +1053,7 @@ async def updateReserveRoles(guild, before_reserve_combos, after_reserve_combos)
 async def updateReserveEmbed(message, reserves, reserve_combos):
   embed = message.embeds[0].to_dict()
 
-  values = ["" for i in range(num_divs)]
+  values = ["" for i in range(num_divs+1)]
   for r in reserves:
     if r.need_avail == 1: # needs reserve
       reservee = message.guild.get_member(r.member_id)
@@ -1187,6 +1209,38 @@ def getMissingQualifiers(guild):
 
   return missing_qualifiers
 # end getMissingQualifiers
+
+async def updateStartOrderEmbed(guild, div):
+  message = await (guild.get_channel(622484589465829376)).fetch_message(START_ORDER_EMBEDS[div-1])
+  embed = message.embeds[0]
+
+  first_col = (div - 1) * 5 + 2 # pos
+  last_col = first_col + 3 # reserve
+
+  workbook = openSpreadsheet()
+  sheet = workbook.worksheet("Start Orders")
+  r = sheet.range(4, first_col, 31, last_col) # pos, div, driver, reserve
+  start_order = RandomSupport.arrayFromRange(r)
+
+  embed.description = ""
+  for row in start_order:
+    pos = start_order[0].value
+    div = start_order[1].value
+    driver = start_order[2].value
+    reserve = start_order[3].value
+
+    if pos == "":
+      break
+
+    embed.description += f"\n{pos}.".rjust(" ", 3)
+    embed.description += f"{div}".center(" ", 3)
+    if reserve == "":
+      embed.description += f"{driver}"
+    else:
+      embed.description += f"~~{driver}~~\n{space_char * 4}"
+
+  await message.edit(embed=embed)
+# end getStartOrders
 
 
 
@@ -1672,57 +1726,6 @@ async def updateDriverRoles(guild, divList):
             await driverMember.remove_roles(role)
             await divisionUpdateChannel.send(driverMember.mention + " has been removed from " + role.name + ".")
 # end updateDriverRoles
-
-async def updateStartOrders(guild, workbook):
-  startOrdersChannel = guild.get_channel(START_ORDERS)
-
-  startOrders = getStartOrders(workbook)
-  startOrderEmbeds = []
-  embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="Children of the Mountain - Season 5", icon_url=logos["cotmFaded"])
-  embed.add_field(name="Start Orders", value="Pos. Driver - Reserve - Points - Last Week's Division", inline=False)
-  embed = embed.to_dict()
-  startOrderEmbeds.append(embed)
-
-  for division in startOrders:
-    embed = discord.Embed(color=int("0xd1d1d1", 16))
-    embed.add_field(name="Division " + str(division), value="", inline=False)
-    embed = embed.to_dict()
-    for i in range(len(startOrders[division])):
-      driver = startOrders[division][i]
-      if (driver == None): # when there is an empty start position
-        continue
-      driverMember = guild.get_member(driver.driverID)
-      try:
-        if (driver.reserveID != None):
-          driverName = "~~" + driverMember.display_name + "~~"
-          reserveMember = guild.get_member(driver.reserveID)
-          for role in guild.roles:
-            if (role.name == "Reserve Division " + str(division)):
-              hasRole = False
-              for role2 in reserveMember.roles:
-                if (role2 == role):
-                  hasRole = True
-                  break
-              if (not hasRole):
-                await reserveMember.add_roles(role)
-                await guild.get_channel(DIVISION_UPDATES).send(reserveMember.mention + " is now reserving for " + driverMember.mention + ".")
-              break
-          embed["fields"][0]["value"] += ("%d. %s - %s - %d - D%s\n" % (i+1, driverName, reserveMember.display_name, driver.totalPoints, driver.lastWeeksDiv))
-        else:
-          driverName = driverMember.display_name
-          embed["fields"][0]["value"] += ("%d. %s - %d - D%s\n" % (i+1, driverName, driver.totalPoints, driver.lastWeeksDiv))
-      except AttributeError: # when driverMember or reserveMember is None
-        await guild.get_member(mo).send("**SOMEONE MAY HAVE LEFT COTM**\nDriver:%s\nReserve:%s" % (driver.driverID, driver.reserveID))
-    startOrderEmbeds.append(embed)
-
-  await startOrdersChannel.purge()
-  for embed in startOrderEmbeds:
-    try:
-      await startOrdersChannel.send(embed=discord.Embed.from_dict(embed))
-    except discord.errors.HTTPException: # when a division has no drivers
-      pass
-# end updateStartOrders
 
 async def updateStandings(guild, workbook):
   standings = getStandings(workbook)
