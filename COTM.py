@@ -1227,21 +1227,28 @@ async def updateStartOrderEmbed(guild, div):
   for row in start_order:
     pos = row[0].value
     div = row[1].value
-    try:
-      driver = getMember(row[2].value, members)
-      reserve = getMember(row[3].value, members)
-    except: # may not find the member...
-      await message.channel.send(f"<@{mo}>, someone's name doesn't match... {row[2].value}, {row[3].value}")
-      return
+    driver = row[2].value
+    reserve = row[3].value
 
     if pos == "":
       break
 
     description += f"\n{pos}.".rjust(3, " ")
+    try:
+      driver = getMember(driver, members)
+    except: # doesn't match
+      await message.channel.send(f"<@{mo}>, {driver} wasn't found.")
+      return
+
     if reserve == "":
       description += f" {driver.display_name}"
     else:
-      description += f"~~{driver.display_name}~~\n{space_char * 4}{reserve.display_name}"
+      try:
+        reserve = getMember(reserve, members)
+      except: # doesn't match
+        await message.channel.send(f"<@{mo}>, {reserve} wasn't found.")
+        return
+      description += f" ~~{driver.display_name}~~\n{space_char * 4}{reserve.display_name}"
   
   embed.description = description
 
