@@ -235,7 +235,6 @@ async def mainReactionAdd(message, payload, client):
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
-    
     if message.id == COTM_STREAMS_EMBED:
       if payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI:
         await updateStreamsEmbed(message.guild)
