@@ -30,6 +30,7 @@ moBotTest = 476974462022189056
 RESERVES_EMBED = 620811567210037253
 VOTING_EMBED = 620778154197385256
 VOTING_CHECKMARK = 620778190767390721
+COTM_STREAMS_EMBED = 709814253938540555# 622137318513442816
 START_ORDER_EMBEDS = [
   709412554119708762,
   709412559211593828,
@@ -234,7 +235,11 @@ async def mainReactionAdd(message, payload, client):
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
-
+    
+    if message.id == COTM_STREAMS_EMBED:
+      if payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI:
+        await updateStreamsEmbed(message.guild)
+        await message.remove_reaction(payload.emoji.name, member)
 
     
 
@@ -1152,6 +1157,117 @@ async def handleReserveReaction(message, payload, member):
 # end handleReserveReaction
 
 
+''' START ORDERS '''
+async def updateStartOrderEmbed(guild, div):
+  members = guild.members
+  message = await (guild.get_channel(START_ORDERS)).fetch_message(START_ORDER_EMBEDS[div-1])
+  embed = message.embeds[0]
+
+  first_col = (div - 1) * 5 + 2 # pos
+  last_col = first_col + 3 # reserve
+
+  workbook = openSpreadsheet()
+  sheet = workbook.worksheet("Start Orders")
+  r = sheet.range(4, first_col, 31, last_col) # pos, div, driver, reserve
+  start_order = RandomSupport.arrayFromRange(r)
+
+  description = ""
+  for row in start_order:
+    pos = row[0].value
+    div = row[1].value
+    driver = row[2].value
+    reserve = row[3].value
+
+    if pos == "":
+      break
+
+    description += f"\n{pos}.".rjust(3, " ")
+    try:
+      driver = getMember(driver, members)
+    except: # doesn't match
+      await message.channel.send(f"<@{mo}>, {driver} wasn't found.")
+      return
+
+    if reserve == "":
+      description += f" {driver.display_name}"
+    else:
+      try:
+        reserve = getMember(reserve, members)
+      except: # doesn't match
+        await message.channel.send(f"<@{mo}>, {reserve} wasn't found.")
+        return
+      description += f" ~~{driver.display_name}~~\n{space_char * 4}{reserve.display_name}"
+  
+  embed.description = description
+
+  await message.edit(embed=embed)
+# end getStartOrders
+
+
+
+''' STREAMS '''
+async def updateStreamsEmbed(guild):
+
+  def getEmoji(stream_link):
+    if ("twitch" in stream_link.lower()):
+      return "<:Twitch:622139375282683914> "
+    elif ("youtube" in stream_link.lower()):
+      return "<:Youtube:622139522502754304>"
+    elif ("mixer" in stream_link.lower()):
+      return "<:Mixer:622139665306353675>"
+  # end getEmoji
+
+  message = await (guild.get_channel(COTM_STREAMS).fetch_message(COTM_STREAMS_EMBED))
+  embed = message.embeds[0].to_dict()
+
+  roster = getRoster(guild)
+
+  divs_values = ["" for i in range(num_divs)]
+
+  for i in range(num_divs):
+    div_role = getRole(f"Division {i+1}", guild.roles)
+    reserve_role = getRole(f"Reserve Division {i+1}", guild.roles)
+
+    twitch_profiles = []
+    for member in div_role.members + reserve_role.members:
+      try:
+        j = roster[1].index(f"<@{member.id}>")
+      except ValueError: # not in list
+        continue
+
+      stream_link = roster[5][j]
+      if "twitch" in stream_link:
+        profile = stream_link.split("twitch.tv/")[1].split("/")[0]
+        twitch_profiles.append(profile)
+        stream_link = f"https://twitch.tv/{profile}"
+      
+      if stream_link != "":
+        divs_values[i] += f"{getEmoji(stream_link)} [__{member.display_name}__]({stream_link})\n"
+
+    if twitch_profiles:
+      divs_values[i] += f"https://multistre.am/{'/'.join(twitch_profiles)}\n"
+
+    if i != num_divs -1:
+      divs_values[i] += space_char
+
+  try:
+    del embed["fields"]
+  except:
+    print(traceback.format_exc())
+
+  embed = discord.Embed().from_dict(embed)
+
+  for i in range(num_divs):
+    embed.add_field(
+      name=f"**Division {i+1}**",
+      value=divs_values[i],
+      inline=False
+    )
+
+  await message.edit(embed=embed)
+# end updateStreamsEmbed
+
+
 
 ''' SUPPORT '''
 def getMember(gamertag, members):
@@ -1209,52 +1325,6 @@ def getMissingQualifiers(guild):
 
   return missing_qualifiers
 # end getMissingQualifiers
-
-async def updateStartOrderEmbed(guild, div):
-  members = guild.members
-  message = await (guild.get_channel(START_ORDERS)).fetch_message(START_ORDER_EMBEDS[div-1])
-  embed = message.embeds[0]
-
-  first_col = (div - 1) * 5 + 2 # pos
-  last_col = first_col + 3 # reserve
-
-  workbook = openSpreadsheet()
-  sheet = workbook.worksheet("Start Orders")
-  r = sheet.range(4, first_col, 31, last_col) # pos, div, driver, reserve
-  start_order = RandomSupport.arrayFromRange(r)
-
-  description = ""
-  for row in start_order:
-    pos = row[0].value
-    div = row[1].value
-    driver = row[2].value
-    reserve = row[3].value
-
-    if pos == "":
-      break
-
-    description += f"\n{pos}.".rjust(3, " ")
-    try:
-      driver = getMember(driver, members)
-    except: # doesn't match
-      await message.channel.send(f"<@{mo}>, {driver} wasn't found.")
-      return
-
-    if reserve == "":
-      description += f" {driver.display_name}"
-    else:
-      try:
-        reserve = getMember(reserve, members)
-      except: # doesn't match
-        await message.channel.send(f"<@{mo}>, {reserve} wasn't found.")
-        return
-      description += f" ~~{driver.display_name}~~\n{space_char * 4}{reserve.display_name}"
-  
-  embed.description = description
-
-  await message.edit(embed=embed)
-# end getStartOrders
-
 
 
 
