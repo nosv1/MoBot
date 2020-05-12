@@ -114,11 +114,12 @@ class Pit_Marshall:
 # end Pit_Marshall
 
 class Reserve:
-  def __init__(self, reserve_id, member_id, div, need_avail):
-    self.reserve_id = int(reserve_id)
-    self.member_id = int(member_id)
-    self.div = int(div)
-    self.need_avail = int(need_avail) # need = 1, avail = 0
+  def __init__(self, reserve_id, date):
+    self.reserve_id = reserve_id
+    self.date = float(date) # total seconds
+    self.member_id = int(reserve_id[:-2])
+    self.div = int(reserve_id[-2])
+    self.need_avail = int(reserve_id[-1]) # need = 1, avail = 0
 # end Reserve
 
 
@@ -698,7 +699,7 @@ async def submitVotes(message, member):
 
 ''' PIT MARSHALLS '''
 # what divs not available if in race
-host_not_avail = [
+host_not_avail = [ # not actually using this, changed the restrictions...
   [1, 4, 7], # in div 1, can't host for these
   [2, 5, 1, 4, 7],
   [3, 6, 2, 5],
@@ -923,7 +924,7 @@ def getReserves():
     reserves.append(Reserve(*record))
   moBotDB.connection.close()
 
-  reserves.sort(key=lambda r:r.reserve_id)
+  reserves.sort(key=lambda r:r.date)
   return reserves
 # end getReserves
 
@@ -950,30 +951,30 @@ def getReserveCombos(reserves):
 
 def handleNeedReserve(t_need, need, member): # just updating the database
   moBotDB = connectDatabase()
-  if t_need == -1 and need == -1: # doesn't need and didn't need
-    pass
+  try:
+    if t_need == -1 and need == -1: # doesn't need and didn't need
+      pass
 
-  elif t_need > -1 and need == -1: # does need and didn't need
-    moBotDB.cursor.execute(f"""
-      INSERT INTO reserves
-        (`id`, `div`, `need_avail`)
-      VALUES
-        ('{member.id}', '{t_need}', '{1}')
-    """)
+    elif t_need > -1 and need == -1: # does need and didn't need
+      moBotDB.cursor.execute(f"""
+        INSERT INTO reserves
+          (`reserve_id`, `date`)
+        VALUES
+          ('{member.id}{t_need}{1}', '{(datetime.utcnow() - datetime(2020, 1, 1)).total_seconds()}')
+      """)
 
-  elif t_need > -1 and need > -1: # does need and did need
-    pass
+    elif t_need > -1 and need > -1: # does need and did need
+      pass
 
-  elif t_need == -1 and need > -1: # doesn't and did need
-    moBotDB.cursor.execute(f"""
-      DELETE FROM reserves
-      WHERE 
-        `id` = '{member.id}' AND
-        `div` = '{need}' AND
-        `need_avail` = '{1}'
-    """)
+    elif t_need == -1 and need > -1: # doesn't and did need
+      moBotDB.cursor.execute(f"""
+        DELETE FROM reserves
+        WHERE `reserve_id` = '{member.id}{need}{1}'
+      """)
 
-  moBotDB.connection.commit()
+    moBotDB.connection.commit()
+  except: # likely duplicate primary key error
+      pass
   moBotDB.connection.close()
 # end handleNeedReserve
 
@@ -990,10 +991,7 @@ def handleAvailReserve(reserves, avail, member):
   for d in remove:
     moBotDB.cursor.execute(f"""
       DELETE FROM reserves
-      WHERE 
-        `id` = '{member.id}' AND
-        `div` = '{d}' AND
-        `need_avail` = '{0}'
+      WHERE `reserve_id` = '{member.id}{d}{0}'
     """)
     moBotDB.connection.commit()
 
@@ -1001,13 +999,13 @@ def handleAvailReserve(reserves, avail, member):
     try:
       moBotDB.cursor.execute(f"""
         INSERT INTO reserves
-          (`id`, `div`, `need_avail`)
+          (`reserve_id`, `date`)
         VALUES
-          ('{member.id}', '{d}', '{0}')
+          ('{member.id}{d}{0}', '{(datetime.utcnow() - datetime(2020, 1, 1)).total_seconds()}')
       """)
       moBotDB.connection.commit()
-    except:
-      print(traceback.format_exc())
+    except: # likely duplicate primary key error
+      pass
   
   moBotDB.connection.close()
 # end handleAvailReserve
