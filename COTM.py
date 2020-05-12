@@ -1211,7 +1211,8 @@ def getMissingQualifiers(guild):
 # end getMissingQualifiers
 
 async def updateStartOrderEmbed(guild, div):
-  message = await (guild.get_channel(622484589465829376)).fetch_message(START_ORDER_EMBEDS[div-1])
+  members = guild.members
+  message = await (guild.get_channel(START_ORDERS)).fetch_message(START_ORDER_EMBEDS[div-1])
   embed = message.embeds[0]
 
   first_col = (div - 1) * 5 + 2 # pos
@@ -1222,22 +1223,27 @@ async def updateStartOrderEmbed(guild, div):
   r = sheet.range(4, first_col, 31, last_col) # pos, div, driver, reserve
   start_order = RandomSupport.arrayFromRange(r)
 
-  embed.description = ""
+  description = ""
   for row in start_order:
-    pos = start_order[0].value
-    div = start_order[1].value
-    driver = start_order[2].value
-    reserve = start_order[3].value
+    pos = row[0].value
+    div = row[1].value
+    try:
+      driver = getMember(row[2].value, members)
+      reserve = getMember(row[3].value, members)
+    except: # may not find the member...
+      await message.channel.send(f"<@{mo}>, someone's name doesn't match... {row[2].value}, {row[3].value}")
+      return
 
     if pos == "":
       break
 
-    embed.description += f"\n{pos}.".rjust(" ", 3)
-    embed.description += f"{div}".center(" ", 3)
+    description += f"\n{pos}.".rjust(3, " ")
     if reserve == "":
-      embed.description += f"{driver}"
+      description += f" {driver.display_name}"
     else:
-      embed.description += f"~~{driver}~~\n{space_char * 4}"
+      description += f"~~{driver.display_name}~~\n{space_char * 4}{reserve.display_name}"
+  
+  embed.description = description
 
   await message.edit(embed=embed)
 # end getStartOrders
