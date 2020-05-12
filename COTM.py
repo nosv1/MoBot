@@ -30,7 +30,7 @@ moBotTest = 476974462022189056
 RESERVES_EMBED = 620811567210037253
 VOTING_EMBED = 620778154197385256
 VOTING_CHECKMARK = 620778190767390721
-COTM_STREAMS_EMBED = 709814253938540555# 622137318513442816
+COTM_STREAMS_EMBED = 622137318513442816
 START_ORDER_EMBEDS = [
   709412554119708762,
   709412559211593828,
@@ -239,15 +239,6 @@ async def mainReactionAdd(message, payload, client):
     if message.id == COTM_STREAMS_EMBED:
       if payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI:
         await updateStreamsEmbed(message.guild)
-        await message.remove_reaction(payload.emoji.name, member)
-
-    
-
-    if (message.id == 622137318513442816): # message id for streamer embed
-      if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
-        await addStreamer(message, member, payload, client)
-      if (payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI):
-        await refreshStreamers(message, openSpreadsheet())
         await message.remove_reaction(payload.emoji.name, member)
 # end mainReactionAdd
 
