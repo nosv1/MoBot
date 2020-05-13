@@ -1044,7 +1044,6 @@ async def updateReserveRoles(guild, before_reserve_combos, after_reserve_combos)
 # end updateReserveRoles
 
 async def updateReserveEmbed(message, reserves, reserve_combos):
-  print(reserve_combos)
   embed = message.embeds[0].to_dict()
 
   values = ["" for i in range(num_divs+1)]
