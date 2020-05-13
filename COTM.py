@@ -1044,6 +1044,7 @@ async def updateReserveRoles(guild, before_reserve_combos, after_reserve_combos)
 # end updateReserveRoles
 
 async def updateReserveEmbed(message, reserves, reserve_combos):
+  print(reserve_combos)
   embed = message.embeds[0].to_dict()
 
   values = ["" for i in range(num_divs+1)]
@@ -1063,7 +1064,7 @@ async def updateReserveEmbed(message, reserves, reserve_combos):
       reservee = None
       for i, r_avail in enumerate(reserve_combos["avail"]):
         if r_avail == reserve.id:
-          if reserve_combos["div"] == r.div:
+          if reserve_combos["div"][i] == r.div:
             reservee = message.guild.get_member(reserve_combos["need"][i])
             values[r.div] += f"{reserve.display_name} rsv. for {reservee.display_name}\n"
             break

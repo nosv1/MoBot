@@ -146,7 +146,10 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await COTM.updateStreamsEmbed(message.guild)
+        reserves = COTM.getReserves()
+        await COTM.updateReserveEmbed(
+          await (message.guild.get_channel(COTM.RESERVE_SEEKING)).fetch_message(COTM.RESERVES_EMBED),
+          reserves, COTM.getReserveCombos(reserves))
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
