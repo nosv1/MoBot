@@ -233,6 +233,7 @@ async def mainReactionAdd(message, payload, client):
         reserves = getReserves()
         await updateReserveEmbed(message, reserves, getReserveCombos(reserves))
         await message.remove_reaction(payload.emoji.name, member)
+        updateReservesSpreadsheet(message.guild, getReserveCombos(reserves))
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
