@@ -1086,8 +1086,8 @@ def updateReservesSpreadsheet(guild, reserve_combos):
     cell.value = ""
 
   for i in range(len(reserve_combos["need"])):
-    r[i].value = guild.get_member(reserve_combos["need"][i]).display_name.split("]")[-1].strip()
-    r[i+1].value = guild.get_member(reserve_combos["avail"][i]).display_name.split("]")[-1].strip()
+    r[(i*2)].value = guild.get_member(reserve_combos["need"][i]).display_name.split("]")[-1].strip()
+    r[(i*2)+1].value = guild.get_member(reserve_combos["avail"][i]).display_name.split("]")[-1].strip()
 
   sheet.update_cells(r, value_input_option="USER_ENTERED")
 # end updateReservesSpreadsheet
