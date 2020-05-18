@@ -230,10 +230,12 @@ async def mainReactionAdd(message, payload, client):
       if payload.emoji.name == WAVE_EMOJI or payload.emoji.id in division_emojis:
         await handleReserveReaction(message, payload, member)
       elif payload.emoji.name in [X_EMOJI, ARROWS_COUNTERCLOCKWISE_EMOJI] and member.id == mo:
+        if payload.emoji.name == X_EMOJI:
+          await clear_reserves(message)
         reserves = getReserves()
         await updateReserveEmbed(message, reserves, getReserveCombos(reserves))
-        await message.remove_reaction(payload.emoji.name, member)
         updateReservesSpreadsheet(message.guild, getReserveCombos(reserves))
+        await message.remove_reaction(payload.emoji.name, member)
       else:
         await message.remove_reaction(payload.emoji.name, member)
 
@@ -735,7 +737,7 @@ def getPitMarshalls():
 
 async def clear_pit_marshalls(guild):
   pit_marshalls = getPitMarshalls()
-  pm_role = getRole("Pit Marshall", guild)
+  pm_role = getRole("Pit Marshall", guild.roles)
   for pm in pit_marshalls:
     member = guild.get_member(pm.member_id)
     await member.remove_roles(pm_role)
@@ -928,6 +930,30 @@ def getReserves():
   reserves.sort(key=lambda r:r.date)
   return reserves
 # end getReserves
+
+async def clear_reserves(message):
+  await message.clear_reactions()
+  await message.add_reaction(WAVE_EMOJI)
+  for i in range(num_divs):
+    div_emoji = f"<:D{i+1}:{division_emojis[i]}>"
+    await message.add_reaction(div_emoji)
+
+  reserves = getReserves()
+  pm_role = getRole("Pit Marshall", message.guild.roles)
+
+  for r in reserves:
+    member = message.guild.get_member(r.member_id)
+    for role in member.roles:
+      if "Reserve" in role.name:
+        await member.remove_roles(role)
+
+  moBotDB = connectDatabase()
+  moBotDB.cursor.execute(f"""
+    DELETE FROM reserves
+  """)
+  moBotDB.connection.commit()
+  moBotDB.connection.close()
+# end clear_pit_marshalls
 
 def getReserveCombos(reserves):
   reserve_combos = {"need" : [], "avail" : [], "div" : []} # only complete pairs
@@ -1147,12 +1173,14 @@ async def handleReserveReaction(message, payload, member):
 
 
 ''' START ORDERS '''
-async def updateStartOrderEmbed(guild, div):
+async def updateStartOrderEmbed(guild, main_div): # also updates div roles
   members = guild.members
-  message = await (guild.get_channel(START_ORDERS)).fetch_message(START_ORDER_EMBEDS[div-1])
+  message = await (guild.get_channel(START_ORDERS)).fetch_message(START_ORDER_EMBEDS[main_div-1])
   embed = message.embeds[0]
 
-  first_col = (div - 1) * 5 + 2 # pos
+  div_updates_channel = guild.get_channel(DIVISION_UPDATES)
+
+  first_col = (main_div - 1) * 5 + 2 # pos
   last_col = first_col + 3 # reserve
 
   workbook = openSpreadsheet()
@@ -1164,15 +1192,27 @@ async def updateStartOrderEmbed(guild, div):
   for row in start_order:
     pos = row[0].value
     div = row[1].value
-    driver = row[2].value
+    gamertag = row[2].value
     reserve = row[3].value
 
     if pos == "":
       break
 
+    div_role = getRole(f"Division {main_div}", guild.roles)
+
     description += f"\n{pos}.".rjust(3, " ")
     try:
-      driver = getMember(driver, members)
+      driver = getMember(gamertag, members)
+
+      if div_role.name not in [r.name for r in driver.roles]:
+        for role in driver.roles:
+          if "Division" in role.name and "Reserve" not in role.name:
+            await driver.remove_roles(role)
+            await div_updates_channel.send(f"{driver.mention} has been removed from {role.name}.")
+            await driver.edit(nick=f"[D{main_div}] {gamertag}")
+
+        await driver.add_roles(div_role)
+        await div_updates_channel.send(f"{driver.mention} has been added to {div_role.name}.")
     except: # doesn't match
       await message.channel.send(f"<@{mo}>, {driver} wasn't found.")
       return
