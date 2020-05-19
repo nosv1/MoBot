@@ -1209,8 +1209,8 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
           if "Division" in role.name and "Reserve" not in role.name:
             await driver.remove_roles(role)
             await div_updates_channel.send(f"{driver.mention} has been removed from {role.name}.")
-            await driver.edit(nick=f"[D{main_div}] {gamertag}")
 
+        await driver.edit(nick=f"[D{main_div}] {gamertag}")
         await driver.add_roles(div_role)
         await div_updates_channel.send(f"{driver.mention} has been added to {div_role.name}.")
     except: # doesn't match
