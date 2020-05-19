@@ -505,7 +505,7 @@ async def updateMoBotStatus(client):
     await client.change_presence(activity=server)
   elif (getRandomCondition(0.1)): # 10%
     serverCount = discord.Activity(type=discord.ActivityType.watching, name=str(len(client.guilds)) + " servers")
-    await client.change_presence(activity=serverCount)
+    #await client.change_presence(activity=serverCount)
     '''elif (rand < 40): # 10%
     msgRate = discord.Activity(type=discord.ActivityType.watching, name="Msg/Sec: %.2f" % messageRate)
     await client.change_presence(activity=msgRate)'''
