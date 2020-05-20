@@ -243,6 +243,11 @@ async def mainReactionAdd(message, payload, client):
       if payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI:
         await updateStreamsEmbed(message.guild)
         await message.remove_reaction(payload.emoji.name, member)
+
+    if message.id in START_ORDER_EMBEDS:
+      if payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI:
+        await updateStartOrderEmbed(message.guild, START_ORDER_EMBEDS.index(message.id)+1)
+        await message.remove_reaction(payload.emoji.name, member)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
