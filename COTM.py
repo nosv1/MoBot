@@ -1043,6 +1043,8 @@ def handleAvailReserve(reserves, avail, member):
 # end handleAvailReserve
 
 async def updateReserveRoles(guild, before_reserve_combos, after_reserve_combos):
+
+  divs_updated = set()
   # remove fellers who have role that shouldn't
   for i, before_r in enumerate(before_reserve_combos["avail"]):
     reserve = before_r
@@ -1063,6 +1065,7 @@ async def updateReserveRoles(guild, before_reserve_combos, after_reserve_combos)
       reserve = guild.get_member(reserve)
       await guild.get_channel(DIVISION_UPDATES).send(f"{reserve.mention} is no longer reserving for {guild.get_member(reservee).mention}.")
       await reserve.remove_roles(getRole(f"Reserve Division {div}", guild.roles))
+      divs_updated.add(div)
     
   for i, r in enumerate(after_reserve_combos["avail"]):
     reserve = guild.get_member(r)
@@ -1073,6 +1076,10 @@ async def updateReserveRoles(guild, before_reserve_combos, after_reserve_combos)
     if role not in reserve.roles:
       await guild.get_channel(DIVISION_UPDATES).send(f"{reserve.mention} is now reserving for {guild.get_member(reservee).mention}.")
       await reserve.add_roles(role)
+      divs_updated.add(div)
+
+  for div in divs_updated:
+    await updateStartOrderEmbed(guild, int(div))
 # end updateReserveRoles
 
 async def updateReserveEmbed(message, reserves, reserve_combos):
