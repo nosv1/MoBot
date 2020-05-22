@@ -21,7 +21,10 @@ async def main(args, message, client):
   if (args[0][1:].lower() in catalogue):
     platform = ["xb1", "xbox", "ps4", "pc"]
     if (len(args) > 2 and args[1].lower() in platform):
-      await getJob(message, args)
+      try:
+        await getJob(message, args)
+      except gspread.exceptions.APIError:
+        await message.channel.send("**There were technical difficulties searching for a job. Try again in a minute or so.**")
       
 # end main
 
