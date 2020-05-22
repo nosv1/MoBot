@@ -10,6 +10,7 @@ import MoBotDatabase
 moBot = 449247895858970624
 mo = 405944496665133058
 spaceChar = "⠀"
+MEDAL_EMOJI = "🏅"
 
 class Player:
   def __init__(self, user_id, guild_id, percent_correct, wins, losses, games_played):
@@ -37,14 +38,34 @@ async def memberRemove(member, client):
   pass
 # end memberRemove
 
-async def mainReactionAdd(message, payload, cilent): 
-  pass
+async def mainReactionAdd(message, payload, cilent):
+  member = message.guild.get_member(payload.user_id)
+
+  if payload.emoji.name == MEDAL_EMOJI:
+    await sendLeaderboard(message)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
   pass
 # end mainReactionRemove
 
+
+async def sendLeaderboard(message):
+  players = getLeaderboard(message.guild.id)
+  players.sort(key=lambda x : x.percent_correct, reverse=True) # best to worst
+  top_10 = [p for p in players if p.games_played >= 10][:10] # top 10
+
+  embed = discord.Embed(color=int("0xd1d1d1", 16))
+  embed.set_author(name=f"{message.guild}\nHangman Leaderboard")
+  
+  des = ""
+  des += f"__Top {len(top_10)} of {len(players)}__\n"
+  for i, p in enumerate(top_10):
+    des += f"{str(i+1).rjust(2, ' ')}. **{message.guild.get_member(int(p.user_id))}** ({p.percent_correct}% - {p.games_played})\n"
+
+  embed.description = des
+  await message.channel.send(embed=embed)
+# end sendLeaderboard
 
 
 async def newGame(message, client):
@@ -146,6 +167,8 @@ async def newGame(message, client):
 
         embed = discord.Embed.from_dict(embed)
         embed.add_field(name=spaceChar, value=v, inline=False)
+        embed.set_footer(text=f"| {MEDAL_EMOJI} Leaderboard |")
+        msg.add_reaction(MEDAL_EMOJI)
         embed = embed.to_dict()
 
 
@@ -233,7 +256,7 @@ async def getDefinition(word):
 # end getDefinition
 
 async def updateLeaderboard(user_id, guild_id, is_winner):
-  leaderboard = await getLeaderboard(guild_id)
+  leaderboard = getLeaderboard(guild_id)
 
   player_found = None
   for player in leaderboard:
@@ -247,7 +270,7 @@ async def updateLeaderboard(user_id, guild_id, is_winner):
       player_found = player
       break
   
-  moBotDB = await connectDatabase()
+  moBotDB = connectDatabase()
 
   if player_found:
     moBotDB.cursor.execute(f"""
@@ -287,12 +310,11 @@ async def updateLeaderboard(user_id, guild_id, is_winner):
 
   leaderboard.sort(key=lambda x : float(x.percent_correct), reverse=True)
   return player_found, leaderboard
-
 # end updateLeaderboard
 
-async def getLeaderboard(guild_id):
+def getLeaderboard(guild_id):
   players = []
-  moBotDB = await connectDatabase()
+  moBotDB = connectDatabase()
   moBotDB.cursor.execute(f"""
     SELECT *
     FROM hangman_leaderboard
@@ -306,6 +328,6 @@ async def getLeaderboard(guild_id):
 
 
 
-async def connectDatabase():
+def connectDatabase():
   return MoBotDatabase.connectDatabase("MoBot")
 # end getLeaderboard
