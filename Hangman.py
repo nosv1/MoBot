@@ -168,7 +168,7 @@ async def newGame(message, client):
         embed = discord.Embed.from_dict(embed)
         embed.add_field(name=spaceChar, value=v, inline=False)
         embed.set_footer(text=f"| {MEDAL_EMOJI} Leaderboard |")
-        msg.add_reaction(MEDAL_EMOJI)
+        await msg.add_reaction(MEDAL_EMOJI)
         embed = embed.to_dict()
 
 
