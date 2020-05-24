@@ -1178,9 +1178,9 @@ async def handleReserveReaction(message, payload, member):
   after_reserves = getReserves()
   after_reserve_combos = getReserveCombos(after_reserves)
 
+  updateReservesSpreadsheet(message.guild, after_reserve_combos)
   await updateReserveRoles(message.guild, before_reserve_combos, after_reserve_combos)
   await updateReserveEmbed(message, after_reserves, after_reserve_combos)
-  updateReservesSpreadsheet(message.guild, after_reserve_combos)
 # end handleReserveReaction
 
 
