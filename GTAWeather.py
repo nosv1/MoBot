@@ -167,7 +167,7 @@ async def handleFutureCast(message, member):
   embed = discord.Embed(color=moBotMember.roles[-1].color)
   embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar_url)
 
-  futurecast = "**3-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%a %b %d %H:%M UTC"), getFuturecast(n))
+  futurecast = "**4-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%a %b %d %H:%M UTC"), getFuturecast(n))
 
   embed.description = futurecast
   msg = await message.channel.send(embed=embed)
@@ -296,7 +296,7 @@ def getFuturecast(n):
   report = ""
   t = n
   oldWeatherDescription = None
-  while (t < n + timedelta(hours=3)):
+  while (t < n + timedelta(hours=4)):
     currentWeather = getForecast(t)
     if (currentWeather.currentWeatherDescription != oldWeatherDescription):
       report += "%s - %s\n" % (t.strftime("%H:%M"), currentWeather.currentWeatherDescription.title())
