@@ -1205,7 +1205,7 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
     pos = row[0].value
     div = row[1].value
     gamertag = row[2].value
-    reserve = row[3].value
+    res_gamertag = row[3].value
 
     if pos == "":
       break
@@ -1226,22 +1226,22 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
         await driver.add_roles(div_role)
         await div_updates_channel.send(f"{driver.mention} has been added to {div_role.name}.")
     except: # doesn't match
-      await message.channel.send(f"<@{mo}>, {driver} wasn't found.")
+      await message.channel.send(f"<@{mo}>, {gamertag} wasn't found.")
       return
 
-    if reserve == "":
+    if res_gamertag == "":
       description += f" {driver.display_name}"
     else:
       try:
-        reserve = getMember(reserve, members)
+        reserve = getMember(res_gamertag, members)
       except: # doesn't match
-        await message.channel.send(f"<@{mo}>, {reserve} wasn't found.")
+        await message.channel.send(f"<@{mo}>, {res_gamertag} wasn't found.")
         return
       description += f" ~~{driver.display_name}~~\n{space_char * 4}{reserve.display_name}"
   
   embed.description = description
 
-  await message.edit(embed=embed)
+  #await message.edit(embed=embed)
 # end getStartOrders
 
 
