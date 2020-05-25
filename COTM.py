@@ -1241,7 +1241,7 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
   
   embed.description = description
 
-  #await message.edit(embed=embed)
+  await message.edit(embed=embed)
 # end getStartOrders
 
 
