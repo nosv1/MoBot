@@ -1204,7 +1204,7 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
   for row in start_order:
     pos = row[0].value
     div = row[1].value
-    pts = row[2].value
+    pts = row[2].value.split(".")[0]
     gamertag = row[3].value
     res_gamertag = row[4].value
 
@@ -1231,14 +1231,14 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
       return
 
     if res_gamertag == "":
-      description += f" {driver.display_name}"
+      description += f" **{driver.display_name}** ({pts})"
     else:
       try:
         reserve = getMember(res_gamertag, members)
       except: # doesn't match
         await message.channel.send(f"<@{mo}>, {res_gamertag} wasn't found.")
         return
-      description += f" ~~{driver.display_name}~~\n{space_char * 4}{reserve.display_name}"
+      description += f" **~~{driver.display_name}~~** ({pts})\n{space_char * 4}**{reserve.display_name}**"
   
   embed.description = description
 
