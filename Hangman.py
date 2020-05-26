@@ -5,6 +5,7 @@ import random
 from requests_html import HTMLSession
 import RandomSupport
 import MoBotDatabase
+import re
 
 
 moBot = 449247895858970624
@@ -150,7 +151,16 @@ async def newGame(message, client):
 
         if player.games_played >= 10:
           server_position = str(leaderboard.index(player) + 1)
-          server_position += "st" if server_position[-1] == "1" else ("nd" if server_position[-1] == "2" else ("rd" if server_position[-1] == "3" else "th"))
+          if re.match(r"(11$)|(12$)|(13$)|[4567890]$", server_position):
+            server_position += "th"
+          else:
+            end = server_position[-1]
+            if "1" == end:
+              server_position += "st"
+            elif "2" == end:
+              server_position += "nd"
+            elif "3" == end:
+              server_position += "th"
 
         v = ""
         v += "**Stat Line**\n"
