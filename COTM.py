@@ -1193,20 +1193,20 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
   div_updates_channel = guild.get_channel(DIVISION_UPDATES)
 
   first_col = (main_div - 1) * 6 + 2 # pos
-  last_col = first_col + 3 # reserve
+  last_col = first_col + 4 # pts
 
   workbook = openSpreadsheet()
   sheet = workbook.worksheet("Start Orders")
-  r = sheet.range(4, first_col, 31, last_col) # pos, div, pts, driver, reserve
+  r = sheet.range(4, first_col, 31, last_col) # pos, div, driver, reserve, pts
   start_order = RandomSupport.arrayFromRange(r)
 
   description = ""
   for row in start_order:
     pos = row[0].value
     div = row[1].value
-    pts = row[2].value.split(".")[0]
-    gamertag = row[3].value
-    res_gamertag = row[4].value
+    gamertag = row[2].value
+    res_gamertag = row[3].value
+    pts = row[4].value.split(".")[0]
 
     if pos == "":
       break
@@ -1231,14 +1231,14 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
       return
 
     if res_gamertag == "":
-      description += f" **{driver.display_name}** ({pts})"
+      description += f" **{driver.display_name}** ({pts} - D{div})"
     else:
       try:
         reserve = getMember(res_gamertag, members)
       except: # doesn't match
         await message.channel.send(f"<@{mo}>, {res_gamertag} wasn't found.")
         return
-      description += f" **~~{driver.display_name}~~** ({pts})\n{space_char * 4}**{reserve.display_name}**"
+      description += f" **~~{driver.display_name}~~** ({pts} - D{div})\n{space_char * 4}**{reserve.display_name}**"
   
   embed.description = description
 
