@@ -1192,20 +1192,21 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
 
   div_updates_channel = guild.get_channel(DIVISION_UPDATES)
 
-  first_col = (main_div - 1) * 5 + 2 # pos
+  first_col = (main_div - 1) * 6 + 2 # pos
   last_col = first_col + 3 # reserve
 
   workbook = openSpreadsheet()
   sheet = workbook.worksheet("Start Orders")
-  r = sheet.range(4, first_col, 31, last_col) # pos, div, driver, reserve
+  r = sheet.range(4, first_col, 31, last_col) # pos, div, pts, driver, reserve
   start_order = RandomSupport.arrayFromRange(r)
 
   description = ""
   for row in start_order:
     pos = row[0].value
     div = row[1].value
-    gamertag = row[2].value
-    res_gamertag = row[3].value
+    pts = row[2].value
+    gamertag = row[3].value
+    res_gamertag = row[4].value
 
     if pos == "":
       break
