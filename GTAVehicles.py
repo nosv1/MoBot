@@ -68,6 +68,8 @@ async def handleUserVehicleInput(message, client):
   sheets = workbook.worksheets()
   key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
   handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
+
+  vehicles = []
   try: # search for possible vehicles
     poss_vehicles = searchVehicle(key_vehicle_info_sheet, vehicle)
     if poss_vehicles:
@@ -83,7 +85,7 @@ async def handleUserVehicleInput(message, client):
     await msg.edit(embed=embed)
     return
 
-  if poss_vehicles: # ask user which vehicle is correct
+  if vehicles: # ask user which vehicle is correct
     emojis = []
 
     embed.description = "**Which Vehicle?**\n"
