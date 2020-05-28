@@ -247,11 +247,9 @@ def openSpreadsheet():
   return workbook
 # end openSpreadsheet
 
-
-
-workbook = openSpreadsheet()
+'''workbook = openSpreadsheet()
 sheets = workbook.worksheets()
 key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
 handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
 overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
-getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overall_lap_time_sheet, [Vehicle("Sultan RS")])
+getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overall_lap_time_sheet, [Vehicle("Sultan RS")])'''
