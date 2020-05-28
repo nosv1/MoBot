@@ -112,6 +112,8 @@ async def handleUserVehicleInput(message, client):
     else:
       vehicle = vehicles[0]
 
+    embed = RandomSupport.updateDetailInURL(embed, "vehicle", vehicle._Vehicle)
+
     try:
       embed.set_thumbnail(url=getVehicleImage(vehicle))
     except: # not sure what could go wrong here... may not find correct page i guess
@@ -145,7 +147,8 @@ async def handleUserVehicleInput(message, client):
     await msg.edit(embed=embed)
 
   else:
-    await message.channel.send(f"No vehicles with a name close to `{vehicle}` could be found.")
+    embed.description = f"No vehicles with a name close to `{vehicle}` could be found."
+    await msg.edit(embed=embed)
 # end handleUserVehicleInput
 
 def getVehicleImage(vehicle):
