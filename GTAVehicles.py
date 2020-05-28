@@ -21,6 +21,7 @@ mo = 405944496665133058
 # GTA V/Online Vehicle Info, Lap Times, and Top Speeds -- SHEET IDs
 KEY_VEHICLE_INFO_SHEET_ID = 1689972026
 HANDLING_DATA_BASIC_SHEET_ID = 110431106
+OVERALL_LAP_TIME_SHEET_ID = 60309153
 
 space_char = "⠀"
 
@@ -68,6 +69,7 @@ async def handleUserVehicleInput(message, client):
   sheets = workbook.worksheets()
   key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
   handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
+  overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
 
   vehicles = []
   try: # search for possible vehicles
@@ -76,6 +78,7 @@ async def handleUserVehicleInput(message, client):
       vehicles = getVehicleInfo(
         key_vehicle_info_sheet, 
         handling_data_basic_info_sheet, 
+        overall_lap_time_sheet,
         [Vehicle(v) for v in poss_vehicles[:9]]
       ) # list of complete vehicle objects, just waiting for user selection now
   except: # likely issue with gspread
@@ -125,6 +128,7 @@ async def handleUserVehicleInput(message, client):
 
     embed.description = f"**Vehicle:** {vehicle._Vehicle}\n"
     embed.description += f"**Class:** {vehicle._Class}\n"
+    embed.description += f"[__Overall (Lap Time)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=60309153&range=B{vehicle._overall_lap_time_row}) - "
     embed.description += f"[__Key Info__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=1689972026&range=B{vehicle._key_info_row}) - "
     embed.description += f"[__Handling Data (Basic)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=110431106&range=B{vehicle._handling_data_basic_row})\n{space_char}\n"
 
@@ -133,18 +137,20 @@ async def handleUserVehicleInput(message, client):
     v += f"**Seats:** {vehicle._Seats}\n"
     v += f"**Source:** {vehicle._Source}\n"
     v += f"**Cost:** {vehicle._Cost}\n"
+    embed.add_field(name="**__Basic Information__**", value=f"{v}{space_char}")
+
+    v = ""
     v += f"**Race Tier:** {vehicle._Race_Tier}\n"
-    embed.add_field(name="**__Key Attributes__**", value=f"{v}{space_char}")
+    v += f"**Lap Time:** {vehicle._Lap_Time__m_ss_000_}\n"
+    v += f"**Top Speed:** {vehicle._Top_Speed__mph_}\n"
+    embed.add_field(name="**__Basic Performance__**", value=f"{v}{space_char}")
 
     v = ""
     v += f"**Spoiler:** {vehicle._Spoiler}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     v += f"**Tyres Clip:** {vehicle._Tyres_Clip}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
-    embed.add_field(name="**__Extra Attributes__**", value=f"{v}{space_char}")
-
-    v = ""
     v += f"**Bouncy:** {vehicle._Bouncy}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     v += f"**Engine:** {vehicle._Engine}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
-    embed.add_field(name="**__AH Flag Issues__**", value=f"{v}{space_char}")
+    embed.add_field(name="**__Features / AHF Issues__**", value=f"{v}{space_char}")
 
     embed.set_footer(text="All information is retrieved from Broughy's Spreadsheet, \"GTA V/Online Vehicle Info, Lap Times, and Top Speeds\". Information may not be absolutely accurate.")
     await msg.edit(embed=embed)
@@ -162,9 +168,10 @@ def getVehicleImage(vehicle):
   return image_url
 # end getVehicleImage
 
-def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, vehicles):
+def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overall_lap_time_sheet, vehicles):
   key_info_range = key_vehicle_info_sheet.range(f"A2:J{key_vehicle_info_sheet.row_count}")
   handling_data_basic_range = handling_data_basic_info_sheet.range(f"A2:R{handling_data_basic_info_sheet.row_count}")
+  overall_lap_time_range = overall_lap_time_sheet.range(f"A2:F{overall_lap_time_sheet.row_count}")
 
   key_info = RandomSupport.arrayFromRange(key_info_range)
   key_info[1][0].value = "Class"
@@ -174,15 +181,24 @@ def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, vehic
   handling_data_basic_info[1][0].value = "Class"
   handling_data_basic_info[1][1].value = "Vehicle"
 
-  def fix_attr(attr):
-    return re.sub(r"[\s\-\(\)]", "_", attr)
+  overall_lap_time_info = RandomSupport.arrayFromRange(overall_lap_time_range)
+  overall_lap_time_info[0][0].value = "Overall Position"
+  overall_lap_time_info[0][1].value = "In Class Position"
 
-  for i, attr in enumerate(key_info[1] + handling_data_basic_info[1]): # add attributes to class
+  def fix_attr(attr):
+    return re.sub(r"[\s\-\(\):.]", "_", attr)
+
+  for i, attr in enumerate(
+    key_info[1] + 
+    handling_data_basic_info[1] +
+    overall_lap_time_info[0]
+  ): # add attributes to class
     if attr.value.strip() != "":
       attr = fix_attr(attr.value)
       exec(f"Vehicle._{attr} = None")
   Vehicle._key_info_row = None
   Vehicle._handling_data_basic_row = None
+  Vehicle._overall_lap_time_row = None
 
   for vehicle in vehicles:
 
@@ -191,14 +207,23 @@ def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, vehic
         for j, prop in enumerate(key_info[i]):
           attr = fix_attr(key_info[1][j].value)
           exec(f'vehicle._{attr} = "{prop.value}"')
-        vehicle._key_info_row = i + 2 # + 2 for headers
+        vehicle._key_info_row = i + 2 # + 2 is for headers
 
     for i, v in enumerate(handling_data_basic_info):
       if v[1].value == vehicle._name:
         for j, prop in enumerate(handling_data_basic_info[i]):
           attr = fix_attr(handling_data_basic_info[1][j].value)
           exec(f'vehicle._{attr} = "{prop.value}"')
-        vehicle._handling_data_basic_row = i + 2 # + 2 for headers
+        vehicle._handling_data_basic_row = i + 2 # + 2 is for headers
+
+    for i, v in enumerate(overall_lap_time_info):
+      if v[3].value == vehicle._name:
+        for j, prop in enumerate(overall_lap_time_info[i]):
+          attr = fix_attr(overall_lap_time_info[0][j].value)
+          exec(f'vehicle._{attr} = "{prop.value}"')
+        vehicle._overall_lap_time_row = i + 2 # + 2 is for headers
+
+    print(vars(vehicle))
 
   return vehicles
 # end getVehicleInfo
@@ -221,3 +246,12 @@ def openSpreadsheet():
   workbook = clientSS.open_by_key("1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4")
   return workbook
 # end openSpreadsheet
+
+
+
+workbook = openSpreadsheet()
+sheets = workbook.worksheets()
+key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
+handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
+overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
+getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overall_lap_time_sheet, [Vehicle("Sultan RS")])
