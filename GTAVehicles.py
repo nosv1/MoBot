@@ -70,6 +70,12 @@ async def handleUserVehicleInput(message, client):
   handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
   try: # search for possible vehicles
     poss_vehicles = searchVehicle(key_vehicle_info_sheet, vehicle)
+    if poss_vehicles:
+      vehicles = getVehicleInfo(
+        key_vehicle_info_sheet, 
+        handling_data_basic_info_sheet, 
+        [Vehicle(v) for v in poss_vehicles[:9]]
+      ) # list of complete vehicle objects, just waiting for user selection now
   except: # likely issue with gspread
     print("CAUGHT EXCEPTION")
     print(traceback.format_exc())
@@ -78,11 +84,6 @@ async def handleUserVehicleInput(message, client):
     return
 
   if poss_vehicles: # ask user which vehicle is correct
-    vehicles = getVehicleInfo(
-      key_vehicle_info_sheet, 
-      handling_data_basic_info_sheet, 
-      [Vehicle(v) for v in poss_vehicles[:9]]
-    ) # list of complete vehicle objects, just waiting for user selection now
     emojis = []
 
     embed.description = "**Which Vehicle?**\n"
