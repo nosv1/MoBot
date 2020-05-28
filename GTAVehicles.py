@@ -70,7 +70,7 @@ async def handleUserVehicleInput(message, client):
   handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
   try: # search for possible vehicles
     poss_vehicles = searchVehicle(key_vehicle_info_sheet, vehicle)
-  except:
+  except: # likely issue with gspread
     print("CAUGHT EXCEPTION")
     print(traceback.format_exc())
     embed.description = "There were technical difficulties searching for your vehicle. Please try again in a minute or so."
@@ -112,7 +112,11 @@ async def handleUserVehicleInput(message, client):
     else:
       vehicle = vehicles[0]
 
-    embed.set_thumbnail(url=getVehicleImage(vehicle))
+    try:
+      embed.set_thumbnail(url=getVehicleImage(vehicle))
+    except: # not sure what could go wrong here... may not find correct page i guess
+      print("CAUGHT EXCEPTION")
+      print(traceback.format_exc())
 
     embed.description = f"**Vehicle:** {vehicle._Vehicle}\n"
     embed.description += f"**Class:** {vehicle._Class}\n"
