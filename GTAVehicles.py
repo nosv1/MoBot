@@ -146,7 +146,7 @@ async def handleUserVehicleInput(message, client):
     v += f"**Engine:** {vehicle._Engine}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     embed.add_field(name="**__AH Flag Issues__**", value=f"{v}{space_char}")
 
-    embed.set_footer(text="All information is retrieved from Broughy's Spreadsheet, \"GTA V/Online Vehicle Info, Lap Times, and Top Speeds\". Information may not be absolutley accurate.")
+    embed.set_footer(text="All information is retrieved from Broughy's Spreadsheet, \"GTA V/Online Vehicle Info, Lap Times, and Top Speeds\". Information may not be absolutely accurate.")
     await msg.edit(embed=embed)
 
   else:
