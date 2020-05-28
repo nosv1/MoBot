@@ -41,6 +41,7 @@ import Imperial
 import ReapersMC
 
 # importing external functions files
+import GTAVehicles
 import GTAWeather
 import XboxGamertags
 import watchWords
@@ -300,6 +301,8 @@ async def on_message(message):
         ## random commands
         elif ("corona" in args[1]): 
           await message.channel.send(RandomSupport.cornavirus())
+        elif ("gtacar" in args[1] or "gta car" in message.content):
+          await GTAVehicles.handleUserVehicleInput(message, client)
         elif ("gtaweather" in args[1] or "gta weather" in message.content):
           await GTAWeather.sendWeatherForecast(message)
         elif (args[1] == "admin" and isMo):

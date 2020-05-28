@@ -12,7 +12,7 @@ moBot = 449247895858970624
 moBotTest = 476974462022189056
 mo = 405944496665133058
 
-spaceChar = "⠀"
+space_char = "⠀"
 
 async def main(args, message, client):
   now = datetime.now()
