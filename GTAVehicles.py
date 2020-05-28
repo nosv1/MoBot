@@ -7,6 +7,7 @@ import mysql.connector
 from difflib import get_close_matches
 import traceback
 import re
+from requests_html import HTMLSession
 
 import SecretStuff
 import MoBotDatabase
@@ -111,6 +112,8 @@ async def handleUserVehicleInput(message, client):
     else:
       vehicle = vehicles[0]
 
+    embed.set_thumbnail(url=getVehicleImage(vehicle))
+
     embed.description = f"**Vehicle:** {vehicle._Vehicle}\n"
     embed.description += f"**Class:** {vehicle._Class}\n"
     embed.description += f"[__Key Info__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=1689972026&range=B{vehicle._key_info_row}) - "
@@ -140,6 +143,14 @@ async def handleUserVehicleInput(message, client):
   else:
     await message.channel.send(f"No vehicles with a name close to `{vehicle}` could be found.")
 # end handleUserVehicleInput
+
+def getVehicleImage(vehicle):
+  session = HTMLSession()
+  url = f"https://gta.fandom.com/wiki/{vehicle._vehicle.replace(' ', '_')}"
+  r = session.get(url)
+  image_url = r.html.html.split("image image-thumbnail")[1].split("src=\"")[1].split("\"")[0]
+  return image_url
+# end getVehicleImage
 
 def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, vehicles):
   key_info_range = key_vehicle_info_sheet.range(f"A2:J{key_vehicle_info_sheet.row_count}")
