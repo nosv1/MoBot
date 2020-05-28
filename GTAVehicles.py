@@ -146,7 +146,7 @@ async def handleUserVehicleInput(message, client):
 
 def getVehicleImage(vehicle):
   session = HTMLSession()
-  url = f"https://gta.fandom.com/wiki/{vehicle._vehicle.replace(' ', '_')}"
+  url = f"https://gta.fandom.com/wiki/{vehicle._Vehicle.replace(' ', '_')}"
   r = session.get(url)
   image_url = r.html.html.split("image image-thumbnail")[1].split("src=\"")[1].split("\"")[0]
   return image_url
