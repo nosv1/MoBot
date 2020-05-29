@@ -142,7 +142,7 @@ async def handleUserVehicleInput(message, client):
     v = ""
     v += f"**Race Tier:** {vehicle._Race_Tier}\n"
     v += f"**Lap Time:** {vehicle._Lap_Time__m_ss_000_}\n"
-    v += f"**Top Speed:** {vehicle._Top_Speed__mph_} mph\n"
+    v += f"**Top Speed:** {vehicle._Top_Speed__mph_}mph\n"
     embed.add_field(name="**__Basic Performance__**", value=f"{v}{space_char}")
 
     v = ""
