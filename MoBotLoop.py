@@ -50,7 +50,8 @@ moBot = 449247895858970624
 MOBOT_SUPPORT_CLOCK = 579774370684207133 # voice
 
 class Clock:
-  def __init__(self, channelID, guildID, guildName, timeFormat, timeZone):
+  def __init__(self, msgID, channelID, guildID, guildName, timeFormat, timeZone):
+    self.msgID = int(msgID)
     self.channelID = int(channelID)
     self.guildID = int(guildID)
     self.guildName = guildName
@@ -258,8 +259,10 @@ async def main(client):
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
       if (second is 0): # check for every 60 seconds or incase we miss the 0 tick because of slowness
+        await updateDiscordTables() 
 
         # update clocks and countdowns
+        '''
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
         try:
@@ -268,6 +271,7 @@ async def main(client):
           await updateMoBotStatus(client)
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
+        '''
         
         await updateTimeZoneList(currentTime)
       # end if second == 0
@@ -544,7 +548,7 @@ async def getGuildClocks():
 
   clocks = []
   for record in moBotDB.cursor:
-    clocks.append(Clock(record[0], record[1], record[2], record[3], record[4]))
+    clocks.append(Clock(record[0], record[1], record[2], record[3], record[4], record[5]))
 
   moBotDB.connection.close()
   return clocks
@@ -558,12 +562,19 @@ async def updateGuildClocks(client, currentTime, clocks):
       #await client.get_user(int(mo)).send("GUILD ID: %s" % clock.guildID)
       continue
 
+    moBotMember = guild.get_member(moBot)
+
     tz = clock.timeZone
     convertedTime = timezone("US/Central").localize(currentTime).astimezone(timezone(tz))
 
     try:
       channel = guild.get_channel(clock.channelID)
-      await channel.edit(name=re.sub(r"-(?=\d\d)", "UTC-", convertedTime.strftime(clock.timeFormat).replace("+", "UTC+")))
+      msg = channel.fetch_message(clock.msgID)
+
+      embed = msg.embeds[0]
+      embed.set_author(name=clock.timeZone)
+      embed.color = moBotMember.roles[-1].color
+      embed.description = re.sub(r"-(?=\d\d)", "UTC-", convertedTime.strftime(clock.timeFormat).replace("+", "UTC+"))
     except AttributeError: # when channel doesn't exist
       #await ClocksAndCountdowns.delete("clock", clock.channelID)
       #await client.get_user(int(mo)).send("GUILD ID: %s\nCHANNEL ID: %s" % (guild.id, clock.channelID))
