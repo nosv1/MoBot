@@ -259,10 +259,15 @@ async def main(client):
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
       if (second is 0): # check for every 60 seconds or incase we miss the 0 tick because of slowness
-        await updateDiscordTables() 
-
         # update clocks and countdowns
         '''
+        clocks = ClocksAndCountdowns.getClocks()
+        for clock in clocks:
+          try:
+            await ClocksAndCountdowns.updateClock(client, clock, currentUTC + timedelta(seconds=5))
+          except:
+            print('CAUGHT EXCEPTION')
+            print(traceback.format_exc())
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
         try:
@@ -273,7 +278,9 @@ async def main(client):
           pass
         '''
         
+        await updateMoBotStatus(client)
         await updateTimeZoneList(currentTime)
+        await updateDiscordTables()
       # end if second == 0
 
         '''
