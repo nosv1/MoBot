@@ -130,7 +130,7 @@ async def handleUserVehicleInput(message, client):
     embed.description += f"**Class:** {vehicle._Class}\n"
     embed.description += f"[__Overall (Lap Time)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=60309153&range=B{vehicle._overall_lap_time_row}) - "
     embed.description += f"[__Key Info__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=1689972026&range=B{vehicle._key_info_row}) - "
-    embed.description += f"[__Handling Data (Basic)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=110431106&range=B{vehicle._handling_data_basic_row})\n{space_char}\n"
+    embed.description += f"[__Handling Data (Basic)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=110431106&range=D{vehicle._handling_data_basic_row})\n{space_char}\n"
 
     v = ""
     v += f"**Drivetrain:** {vehicle._Drivetrain}\n"
@@ -142,7 +142,7 @@ async def handleUserVehicleInput(message, client):
     v = ""
     v += f"**Race Tier:** {vehicle._Race_Tier}\n"
     v += f"**Lap Time:** {vehicle._Lap_Time__m_ss_000_}\n"
-    v += f"**Top Speed:** {vehicle._Top_Speed__mph_}\n"
+    v += f"**Top Speed:** {vehicle._Top_Speed__mph_} mph\n"
     embed.add_field(name="**__Basic Performance__**", value=f"{v}{space_char}")
 
     v = ""
