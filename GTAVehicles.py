@@ -153,7 +153,12 @@ async def handleUserVehicleInput(message, client):
     embed.add_field(name="**__Features / AHF Issues__**", value=f"{v}{space_char}")
 
     embed.set_footer(text="All information is retrieved from Broughy's Spreadsheet, \"GTA V/Online Vehicle Info, Lap Times, and Top Speeds\". Information may not be absolutely accurate.")
-    await msg.edit(embed=embed)
+    try:
+      await msg.edit(embed=embed)
+    except discord.errors.HTTPException: # bad thumbnail
+      embed = embed.to_dict()
+      del embed["thumbnail"]
+      await msg.edit(embed=discord.Embed.from_dict(embed))
 
   else:
     embed.description = f"No vehicles with a name close to `{vehicle}` could be found."
