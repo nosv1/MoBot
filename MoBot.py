@@ -487,10 +487,6 @@ async def on_message(message):
       except AttributeError: # when messaage is a private message... idk 
         pass
 
-    # check for clock accuracy...
-    if (random.random() < .01):
-      await ClocksAndCountdowns.checkClockAccuracy(client)
-
   except:
     await RandomSupport.sendErrorToMo("MoBot", client, mo)
 # end on_message
