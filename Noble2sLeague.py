@@ -83,7 +83,7 @@ async def main(args, message, client):
       await submitResultConfirm(message, client)
     elif (args[1].lower() == "registerid" or args[1].lower() == "changeid"):
       await registerID(None, message, args)
-    elif (args[1].lower() == "nrt"):
+    elif (args[1].lower() == "prt"):
       await sendNRT(message, args)
     elif args[1].lower() == "dsn":
       import Imperial
@@ -198,7 +198,7 @@ async def mainReactionAdd(message, payload, client):
         elif (payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI):
           await resetScoreSubmission(message, member)
       
-      if ("Noble Rank Tracker" in embedAuthor):
+      if ("Templar Rank Tracker" in embedAuthor):
         if (payload.emoji.name == RandomSupport.FLOPPY_DISK_EMOJI):
           await saveNRT(message, member)
           try:
@@ -249,7 +249,7 @@ def startScoreSubmissionEmbed(message, user):
   embed = discord.Embed(color = moBotMember.roles[-1].color)
   embed.set_footer(text="| %s Reset Submission |" % RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
   embed.set_author(
-    name="Noble Leagues - Season 4\nScore Submission", 
+    name="Templar Leagues - Season 4\nScore Submission", 
     icon_url=message.guild.icon_url,
     url="https://google.com/userID=%s/state=getDivision/team1=-1/team2=-1/divSheetTitle=-1/scoreRange=-1" % user.id
   )
@@ -483,7 +483,7 @@ async def scoreSubmission(message, payload, client):
       RandomSupport.getValueFromField(embed, "Proof").split("\n")[0]
     )
     match_result_embed.set_author(
-      name="Noble Leagues - Season 4\nMatch Result",
+      name="Templar Leagues - Season 4\nMatch Result",
       icon_url=message.guild.icon_url
     )
 
@@ -563,7 +563,7 @@ async def addScoreSubmitReactions(msg, state):
 # end addScoreSubmitReactions
 
 
-### Noble Rank Tracker NRT ###
+### Templar Rank Tracker PRT ###
 
 async def sendNRT(message, args):
   await message.channel.trigger_typing()
@@ -577,21 +577,21 @@ async def sendNRT(message, args):
     trackerID = trackerURL.split("/")[-1]
     nrt = await getNRT(mmrs)
   except ValueError: # only one index for mmr array, too early in season
-    await message.channel.send("**Something went wrong... It's likely too early in the season to get an accurate MMR peak.**\n`@MoBot#0697 nrt steam/xbox/ps id`\n`@MoBot#0697 nrt xbox Mo v0`")
+    await message.channel.send("**Something went wrong... It's likely too early in the season to get an accurate MMR peak.**\n`@MoBot#0697 prt steam/xbox/ps id`\n`@MoBot#0697 prt xbox Mo v0`")
     return
   except: # any errors should mean the id doesn't exist
-    await message.channel.send("**Something went wrong... Is the ID correct?**\n`@MoBot#0697 nrt steam/xbox/ps id`\n`@MoBot#0697 nrt xbox Mo v0`")
+    await message.channel.send("**Something went wrong... Is the ID correct?**\n`@MoBot#0697 prt steam/xbox/ps id`\n`@MoBot#0697 prt xbox Mo v0`")
     return
 
   if (nrt is None):
-    await message.channel.send("**Not enough MMRs to calculate NRT.**\n<%s>" % trackerURL)
+    await message.channel.send("**Not enough MMRs to calculate PRT.**\n<%s>" % trackerURL)
     return
 
   moBotMember = message.guild.get_member(moBot)
   embed = discord.Embed(color=moBotMember.roles[-1].color)
   embed.set_author(
-    name="Noble Rank Tracker", 
-    url="https://google.com/ogMessageID=%s/memberID=%s/playerID=%s/platform=%s/trackerID=%s/nrt=%s/" % (
+    name="Templar Rank Tracker", 
+    url="https://google.com/ogMessageID=%s/memberID=%s/playerID=%s/platform=%s/trackerID=%s/prt=%s/" % (
       message.id,
       message.author.id, 
       playerID.replace(" ", "%20"),
@@ -608,10 +608,10 @@ async def sendNRT(message, args):
   description += "Season %s 3s: `%s`\n" % (nrt.last3.season, nrt.last3.mmr)
   description += "Season %s 2s (Peak): `%s`\n" % (nrt.peak2.season, nrt.peak2.mmr)
   description += "Season %s 3s (Peak): `%s`\n\n" % (nrt.peak3.season, nrt.peak3.mmr)
-  description += "**NRT: `%s`**\n" % (nrt.nrt if nrt.nrt >= 0 else "Invalid")
+  description += "**PRT: `%s`**\n" % (nrt.nrt if nrt.nrt >= 0 else "Invalid")
   description += "[__Tracker__](%s)" % trackerURL
   embed.description = description
-  embed.set_footer(text="| %s - Save NRT (ONLY IF THIS IS YOU) | " % RandomSupport.FLOPPY_DISK_EMOJI)
+  embed.set_footer(text="| %s - Save PRT (ONLY IF THIS IS YOU) | " % RandomSupport.FLOPPY_DISK_EMOJI)
 
   msg = await message.channel.send(embed=embed)
   await msg.add_reaction(RandomSupport.FLOPPY_DISK_EMOJI)
@@ -641,7 +641,7 @@ async def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   seasons = list(mmrs.keys())
 
   '''
-  nrt = 
+  prt = 
   50% of peak 2s MMR current season OR 2s final MMR last season.
   25% of peak 3s MMR current season OR 3s final MMR last season.
   25% of highest final MMR from last season in 2s OR 3s
@@ -680,7 +680,7 @@ async def getNRT(mmrs): # mmrs are got from rlranks.getMMRs(platform, id)
   mmrs = [nrt.peak2.mmr, nrt.peak3.mmr, nrt.last2.mmr, nrt.last3.mmr]
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues | League Play Sheet"])
-  nrt_sheet = workbook.worksheet("NRT")
+  nrt_sheet = [sheet for sheet in workbook.worksheets() if sheet.id == 124457210][0]
   calc_range = nrt_sheet.range("B10:C12")
   calc_range[0].value = mmrs[0]
   calc_range[1].value = mmrs[1]
@@ -701,14 +701,14 @@ async def saveNRT(message, member):
 
   memberID = RandomSupport.getDetailFromURL(authorURL, "memberID")
   playerID = RandomSupport.getDetailFromURL(authorURL, "playerID").replace("%20", " ")
-  nrt = RandomSupport.getDetailFromURL(authorURL, "nrt")
+  nrt = RandomSupport.getDetailFromURL(authorURL, "prt")
   platform = RandomSupport.getDetailFromURL(authorURL, "platform").lower()
   trackerID = RandomSupport.getDetailFromURL(authorURL, "trackerID")
   trackerURL = "https://rocketleague.tracker.network/profile/%s/%s" % (platform, trackerID)
 
   isMember = str(member.id) != memberID
   if (isMember):
-    await message.channel.send("**Cannot Save NRT**\n%s, you did not request this NRT, so you cannot save it." % (member.mention), delete_after=10)
+    await message.channel.send("**Cannot Save PRT**\n%s, you did not request this PRT, so you cannot save it." % (member.mention), delete_after=10)
 
   else:
     workbook = await openSpreadsheet(ssIDs["Noble Leagues MoBot"])
@@ -716,7 +716,7 @@ async def saveNRT(message, member):
     r = registeredIDsSheet.range("A2:F" + str(registeredIDsSheet.row_count))
 
     isRegistered = False
-    for i in range(0, len(r), 6): # reg id, dis id, player id, platform, tracker url, nrt
+    for i in range(0, len(r), 6): # reg id, dis id, player id, platform, tracker url, prt
       isRegistered = r[i+1].value == memberID
 
       if (isRegistered): 
@@ -728,7 +728,7 @@ async def saveNRT(message, member):
           r[i+4].value = trackerURL
           r[i+5].value = nrt
           registeredIDsSheet.update_cells(r, value_input_option="USER_ENTERED")
-          messages = [message, await message.channel.send("**NRT Saved**")]
+          messages = [message, await message.channel.send("**PRT Saved**")]
           try:
             messages.append(
             await message.channel.fetch_message(RandomSupport.getDetailFromURL(authorURL, "ogMessageID")))
@@ -742,14 +742,14 @@ async def saveNRT(message, member):
             except: # incase forbidden or something
               pass
 
-          await message.guild.get_channel(REGISTER_LOG_CHNL).send("%s has saved their NRT with:\nID: `%s`\nPlatform: `%s`\nNRT: `%s`" % (member.mention, playerID, platform, nrt))
+          await message.guild.get_channel(REGISTER_LOG_CHNL).send("%s has saved their PRT with:\nID: `%s`\nPlatform: `%s`\PRT: `%s`" % (member.mention, playerID, platform, nrt))
 
         else:
-          await message.channel.send("**Cannot Save NRT**\n%s, there is another player saved under your Discord ID.\nID: `%s`\nPlatform: `%s`\nTracker: <%s>" % (member.mention, r[i+3].value, r[i+2].value, trackerURL), delete_after=10)
+          await message.channel.send("**Cannot Save PRT**\n%s, there is another player saved under your Discord ID.\nID: `%s`\nPlatform: `%s`\nTracker: <%s>" % (member.mention, r[i+3].value, r[i+2].value, trackerURL), delete_after=10)
         break
 
     if (not isRegistered):
-      await message.channel.send("**Cannot Save NRT**\n%s, you have not registered your ID.\n`@MoBot#0697 registerID input_name`\n`@MoBot#0697 registerID Mo v0`" % member.mention, delete_after=10)
+      await message.channel.send("**Cannot Save PRT**\n%s, you have not registered your ID.\n`@MoBot#0697 registerID input_name`\n`@MoBot#0697 registerID Mo v0`" % member.mention, delete_after=10)
 # end saveNRT
 
 
@@ -852,7 +852,7 @@ async def setnick(message):
   await message.channel.trigger_typing()
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   players = referencesSheet.range("G2:I" + str(referencesSheet.row_count))
   prefixes = referencesSheet.range("E2:E" + str(referencesSheet.row_count))
@@ -918,7 +918,7 @@ async def updateDailyGrowth(message):
 
 async def updatePlayerIDs():
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   playerIds = referencesSheet.range("C2:C" + str(referencesSheet.row_count))
 
@@ -1054,7 +1054,7 @@ async def tCaptain(message, tCommandLog):
   moBotMessages = [message]
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   captains = referencesSheet.range("G2:G" + str(referencesSheet.row_count))
   players = referencesSheet.range("H2:I" + str(referencesSheet.row_count))
@@ -1098,7 +1098,7 @@ async def tRemove(message, tCommandLog):
   moBotMessages = [message]
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   captains = referencesSheet.range("G2:G" + str(referencesSheet.row_count))
   teams = referencesSheet.range("F2:F" + str(referencesSheet.row_count))
@@ -1158,7 +1158,7 @@ async def tLeave(message, tCommandLog):
   moBotMessages = [message]
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   players = referencesSheet.range("G2:I" + str(referencesSheet.row_count))
   teams = referencesSheet.range("F2:F" + str(referencesSheet.row_count))
@@ -1216,7 +1216,7 @@ async def tTeams(message, payload):
   moBotMessages = [message]
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
   
   prefixes = referencesSheet.range("E2:E" + str(referencesSheet.row_count))
   teams = referencesSheet.range("F2:F" + str(referencesSheet.row_count))
@@ -1244,7 +1244,7 @@ async def tTeam(message):
   searchFor = message.content.split("team ")[1].strip()
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
   teams = referencesSheet.range("F2:F" + str(referencesSheet.row_count))
   prefixes = referencesSheet.range("E2:E" + str(referencesSheet.row_count))
 
@@ -1278,7 +1278,7 @@ async def tAdd(message, tCommandLog):
   moBotMessages = [message]
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   captains = referencesSheet.range("G2:G" + str(referencesSheet.row_count))
   players = referencesSheet.range("G2:I" + str(referencesSheet.row_count))
@@ -1351,7 +1351,7 @@ async def tPrefixStyle(message, tCommandLog):
   moBotMessages = [message]
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   prefixStyle = message.content.split("prefixstyle")[1].strip()
 
@@ -1377,7 +1377,7 @@ async def tPrefixStyle(message, tCommandLog):
         await tCommandLog.send("<@" + str(user.id) + "> has updated his/her prefix style to " + prefixStyles[prefixStyle])
         moBotMessages.append(await message.channel.send("```Prefix style updated.```"))
       except KeyError:
-        moBotMessages.append(await message.channel.send("```Prefix style does not exist.\n!t prefixstyle 1 for NG | Noble Gaming\n!t prefixstyle 2 for [NG] Noble Gaming```"))
+        moBotMessages.append(await message.channel.send("```Prefix style does not exist.\n!t prefixstyle 1 for TG | Templar Gaming\n!t prefixstyle 2 for [NG] Templar Gaming```"))
         badStyle = True
       break
 
@@ -1412,7 +1412,7 @@ async def tActive(message, tCommandLog):
   teamName = message.content.split("active ")[1].strip()
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   prefixes = referencesSheet.range("E2:E" + str(referencesSheet.row_count))
   teams = referencesSheet.range("F2:F" + str(referencesSheet.row_count))
@@ -1501,7 +1501,7 @@ async def tEdit(message, tCommandLog):
   moBotMessages = [message]
 
   workbook = await openSpreadsheet(ssIDs["Noble Leagues Qualifiers"])
-  referencesSheet = workbook.worksheet("Noble Teams")
+  referencesSheet = [sheet for sheet in workbook.worksheets() if sheet.id == 112718765][0] # "Templar Teams"
 
   teamName = ""
   for part in message.content.split("edit ")[1].strip().split(" "):
@@ -2160,7 +2160,7 @@ async def getNobleScore(message, NOBLE_STANDINGS_MSG, workbook):
   table2 += horizontalBoarder
 
   msg1 = await message.channel.fetch_message(565576409414631426)
-  await msg1.edit(content="```Noble Standings:" + tableHeader + table1 + "```")
+  await msg1.edit(content="```Templar Standings:" + tableHeader + table1 + "```")
   await message.edit(content="```\n" + table2 + "```")
 
   moBotMessages.append(await message.channel.send("```Table Updated```"))
