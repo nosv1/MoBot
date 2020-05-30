@@ -563,7 +563,7 @@ async def addScoreSubmitReactions(msg, state):
 # end addScoreSubmitReactions
 
 
-### Templar Rank Tracker PRT ###
+### Paladin Rank Tracker PRT ###
 
 async def sendNRT(message, args):
   await message.channel.trigger_typing()
@@ -590,7 +590,7 @@ async def sendNRT(message, args):
   moBotMember = message.guild.get_member(moBot)
   embed = discord.Embed(color=moBotMember.roles[-1].color)
   embed.set_author(
-    name="Templar Rank Tracker", 
+    name="Paladin Rank Tracker", 
     url="https://google.com/ogMessageID=%s/memberID=%s/playerID=%s/platform=%s/trackerID=%s/prt=%s/" % (
       message.id,
       message.author.id, 
