@@ -693,14 +693,11 @@ async def updateTimeZoneList(currentTime):
     client.get_channel(381814096644800514), # ducati doctor
     client.get_channel(716793680458940506) # xtheonlygx
   ]
-  if (None in timeZonesChannels):
-    return
   timeZonesListMessages = [
     await timeZonesChannels[0].fetch_message(607323599925149706),
     await timeZonesChannels[1].fetch_message(696459610663682088),
-    await timeZonesChannels[1].fetch_message(716793817545834509),
+    await timeZonesChannels[2].fetch_message(716793817545834509),
   ]
-
 
   timeZones = MoBotTimeZones.timeZones
 
@@ -722,8 +719,8 @@ async def updateTimeZoneList(currentTime):
     name = "__" + tz + "__" if (tz == "UTC") else tz
     embed.add_field(name=name, value=spaceChar + value, inline=False)
   
-  await timeZonesListMessages[0].edit(embed=embed)
-  await timeZonesListMessages[1].edit(embed=embed)
+  for msg in timeZonesListMessages:
+    await msg.edit(embed=embed)
 # end updateTimeZoneList
 
 async def convertTime(currentTime, tz, toFrom):
