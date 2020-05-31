@@ -258,6 +258,7 @@ async def main(client):
 
       if (second is 0): # check for every 60 seconds or incase we miss the 0 tick because of slowness
         # update clocks and countdowns
+        '''
         clocks = ClocksAndCountdowns.getClocks()
         for clock in clocks:
           try:
@@ -265,7 +266,6 @@ async def main(client):
           except:
             print('CAUGHT EXCEPTION')
             print(traceback.format_exc())
-        '''
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
         try:
