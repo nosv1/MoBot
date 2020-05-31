@@ -279,7 +279,6 @@ async def main(client):
         await on_guild_channel_update(None, None)
         await updateMoBotStatus(client)
         await updateTimeZoneList(currentTime)
-        await updateDiscordTables()
       # end if second == 0
 
         '''
