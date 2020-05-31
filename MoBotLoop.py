@@ -258,6 +258,7 @@ async def main(client):
 
       if (second is 0): # check for every 60 seconds or incase we miss the 0 tick because of slowness
         # update clocks and countdowns
+        
         '''
         clocks = ClocksAndCountdowns.getClocks()
         for clock in clocks:
@@ -271,12 +272,12 @@ async def main(client):
         try:
           await updateGuildClocks(client, currentTime, clocks)
           await updateGuildCountdowns(client, currentTime, countdowns)
-          await updateMoBotStatus(client)
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
         '''
         
         await on_guild_channel_update(None, None)
+        await updateMoBotStatus(client)
         await updateTimeZoneList(currentTime)
         await updateDiscordTables()
       # end if second == 0
