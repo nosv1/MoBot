@@ -259,7 +259,6 @@ async def main(client):
       if (second is 0): # check for every 60 seconds or incase we miss the 0 tick because of slowness
         # update clocks and countdowns
         
-        '''
         clocks = ClocksAndCountdowns.getClocks()
         for clock in clocks:
           try:
@@ -267,6 +266,7 @@ async def main(client):
           except:
             print('CAUGHT EXCEPTION')
             print(traceback.format_exc())
+        '''
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
         try:
@@ -691,13 +691,15 @@ async def updateGuildCountdowns(client, currentTime, countdowns):
 async def updateTimeZoneList(currentTime):
   timeZonesChannels = [
     client.get_channel(607323514042712074), # support server
-    client.get_channel(381814096644800514) # ducati doctor
+    client.get_channel(381814096644800514), # ducati doctor
+    client.get_channel(716793680458940506) # xtheonlygx
   ]
   if (None in timeZonesChannels):
     return
   timeZonesListMessages = [
     await timeZonesChannels[0].fetch_message(607323599925149706),
-    await timeZonesChannels[1].fetch_message(696459610663682088)
+    await timeZonesChannels[1].fetch_message(696459610663682088),
+    await timeZonesChannels[1].fetch_message(716793817545834509),
   ]
 
 
