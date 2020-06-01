@@ -214,7 +214,7 @@ async def on_message(message):
           await ticketManager.main(args, message, client)
         elif ("schedule message" in mc):
             await MessageScheduler.main(args, message, client)
-        elif (args[1] in ["countdown", "clock"] and authorPerms.manageChannels):
+        elif (args[1] in ["countdown", "clock"] and authorPerms.manageMessages):
           await ClocksAndCountdowns.main(args, message, client)
         elif ("scrims" in args[1]):
           await RLScrims.main(args, message, client)
@@ -587,7 +587,7 @@ async def on_raw_reaction_add(payload):
 
         elif ("Countdown Editor" in embedAuthor):
           await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
-        elif ("Clock Editor" in embedAuthor):
+        elif ("MoBot Clock Editor" in embedAuthor):
           await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "clock")
 
         elif ("MoBot Custom Commands" in embedAuthor):

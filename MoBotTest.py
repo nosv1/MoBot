@@ -147,7 +147,7 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await GTAVehicles.handleUserVehicleInput(message, client)
+        await ClocksAndCountdowns.createClock(message)
         await message.channel.send("done", delete_after=3)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
@@ -414,7 +414,7 @@ async def on_raw_reaction_add(payload):
         await GTAWeather.handleFutureCast(message, member)
       if ("MoBot Commands" in embedAuthor):
         await Help.mainReactionAdd(message, payload, client)
-      if ("Clock Editor" in embedAuthor):
+      if ("MoBot Clock Editor" in embedAuthor):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "clock")
       if ("Countdown Editor" in embedAuthor):
         await ClocksAndCountdowns.mainReactionAdd(message, payload, client, "countdown")
