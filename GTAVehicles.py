@@ -65,14 +65,15 @@ async def handleUserVehicleInput(message, client):
   embed = RandomSupport.updateDetailInURL(embed, "vehicle", vehicle)
   msg = await message.channel.send(embed=embed)
 
-  workbook = openSpreadsheet()
-  sheets = workbook.worksheets()
-  key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
-  handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
-  overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
-
   vehicles = []
   try: # search for possible vehicles
+
+    workbook = openSpreadsheet()
+    sheets = workbook.worksheets()
+    key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
+    handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
+    overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
+
     poss_vehicles = searchVehicle(key_vehicle_info_sheet, vehicle)
     if poss_vehicles:
       vehicles = getVehicleInfo(
