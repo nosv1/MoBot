@@ -1200,6 +1200,8 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
   r = sheet.range(4, first_col, 31, last_col) # pos, div, driver, reserve, pts
   start_order = RandomSupport.arrayFromRange(r)
 
+  reserves = getReserves() # using to see if driver needs reserve but does not have one
+
   description = ""
   for row in start_order:
     pos = row[0].value
@@ -1217,6 +1219,8 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
     try:
       driver = getMember(gamertag, members)
 
+      needs_reserve = driver.id in [r.member_id for r in reserves if r.need_avail == 1]
+
       if div_role.name not in [r.name for r in driver.roles]:
         for role in driver.roles:
           if "Division" in role.name and "Reserve" not in role.name:
@@ -1230,15 +1234,18 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
       await message.channel.send(f"<@{mo}>, {gamertag} wasn't found.")
       return
 
-    if res_gamertag == "":
+    if res_gamertag == "" and not needs_reserve:
       description += f" **{driver.display_name}** ({pts} - D{div})"
     else:
-      try:
-        reserve = getMember(res_gamertag, members)
-      except: # doesn't match
-        await message.channel.send(f"<@{mo}>, {res_gamertag} wasn't found.")
-        return
-      description += f" **~~{driver.display_name}~~** ({pts} - D{div})\n{space_char * 4}**{reserve.display_name}**"
+      reserve = None
+      if needs_reserve and res_gamertag:
+        try:
+          reserve = getMember(res_gamertag, members)
+        except: # doesn't match
+          await message.channel.send(f"<@{mo}>, {res_gamertag} wasn't found.")
+          return
+
+      description += f" **~~{driver.display_name}~~** ({pts} - D{div})\n{space_char * 4}**{reserve.display_name if reserve else 'Needs Reserve'}**"
   
   embed.description = description
 
