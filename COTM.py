@@ -1245,7 +1245,7 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
           await message.channel.send(f"<@{mo}>, {res_gamertag} wasn't found.")
           return
 
-      description += f" **~~{driver.display_name}~~** ({pts} - D{div})\n{space_char * 4}**{reserve.display_name if reserve else 'Needs Reserve'}**"
+      description += f" ~~{driver.display_name}~~ ({pts} - D{div})\n{space_char * 4}**{reserve.display_name if reserve else 'Needs Reserve'}**"
   
   embed.description = description
 
