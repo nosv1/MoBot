@@ -183,12 +183,13 @@ async def newGame(message, client):
 
 
         if message.channel.name == "hangman":
-          leader = leaderboard[0]
-          try:
-            leader_name = message.guild.get_member(int(leader.user_id))
-          except:
-            leader_name = "unkown..."
-          await message.channel.edit(topic=f"Leader: {leader_name}\nWin %: {leader.percent_correct}%\nGames Played: {leader.games_played}")
+          if leaderboard:
+            leader = leaderboard[0]
+            try:
+              leader_name = message.guild.get_member(int(leader.user_id))
+            except:
+              leader_name = "unkown..."
+            await message.channel.edit(topic=f"Leader: {leader_name}\nWin %: {leader.percent_correct}%\nGames Played: {leader.games_played}")
 
     embed = discord.Embed.from_dict(embed)
     try:
