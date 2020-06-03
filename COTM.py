@@ -632,7 +632,7 @@ async def submitVotes(message, member):
     workbook = openSpreadsheet()
     sheets = workbook.worksheets()
     sheet = [sheet for sheet in sheets if sheet.id == 242811195][0] # Voting Sheet
-    r = sheet.range(f"C8:G{sheet.row_count}")
+    r = sheet.range(f"C9:G{sheet.row_count}")
     user_found = findDriver(r, member.display_name)
 
     if user_found != -1:
@@ -1317,6 +1317,160 @@ async def updateStreamsEmbed(guild):
 # end updateStreamsEmbed
 
 
+''' HISTORY / STATS '''
+'''
+def getDriverHistory(workbook):
+  class Driver:
+    def __init__(self, driverID, totalPoints, divisions, startPositions, finishPositions, points):
+      self.driverID = int(driverID)
+      self.totalPoints = totalPoints
+      self.divisions = divisions
+      self.startPositions = startPositions
+      self.finishPositions = finishPositions
+      self.points = points # per race
+  # end Driver
+
+  driverHistorySheet = workbook.worksheet("Driver History")
+  driverHistoryRange = driverHistorySheet.range("B3:CH%s"  % (driverHistorySheet.row_count))
+  driverHistoryRangeCols = 85
+  driversRange, driversSheet = getDriversRange(workbook)
+  currentWeek = int(driverHistorySheet.range("B1:B1")[0].value)
+
+  drivers = []
+
+  for i in range(driverHistoryRangeCols, len(driverHistoryRange), driverHistoryRangeCols):
+    if (driverHistoryRange[i].value == ""):
+      break
+
+    driverID = None
+    totalPoints = 0
+    divisions = []
+    startPositions = []
+    finishPositions = []
+    points = []
+    for j in range(driverHistoryRangeCols):
+      
+      if (driverHistoryRange[j].value == "Driver"):
+        driverName = driverHistoryRange[i+j].value
+        driverID = driversRange[findDriver(driversRange, driverName)-1].value
+
+      elif (driverHistoryRange[j].value == "Div"):
+        div = driverHistoryRange[i+j].value
+        if (div != "OUT"):
+          div = div.split("D")[-1]
+        else:
+          break
+        try:
+          divisions.append(int(div))
+        except ValueError:
+          divisions.append(0)
+          startPositions.append(0)
+          finishPositions.append(0)
+          points.append(0)
+      try:
+        if (divisions[-1] == 0):
+          continue
+      except IndexError: # still looping to get to the first week
+        continue
+
+      if (driverHistoryRange[j].value == "Total Points"):
+        totalPoints = int(driverHistoryRange[i+j].value.split(".")[0])
+      if (driverHistoryRange[j].value == "Start"):
+        startPositions.append(int(driverHistoryRange[i+j].value))
+      elif (driverHistoryRange[j].value == "Finish"):
+        finishPositions.append(int(driverHistoryRange[i+j].value))
+      elif (driverHistoryRange[j].value == "Points"):
+        points.append(int(driverHistoryRange[i+j].value))
+
+      if (len(points) + 1 == currentWeek):
+        break
+    
+    if (len(divisions) != 0):
+      drivers.append(Driver(driverID, totalPoints, divisions[1:], startPositions, finishPositions, points))
+
+  return drivers
+# end getDriverHistory
+
+async def createDriverHistoryChart(driver, driverMember, filePath):
+  
+  def autoLabel(values):
+    if (type(values[0]) != mpl.lines.Line2D):
+      for i in range(len(values)):
+        value = values[i]
+        height = value.get_height()
+        ax.text(value.get_x() + value.get_width()/2., 1.05*height, '%d' % int(height), weight="bold", ha="center", va="bottom")
+    else:
+      line = values[0]
+      x = line._x
+      y = line._y
+      for i in range(len(x)):
+        height = y[i]
+        ax.text(i+.05, 1.05*height, "%d" % int(height), weight="bold", ha="center", va="bottom")
+    # end autoLabel
+
+  ndx = np.arange(len(driver.divisions))
+
+  textColor = "#839496"
+  facecolor = "#33363B"
+  gridColor = "#363942"
+  mpl.rcParams["text.color"] = textColor
+  mpl.rcParams["axes.labelcolor"] = textColor
+  mpl.rcParams["xtick.color"] = textColor
+  mpl.rcParams["ytick.color"] = textColor
+  mpl.rcParams["legend.facecolor"] = facecolor
+  mpl.rcParams["grid.color"] = textColor
+  mpl.rcParams["grid.alpha"] = .2
+  fig, ax = plt.subplots(facecolor=facecolor)
+  ax.grid()
+
+  ax.set_title(driverMember.display_name + "\n")
+  ax.set_xlabel("Round")
+  ax.set_xticks(ndx)
+  ax.set_xticklabels(range(1, len(ndx) + 1))
+
+  barWidth = .2
+  startPosBars = ax.bar(ndx - barWidth/2, driver.startPositions, barWidth)
+  finishPosBars = ax.bar(ndx + barWidth/2, driver.finishPositions, barWidth)
+
+  divisionPoints = ax.plot(driver.divisions)
+  pointsPoints = ax.plot(driver.points)
+
+  ax.legend(("Division", "Points", "Start Position", "Finish Position"))
+  autoLabel(startPosBars)
+  autoLabel(finishPosBars)
+  autoLabel(divisionPoints)
+  autoLabel(pointsPoints)
+
+  plt.savefig(filePath, facecolor=fig.get_facecolor(), transparent=True)
+  plt.close()
+# end createDriverHistoryChart
+
+async def sendDriverHistory(message):
+  driverHistory = getDriverHistory(workbook)
+
+  for driver in driverHistory:
+    if (message.channel.id != driverHistoryChannel.id):
+      if (driver.driverID != driverID):
+        continue
+    if (len(driver.divisions) == 0):
+      continue
+    driverMember = guild.get_member(driver.driverID)
+    if (driverMember == None):
+      continue
+
+    filePath = "%s_Driver_History.png" % (driverMember.display_name)
+    await createDriverHistoryChart(driver, driverMember, filePath)
+
+    driverHistoryGraph = open(filePath, "rb")
+    #plt.show()
+
+    await message.channel.send(file=discord.File(driverHistoryGraph))
+    driverHistoryGraph.close()
+    os.remove(filePath)
+# end updateDriverHistory
+'''
+
+
 
 ''' SUPPORT '''
 def getMember(gamertag, members):
@@ -1888,92 +2042,6 @@ async def updateStandings(guild, workbook):
     for embed in standingsEmbeds:
       await standingsChannel.send(embed=discord.Embed.from_dict(embed))
 # end updateStandings
-
-async def createDriverHistoryChart(driver, driverMember, filePath):
-  
-  def autoLabel(values):
-    if (type(values[0]) != mpl.lines.Line2D):
-      for i in range(len(values)):
-        value = values[i]
-        height = value.get_height()
-        ax.text(value.get_x() + value.get_width()/2., 1.05*height, '%d' % int(height), weight="bold", ha="center", va="bottom")
-    else:
-      line = values[0]
-      x = line._x
-      y = line._y
-      for i in range(len(x)):
-        height = y[i]
-        ax.text(i+.05, 1.05*height, "%d" % int(height), weight="bold", ha="center", va="bottom")
-    # end autoLabel
-
-  ndx = np.arange(len(driver.divisions))
-
-  textColor = "#839496"
-  facecolor = "#33363B"
-  gridColor = "#363942"
-  mpl.rcParams["text.color"] = textColor
-  mpl.rcParams["axes.labelcolor"] = textColor
-  mpl.rcParams["xtick.color"] = textColor
-  mpl.rcParams["ytick.color"] = textColor
-  mpl.rcParams["legend.facecolor"] = facecolor
-  mpl.rcParams["grid.color"] = textColor
-  mpl.rcParams["grid.alpha"] = .2
-  fig, ax = plt.subplots(facecolor=facecolor)
-  ax.grid()
-
-  ax.set_title(driverMember.display_name + "\n")
-  ax.set_xlabel("Round")
-  ax.set_xticks(ndx)
-  ax.set_xticklabels(range(1, len(ndx) + 1))
-
-  barWidth = .2
-  startPosBars = ax.bar(ndx - barWidth/2, driver.startPositions, barWidth)
-  finishPosBars = ax.bar(ndx + barWidth/2, driver.finishPositions, barWidth)
-
-  divisionPoints = ax.plot(driver.divisions)
-  pointsPoints = ax.plot(driver.points)
-
-  ax.legend(("Division", "Points", "Start Position", "Finish Position"))
-  autoLabel(startPosBars)
-  autoLabel(finishPosBars)
-  autoLabel(divisionPoints)
-  autoLabel(pointsPoints)
-
-  plt.savefig(filePath, facecolor=fig.get_facecolor(), transparent=True)
-  plt.close()
-# end createDriverHistoryChart
-
-async def updateDriverHistory(message, driverID, workbook):
-  guild = message.guild
-  driverHistoryChannel = guild.get_channel(DRIVER_HISTORY)
-  if (message.channel.id == driverHistoryChannel.id):
-    await driverHistoryChannel.purge()
-
-  driverHistory = getDriverHistory(workbook)
-  driverHistory = sorted(driverHistory, key=lambda driver: driver.totalPoints)
-
-  for driver in driverHistory:
-    if (message.channel.id != driverHistoryChannel.id):
-      if (driver.driverID != driverID):
-        continue
-    if (len(driver.divisions) == 0):
-      continue
-    driverMember = guild.get_member(driver.driverID)
-    if (driverMember == None):
-      continue
-
-    filePath = "%s_Driver_History.png" % (driverMember.display_name)
-    await createDriverHistoryChart(driver, driverMember, filePath)
-
-    driverHistoryGraph = open(filePath, "rb")
-    #plt.show()
-    if (message.channel.id != driverHistoryChannel.id):
-      await message.channel.send(file=discord.File(driverHistoryGraph))
-    else:
-      await driverHistoryChannel.send(file=discord.File(driverHistoryGraph))
-    driverHistoryGraph.close()
-    os.remove(filePath)
-# end updateDriverHistory
 
 def getStandings(workbook):
   class Driver:
