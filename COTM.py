@@ -1181,6 +1181,9 @@ async def handleReserveReaction(message, payload, member):
   updateReservesSpreadsheet(message.guild, after_reserve_combos)
   await updateReserveRoles(message.guild, before_reserve_combos, after_reserve_combos)
   await updateReserveEmbed(message, after_reserves, after_reserve_combos)
+
+  if t_need > -1:
+    await updateStartOrderEmbed(message.guild, member_divs[-1])
 # end handleReserveReaction
 
 
