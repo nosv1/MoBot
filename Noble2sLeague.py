@@ -198,7 +198,7 @@ async def mainReactionAdd(message, payload, client):
         elif (payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI):
           await resetScoreSubmission(message, member)
       
-      if ("Templar Rank Tracker" in embedAuthor):
+      if ("Palidin Rank Tracker" in embedAuthor):
         if (payload.emoji.name == RandomSupport.FLOPPY_DISK_EMOJI):
           await saveNRT(message, member)
           try:
