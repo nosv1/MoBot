@@ -742,7 +742,7 @@ async def saveNRT(message, member):
             except: # incase forbidden or something
               pass
 
-          await message.guild.get_channel(REGISTER_LOG_CHNL).send("%s has saved their PRT with:\nID: `%s`\nPlatform: `%s`\PRT: `%s`" % (member.mention, playerID, platform, nrt))
+          await message.guild.get_channel(REGISTER_LOG_CHNL).send("%s has saved their PRT with:\nID: `%s`\nPlatform: `%s`\nPRT: `%s`" % (member.mention, playerID, platform, nrt))
 
         else:
           await message.channel.send("**Cannot Save PRT**\n%s, there is another player saved under your Discord ID.\nID: `%s`\nPlatform: `%s`\nTracker: <%s>" % (member.mention, r[i+3].value, r[i+2].value, trackerURL), delete_after=10)
