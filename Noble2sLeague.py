@@ -74,7 +74,7 @@ async def main(args, message, client):
   if (message.channel.id in rlrankChannels and message.author.id == 424398041043435520): # if in #mmr-post and rl rank tracker
     await getMMR(message, None, tCommandLog)
 
-  if (str(moBot) in args[0]):
+  if (str(moBot) in args[0]): # change to !tl 
     if (args[1] == "info"):
       await getTeamInfo(message, args)
     elif (args[1] == "enc") :
