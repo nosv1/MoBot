@@ -104,7 +104,10 @@ async def sendScheduledMessages(client):
     if (msg[-2] <= n):
 
       destChannel = guild.get_channel(int(msg[3]))
-      await destChannel.trigger_typing()
+      try:
+        await destChannel.trigger_typing()
+      except: # None Channel
+        continue
           
       msgLocation = None
       message = None
