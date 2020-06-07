@@ -107,6 +107,7 @@ async def sendScheduledMessages(client):
       try:
         await destChannel.trigger_typing()
       except: # None Channel
+        print(destChannel.id)
         continue
           
       msgLocation = None
