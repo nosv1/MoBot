@@ -434,7 +434,7 @@ async def on_message(message):
 
         ## MoBot promo commands
         elif (args[1].lower() == "donate"):
-          await message.channel.send("I wouldn't mind a dollar...✌😎✌\n||<https://venmo.com/MoBot_>  ||\n||<https://paypal.me/MoShots>||\n\nFor just $2/month, or $15/year, you can ask for any custom commands you may want/need.")
+          await message.channel.send("__If you pay, it becomes ***real***...__\n<https://venmo.com/MoBot_> - <https://paypal.me/MoShots>")
         elif (args[1].lower() == "server"):
           await message.channel.send("Join my server... It's where you can see features that are in development and such, if you're into that... https://discord.gg/mqxMeTj")
 
