@@ -160,7 +160,7 @@ async def newGame(message, client):
             elif "2" == end:
               server_position += "nd"
             elif "3" == end:
-              server_position += "th"
+              server_position += "rd"
 
         v = ""
         v += "**Stat Line**\n"
