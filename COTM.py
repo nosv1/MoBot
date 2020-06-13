@@ -1297,7 +1297,10 @@ async def updateStreamsEmbed(guild):
         divs_values[i] += f"{getEmoji(stream_link)} [__{member.display_name}__]({stream_link})\n"
 
     if twitch_profiles:
-      divs_values[i] += f"https://multistre.am/{'/'.join(twitch_profiles)}\n"
+      multi_stream = f"https://multistre.am/{'/'.join(twitch_profiles)}\n"
+
+      if len(divs_values[i]) + len(multi_stream) < 1024:
+        divs_values[i] += multi_stream
 
     if i != num_divs -1:
       divs_values[i] += space_char
