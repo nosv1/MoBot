@@ -1801,7 +1801,7 @@ async def tournamentCheckin(message):
     numPlayers = gameType[1]
     gameType = gameType[0]
   except IndexError: # no game type
-    await message.channel.send(f"**Canceling Checkin**\nGame type is not set for the current week.")
+    await message.channel.send(f"**Cancelling Checkin**\nGame type is not set for the current week.")
     return
 
   for sheet in workbook.worksheets():
@@ -1841,17 +1841,17 @@ async def tournamentSignup(message):
     numPlayers = gameType[1]
     gameType = gameType[0]
   except IndexError: # no game type
-    await message.channel.send(f"**Canceling Signup**\nGame type is not set for the current week.")
+    await message.channel.send(f"**Cancelling Signup**\nGame type is not set for the current week.")
     return
 
   for userID in userIDs:
     member = message.guild.get_member(userID)
     if not checkIfRegistered(member, registeredIDsRange):
-      await message.channel.send(f"**Canceling Signup**\n{message.author.mention}, {member.mention} is not a registered member. Use the command `@MoBot#0697 registerID username` to register.")
+      await message.channel.send(f"**Cancelling Signup**\n{message.author.mention}, {member.mention} is not a registered member. Use the command `@MoBot#0697 registerID username` to register.")
       return
 
   if len(userIDs) != numPlayers:
-    await message.channel.send("**Canceling Singup**\n%s, This week's tournament is a `%s` tournament. Exaclty `%s` player%s %s needed when signing up.\n`!minor/major %s`" % (
+    await message.channel.send("**Cancelling Signup**\n%s, This week's tournament is a `%s` tournament. Exactly `%s` player%s %s needed when signing up.\n`!minor/major %s`" % (
       message.author.mention,
       gameType,
       numPlayers,
@@ -1890,7 +1890,7 @@ async def tournamentSignup(message):
 
           elif cell.value in usernames:
             member = message.guild.get_member(int(getRegisteredID(cell.value, registeredIDsRange)))
-            await message.channel.send(f"**Canceling Signup Process**\n{message.author.mention}, {member.mention} is already signed up. If this is a mistake, contact an Organiser.")
+            await message.channel.send(f"**Cancelling Signup Process**\n{message.author.mention}, {member.mention} is already signed up. If this is a mistake, contact an Organiser.")
             break
         break
 # end tournamentSignup
@@ -1906,7 +1906,7 @@ async def tournamentRetire(message):
     numPlayers = gameType[1]
     gameType = gameType[0]
   except IndexError: # no game type // shouldn't happen when retiring, just copying and pasting from signup and checkin
-    await message.channel.send(f"**Canceling Retirement**\nGame type is not set for the current week.")
+    await message.channel.send(f"**Cancelling Retirement**\nGame type is not set for the current week.")
     return
 
   for sheet in workbook.worksheets():
