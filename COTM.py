@@ -1315,7 +1315,7 @@ async def updateStreamsEmbed(guild):
   for i in range(num_divs):
     embed.add_field(
       name=f"**Division {i+1}**",
-      value=divs_values[i],
+      value=divs_values[i] if divs_values[i] != "" else space_char,
       inline=False
     )
 
