@@ -8,6 +8,7 @@ from dateutil.relativedelta import relativedelta
 
 import SecretStuff
 import MoBotTimeZones
+import MoBotDatabase
 
 moBot = 449247895858970624
 moBotTest = 476974462022189056
@@ -52,16 +53,16 @@ class Event:
 # end Event
 
 class Reminder:
-  def __init__(self, reminderSheet, reminderRange, reminderID, guildID, channelID, memberID, text, date):
-    self.reminderID = reminderID
-    self.reminderSheet = reminderSheet
-    self.reminderRange = reminderRange
-    self.guildID = guildID
-    self.channelID = channelID
-    self.memberID = memberID
+  def __init__(self, reminder_id, guild_id, channel_id, member_id, text, date):
+    self.reminderID = reminder_id
+    self.guildID = guild_id
+    self.channelID = channel_id
+    self.memberID = member_id
     self.text = text
     self.date = date
 #end Reminder
+
+
 
 async def main(args, message, client):
   now = datetime.now()
@@ -85,42 +86,39 @@ async def memberRemove(member, client):
   pass
 # end memberRemove
 
+''' REMINDER STUFF'''
 async def sendReminder(reminder, client):
-  guild = client.get_guild(reminder.guildID)
-  channel = guild.get_channel(reminder.channelID)
+  guild = client.get_guild(reminder.guild_id)
+  channel = guild.get_channel(reminder.channel_id)
   await channel.send("Reminder for <@" + str(reminder.memberID) + ">: " + reminder.text)
   reminders = await removeReminder(reminder)
   return reminders
 # end sendReminder
 
 async def removeReminder(reminder):
-  reminderSheet = reminder.reminderSheet
-  reminderRange = reminder.reminderRange
-  for i in range(0, len(reminderRange), reminderNumCols):
-    if (reminderRange[i].value == str(reminder.reminderID)):
-      for j in range(i, len(reminderRange)):
-        try:
-          reminderRange[j].value = reminderRange[j+eventNumCols].value
-        except IndexError:
-          break
+  mobot_db = connectDatabase()
+  mobot_db.cursor.exeucte(f"""
+    DELETE FROM reminders WHERE reminder_id = {reminder.reminder_id}
+  """)
   
-  reminderSheet.update_cells(reminderRange, value_input_option="USER_ENTERED")
-  return await getReminders(reminderSheet, reminderRange)
+  mobot_db.connection.commit()
+  mobot_db.connection.close()
+
+  return await getReminders()
 # end removeCompletedEvent
 
-async def getRemindersRange(workbook):
-  remindersSheet = workbook.worksheet("Reminders")
-  return remindersSheet, remindersSheet.range(2, 1, remindersSheet.row_count, reminderNumCols)
-# end getEventRange
-
-async def getReminders(remindersSheet, remindersRange):
+async def getReminders():
+  mobot_db = connectDatabase()
+  
   reminders = []
-  for i in range(0, len(remindersRange), reminderNumCols):
-    if (remindersRange[i].value != ""):
-      reminder = Reminder(remindersSheet, remindersRange, int(remindersRange[i+0].value), int(remindersRange[i+1].value), int(remindersRange[i+2].value), int(remindersRange[i+3].value), remindersRange[i+4].value, datetime.strptime(remindersRange[i+5].value, "%Y-%m-%d %H:%M:%S"))
-      reminders.append(reminder)
-    else:
-      break
+  mobot_db.cursor.exeucte("""
+    SELECT * FROM reminders
+  """)
+
+  for r in mobot_db.cursor:
+    reminders.append(Reminder(*r))
+
+  mobot_db.connection.close()
   return reminders
 # end getReminders
 
@@ -135,29 +133,37 @@ async def setReminder(message):
     "month" : 0,
     "year" : 0
   }
-  reminderText = " ".join(message.content.split("remindme")[1].strip().split(" ")[:-3]) # list of words, need to add spaces back
+  reminder_text = " ".join(message.content.split("remindme")[1].strip().split(" ")[:-3])
   reminderWord = message.content.split(" ")[-1].strip()
   reminderNumber = message.content.split(" ")[-2].strip()
   for delta in timeDelta:
     if (delta in reminderWord):
-      timeDelta[delta] = int(float(reminderNumber))
+      timeDelta[delta] = float(reminderNumber)
 
-  reminderDate = datetime.utcnow() + relativedelta(years=timeDelta["year"], months=timeDelta["month"], weeks=timeDelta["week"], days=timeDelta["day"], hours=timeDelta["hour"], minutes=timeDelta["minute"], seconds=timeDelta["second"])
+  reminder_date = datetime.utcnow() + relativedelta(years=timeDelta["year"], months=timeDelta["month"], weeks=timeDelta["week"], days=timeDelta["day"], hours=timeDelta["hour"], minutes=timeDelta["minute"], seconds=timeDelta["second"])
 
-  remindersSheet, remindersRange = await getRemindersRange(await openSpreadsheet())
+  mobot_db = connectDatabase()
+  mobot_db.cursor.execute(f"""
+    INSERT INTO reminders (
+      `guild_id`, `channel_id`, `member_id`, `text`, `date`
+    ) VALUES (
+      '{message.guild_id}',
+      '{message.channel}',
+      '{message.author.id}',
+      '{reminder_text}',
+      '{reminder_date}'
+    )
+  """)
 
-  for i in range(len(remindersRange)):
-    if (remindersRange[i].value == ""):
-      remindersRange[i+0].value = str(int(i/reminderNumCols) + 1)
-      remindersRange[i+1].value = str(message.guild.id)
-      remindersRange[i+2].value = str(message.channel.id)
-      remindersRange[i+3].value = str(message.author.id)
-      remindersRange[i+4].value = reminderText
-      remindersRange[i+5].value = str(reminderDate)
-      break
-  remindersSheet.update_cells(remindersRange, value_input_option="USER_ENTERED")
-  await message.channel.send("**You will be reminded at " + reminderDate.strftime("%H:%M:%S UTC on %d %b %Y.") + "**")
+  mobot_db.connection.commit()
+  mobot_db.connection.close()
+
+  await message.channel.send("**You will be reminded at " + reminder_date.strftime("%H:%M:%S UTC on %d %b %Y.") + "**")
 # end setReminder
+
+
+
+''' EVENT STUFF '''
 
 async def getEventTime(event):
   eventTime = datetime(event.year, event.month, event.day, event.hour, event.minute)
@@ -232,6 +238,13 @@ async def getEventFromUser(message):
 async def createEventSchedulerEmbed():
   pass
 # end createEventSchedulerEmbed
+
+
+
+''' RESOURCES '''
+def connectDatabase():
+  return MoBotDatabase.connectDatabase("MoBot")
+# end connectDatabase
 
 async def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']

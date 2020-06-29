@@ -181,7 +181,6 @@ async def on_guild_channel_update(before, after):
         workbook = await EventScheduler.openSpreadsheet()
         eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
         scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
-        remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
         reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
 
         await MessageScheduler.sendScheduledMessages(client)
@@ -225,8 +224,7 @@ async def main(client):
     workbook = await EventScheduler.openSpreadsheet()
     eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
     scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
-    remindersSheet, remindersRange = await EventScheduler.getRemindersRange(workbook)
-    reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
+    reminders = await EventScheduler.getReminders()
     print("Scheduled Events Received")
   except httplib2.ServerNotFoundError:
     try:
