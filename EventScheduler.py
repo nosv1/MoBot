@@ -54,12 +54,12 @@ class Event:
 
 class Reminder:
   def __init__(self, reminder_id, guild_id, channel_id, member_id, text, date):
-    self.reminderID = reminder_id
-    self.guildID = guild_id
-    self.channelID = channel_id
-    self.memberID = member_id
-    self.text = text
-    self.date = date
+    self.reminderID = int(reminder_id)
+    self.guildID = int(guild_id)
+    self.channelID = int(channel_id)
+    self.memberID = int(member_id)
+    self.text = str(text)
+    self.date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S") if type(date) == type("") else date
 #end Reminder
 
 
