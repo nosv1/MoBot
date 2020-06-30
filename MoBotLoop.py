@@ -181,7 +181,6 @@ async def on_guild_channel_update(before, after):
         workbook = await EventScheduler.openSpreadsheet()
         eventSheet, eventRange = await EventScheduler.getEventRange(workbook)
         scheduledEvents = await EventScheduler.getScheduledEvents(eventSheet, eventRange)
-        reminders = await EventScheduler.getReminders(remindersSheet, remindersRange)
 
         await MessageScheduler.sendScheduledMessages(client)
       except gspread.exceptions.APIError:
@@ -192,10 +191,14 @@ async def on_guild_channel_update(before, after):
       eventTime = await EventScheduler.getEventTime(event)
       if (eventTime < currentTime):
         scheduledEvents = await EventScheduler.performScheduledEvent(event, client)
+        
+    reminders = await EventScheduler.getReminders()
+    r = reminders
     for reminder in reminders:
       reminderTime = reminder.date
       if (reminderTime < currentUTC):
-        reminders = await EventScheduler.sendReminder(reminder, client)
+        r = await EventScheduler.sendReminder(reminder, client)
+    reminders = r
         
     await AOR.updateStandings(client)
 
