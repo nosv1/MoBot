@@ -54,10 +54,10 @@ class Event:
 
 class Reminder:
   def __init__(self, reminder_id, guild_id, channel_id, member_id, text, date):
-    self.reminderID = int(reminder_id)
-    self.guildID = int(guild_id)
-    self.channelID = int(channel_id)
-    self.memberID = int(member_id)
+    self.reminder_id = int(reminder_id)
+    self.guild_id = int(guild_id)
+    self.channel_id = int(channel_id)
+    self.member_id = int(member_id)
     self.text = str(text)
     self.date = datetime.strptime(date, "%Y-%m-%d %H:%M:%S") if type(date) == type("") else date
 #end Reminder
@@ -88,17 +88,20 @@ async def memberRemove(member, client):
 
 ''' REMINDER STUFF'''
 async def sendReminder(reminder, client):
+  reminders = await removeReminder(reminder) # removing before in case there are errors
+
   guild = client.get_guild(reminder.guild_id)
   channel = guild.get_channel(reminder.channel_id)
-  await channel.send("Reminder for <@" + str(reminder.memberID) + ">: " + reminder.text)
-  reminders = await removeReminder(reminder)
+  member = guild.get_member(reminder.member_id)
+  await channel.send(f"Reminder for {member.mention}: {reminder.text}")
+
   return reminders
 # end sendReminder
 
 async def removeReminder(reminder):
   mobot_db = connectDatabase()
-  mobot_db.cursor.exeucte(f"""
-    DELETE FROM reminders WHERE reminder_id = {reminder.reminder_id}
+  mobot_db.cursor.execute(f"""
+    DELETE FROM reminders WHERE reminder_id = '{reminder.reminder_id}'
   """)
   
   mobot_db.connection.commit()
@@ -111,7 +114,7 @@ async def getReminders():
   mobot_db = connectDatabase()
   
   reminders = []
-  mobot_db.cursor.exeucte("""
+  mobot_db.cursor.execute("""
     SELECT * FROM reminders
   """)
 
@@ -124,6 +127,7 @@ async def getReminders():
 
 async def setReminder(message):
   await message.channel.trigger_typing()
+
   timeDelta = {
     "second" : 0,
     "minute" : 0,
@@ -133,25 +137,35 @@ async def setReminder(message):
     "month" : 0,
     "year" : 0
   }
+
   reminder_text = " ".join(message.content.split("remindme")[1].strip().split(" ")[:-3])
   reminderWord = message.content.split(" ")[-1].strip()
   reminderNumber = message.content.split(" ")[-2].strip()
+
   for delta in timeDelta:
     if (delta in reminderWord):
       timeDelta[delta] = float(reminderNumber)
 
-  reminder_date = datetime.utcnow() + relativedelta(years=timeDelta["year"], months=timeDelta["month"], weeks=timeDelta["week"], days=timeDelta["day"], hours=timeDelta["hour"], minutes=timeDelta["minute"], seconds=timeDelta["second"])
+  reminder_date = datetime.utcnow() + relativedelta(
+    years=timeDelta["year"], 
+    months=timeDelta["month"], 
+    weeks=timeDelta["week"], 
+    days=timeDelta["day"], 
+    hours=timeDelta["hour"], 
+    minutes=timeDelta["minute"], 
+    seconds=timeDelta["second"]
+  )
 
   mobot_db = connectDatabase()
   mobot_db.cursor.execute(f"""
     INSERT INTO reminders (
       `guild_id`, `channel_id`, `member_id`, `text`, `date`
     ) VALUES (
-      '{message.guild_id}',
-      '{message.channel}',
+      '{message.guild.id}',
+      '{message.channel.id}',
       '{message.author.id}',
       '{reminder_text}',
-      '{reminder_date}'
+      '{reminder_date.strftime("%Y-%m-%d %H:%M:%S")}'
     )
   """)
 
