@@ -642,7 +642,7 @@ async def submitVotes(message, member):
     workbook = openSpreadsheet()
     sheets = workbook.worksheets()
     sheet = [sheet for sheet in sheets if sheet.id == 242811195][0] # Voting Sheet
-    r = sheet.range(f"C9:G{sheet.row_count}")
+    r = sheet.range(f"C10:G{sheet.row_count}")
     user_found = findDriver(r, member.display_name)
 
     if user_found != -1:
@@ -691,7 +691,7 @@ async def submitVotes(message, member):
           inline=False
         )
 
-        count = RandomSupport.numberToEmojiNumbers(i // 9 + 1)
+        count = RandomSupport.numberToEmojiNumbers(i // 10 + 1)
         log_embed.add_field(
           name="Count",
           value=count
