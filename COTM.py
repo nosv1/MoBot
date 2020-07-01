@@ -77,6 +77,7 @@ GLOBE_WITH_LINES = "🌐"
 EVERYONE = 527156310366486529
 PEEKER_ROLE = 534230087244185601
 CHILDREN_ROLE = 529112570448183296
+EXPERT_VOTER_ROLE = 727940758627287051
 
 space_char = "⠀"
 logos = {
@@ -476,6 +477,15 @@ async def handleQualiSubmission(message):
 
 
 ''' VOTING '''
+def getTotalVotesAvail(member):
+  total_avail = 2 # default
+
+  if EXPERT_VOTER_ROLE in [r.id for r in member.roles]:
+    total_avail += 3
+
+  return total_avail 
+# end getTotalVotesAvail
+
 async def openVotingChannel(message, member):
   await message.channel.trigger_typing()
 
@@ -501,14 +511,15 @@ async def openVotingChannel(message, member):
   )
   msg = await channel.send(
     content=member.mention,
-    embed=(await createOgVotingEmbed(message))
+    embed=(await createOgVotingEmbed(message, member))
   )
   await msg.add_reaction(X_EMOJI)
-  for emoji in RandomSupport.numberEmojis[0:5]:
+  for emoji in RandomSupport.numberEmojis[0:getTotalVotesAvail(member)+1]:
     await msg.add_reaction(emoji)
 # end openVotingChannel
 
-async def createOgVotingEmbed(message):
+async def createOgVotingEmbed(message, member):
+  total_votes_avail = getTotalVotesAvail(member)
 
   embed = discord.Embed()
   embed.color = int("0xFFFFFE", 16)
@@ -521,11 +532,10 @@ async def createOgVotingEmbed(message):
 
   embed.add_field(
     name="**Instructions**",
-    value=f"Select the number-button below to cast your vote. You have 4 votes to spend total. Spread them out, or stack them all on one option. Click the {X_EMOJI} to clear all your votes.\n{space_char}",
+    value=f"Select the number-button below to cast your vote. You have {total_votes_avail} votes to spend total. Spread them out, or stack them all on one option. Click the {X_EMOJI} to clear all your votes.\n{space_char}",
     inline=False
   )
 
-  og_voting_embed = await (message.guild.get_channel(VOTING)).fetch_message(VOTING_EMBED)
   options = [f"Track {c} - 0" for c in "ABCD"]
   embed.add_field(
     name="**Options**", 
@@ -541,18 +551,18 @@ async def createOgVotingEmbed(message):
 
   embed.add_field(
     name="**Votes Remaining**",
-    value="4",
+    value=total_votes_avail,
     inline=False
   )
 
   return embed
 # end createOgVotingEmbed
 
-async def resetVotes(message):
+async def resetVotes(message, member):
   await message.clear_reactions()
-  await message.edit(embed=(await createOgVotingEmbed(message)))
+  await message.edit(embed=(await createOgVotingEmbed(message, member)))
   await message.add_reaction(X_EMOJI)
-  for emoji in RandomSupport.numberEmojis[0:5]:
+  for emoji in RandomSupport.numberEmojis[0:getTotalVotesAvail(member)+1]:
     await message.add_reaction(emoji)
 # end resetVotes
 
@@ -645,8 +655,8 @@ async def submitVotes(message, member):
       if cell.value == "": # append vote
         vote_embed = message.embeds[0]
         votes = [int(RandomSupport.getDetailFromURL(vote_embed.author.url, str(j))) for j in range(1, 5)]
-        if sum(votes) != 4: # if user spams, they sometimes can get more than 4 total votes in...
-          await resetVotes(message)
+        if sum(votes) != getTotalVotesAvail(member): # if user spams, they sometimes can get more than 4 total votes in...
+          await resetVotes(message, member)
           return
         r[i].value = member.display_name
         for j in range(1, 5):
@@ -681,7 +691,7 @@ async def submitVotes(message, member):
           inline=False
         )
 
-        count = RandomSupport.numberToEmojiNumbers(i // 5 + 1)
+        count = RandomSupport.numberToEmojiNumbers(i // 9 + 1)
         log_embed.add_field(
           name="Count",
           value=count
