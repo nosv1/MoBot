@@ -691,7 +691,7 @@ async def submitVotes(message, member):
           inline=False
         )
 
-        count = RandomSupport.numberToEmojiNumbers(i // 10 + 1)
+        count = RandomSupport.numberToEmojiNumbers(i // 5 + 1)
         log_embed.add_field(
           name="Count",
           value=count
