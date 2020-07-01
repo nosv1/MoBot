@@ -200,16 +200,22 @@ async def mainReactionAdd(message, payload, client):
   qualiScreenshotsChannel = message.guild.get_channel(QUALI_SCREENSHOTS)
 
   if ("MoBot" not in member.name):
-    if payload.emoji.name == CHECKMARK_EMOJI:
-      if (message.id == VOTING_CHECKMARK): # track-voting
+    if (message.id == VOTING_CHECKMARK): # track-voting
+      if payload.emoji.name == CHECKMARK_EMOJI:
         await openVotingChannel(message, member)
         await message.remove_reaction(payload.emoji.name, member)
 
+      if payload.emoji.name == X_EMOJI:
+        role = message.guild.get_role(EXPERT_VOTER_ROLE)
+        for member in role.members:
+          await member.remove_roles(role)
+        await message.remove_reaction(payload.emoji.name, member)
+
     if re.match(r"(voting)(?!.*-log)", message.channel.name): # is voting-name channel
-      if payload.emoji.name in RandomSupport.numberEmojis[0:5]:
+      if payload.emoji.name in RandomSupport.numberEmojis[0:getTotalVotesAvail(member)]:
         await votePlaced(message, member)
       elif payload.emoji.name == X_EMOJI:
-        await resetVotes(message)
+        await resetVotes(message, member)
       elif payload.emoji.name == CHECKMARK_EMOJI:
         await submitVotes(message, member)
 
