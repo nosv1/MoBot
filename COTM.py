@@ -212,6 +212,7 @@ async def mainReactionAdd(message, payload, client):
         await message.remove_reaction(payload.emoji.name, member)
 
     if re.match(r"(voting)(?!.*-log)", message.channel.name): # is voting-name channel
+      member = message.mentions[0]
       if payload.emoji.name in RandomSupport.numberEmojis[0:getTotalVotesAvail(member)]:
         await votePlaced(message, member)
       elif payload.emoji.name == X_EMOJI:
