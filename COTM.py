@@ -537,11 +537,11 @@ async def createOgVotingEmbed(message, member):
   embed.set_thumbnail(url=logos["cotm_white_trans"])
 
   instructions = f"The 'current option' will cycle through the options as you spend your votes. Select a number-button below to cast a vote for the current option. You have {total_votes_avail} votes to spend total. Spread them out, or stack them all on one option. Click the {X_EMOJI} to clear all your votes.\n"
-  extra_vote_hint = f"\nTo get extra votes to spend, prove to a staff member you've completed the playlist (link in {message.guild.get_channel(VOTING).mention})." if EXPERT_VOTER_ROLE not in [r.id for r in member.roles] else ""
+  extra_vote_hint = f"\nTo get extra votes to spend, prove to a staff member you've completed the playlist (link in {message.guild.get_channel(VOTING).mention}).\n" if EXPERT_VOTER_ROLE not in [r.id for r in member.roles] else ""
 
   embed.add_field(
     name="**Instructions**",
-    value=f"{instructions}{extra_vote_hint}\n{space_char}",
+    value=f"{instructions}{extra_vote_hint}{space_char}",
     inline=False
   )
 
