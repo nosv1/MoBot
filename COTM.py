@@ -532,13 +532,16 @@ async def createOgVotingEmbed(message, member):
   embed.set_footer(text="Please do not spam the number-buttons... If there are issues, contact @Mo#9991 :)")
   embed.set_author(
     name="Voting",
-    icon_url=logos["cotm_white_trans"],
     url="https://google.com/current_option=1/1=0/2=0/3=0/4=0/"
   )
+  embed.set_thumbnail(url=logos["cotm_white_trans"])
+
+  instructions = f"The 'current option' will cycle through the options as you spend your votes. Select a number-button below to cast a vote for the current option. You have {total_votes_avail} votes to spend total. Spread them out, or stack them all on one option. Click the {X_EMOJI} to clear all your votes.\n"
+  extra_vote_hint = f"\nTo get extra votes to spend, prove to a staff member you've completed the playlist (link in {message.guild.get_channel(VOTING).mention})." if EXPERT_VOTER_ROLE not in [r.id for r in member.roles] else ""
 
   embed.add_field(
     name="**Instructions**",
-    value=f"Select the number-button below to cast your vote. You have {total_votes_avail} votes to spend total. Spread them out, or stack them all on one option. Click the {X_EMOJI} to clear all your votes.\n{space_char}",
+    value=f"{instructions}{extra_vote_hint}\n{space_char}",
     inline=False
   )
 
@@ -661,7 +664,7 @@ async def submitVotes(message, member):
       if cell.value == "": # append vote
         vote_embed = message.embeds[0]
         votes = [int(RandomSupport.getDetailFromURL(vote_embed.author.url, str(j))) for j in range(1, 5)]
-        if sum(votes) != getTotalVotesAvail(member): # if user spams, they sometimes can get more than 4 total votes in...
+        if sum(votes) != getTotalVotesAvail(member): # if user spams, they sometimes can get more votes in...
           await resetVotes(message, member)
           return
         r[i].value = member.display_name
