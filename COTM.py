@@ -101,8 +101,7 @@ division_emojis = [
   702654859983454318,
   702654860478251128
 ]
-num_divs = 7 # active div count
-
+num_divs = 6 # active div count
 
 
 ''' CLASSES '''
@@ -213,7 +212,7 @@ async def mainReactionAdd(message, payload, client):
 
     if re.match(r"(voting)(?!.*-log)", message.channel.name): # is voting-name channel
       member = message.mentions[0]
-      if payload.emoji.name in RandomSupport.numberEmojis[0:getTotalVotesAvail(member)]:
+      if payload.emoji.name in RandomSupport.numberEmojis[0:getTotalVotesAvail(member)+1]:
         await votePlaced(message, member)
       elif payload.emoji.name == X_EMOJI:
         await resetVotes(message, member)
@@ -647,30 +646,38 @@ async def votePlaced(message, member):
 
 async def submitVotes(message, member):
   await message.channel.trigger_typing()
+  total_votes_avail = getTotalVotesAvail(member)
 
   try:
     workbook = openSpreadsheet()
     sheets = workbook.worksheets()
     sheet = [sheet for sheet in sheets if sheet.id == 242811195][0] # Voting Sheet
     r = sheet.range(f"C10:G{sheet.row_count}")
-    user_found = findDriver(r, member.display_name)
 
-    if user_found != -1:
-      await message.channel.send(f"**Cancelling Submssion**\nYou cannot vote more than once. If this is a mistake, contact <@{mo}>.")
-      await message.clear_reactions()
-      return
-
+    re_voted = False
     for i, cell in enumerate(r):
 
-      if cell.value == "": # append vote
+      if cell.value == "" or cell.value == member.display_name: # append vote
         vote_embed = message.embeds[0]
         votes = [int(RandomSupport.getDetailFromURL(vote_embed.author.url, str(j))) for j in range(1, 5)]
-        if sum(votes) != getTotalVotesAvail(member): # if user spams, they sometimes can get more votes in...
+
+        if sum(votes) != total_votes_avail: # if user spams, they sometimes can get more votes in...
           await resetVotes(message, member)
           return
+
+        if cell.value != "": 
+          prev_votes = sum([int(t.value) for t in r[i+1:i+5]])
+          if prev_votes == total_votes_avail:
+            await message.channel.send(f"**Cancelling Submssion**\nYou cannot vote more than once. If this is a mistake, contact <@{mo}>.")
+            await message.clear_reactions()
+            return
+          else:
+            re_voted = True
+
         r[i].value = member.display_name
         for j in range(1, 5):
           r[i+j].value = votes[j-1]
+
         sheet.update_cells(r, value_input_option="USER_ENTERED")
         await message.channel.send("**Votes Submitted**\nThank you for voting. :)")
 
@@ -687,7 +694,7 @@ async def submitVotes(message, member):
         log_embed.set_author(name="Vote Submission", icon_url=logos["cotm_white_trans"])
         options = RandomSupport.getValueFromField(vote_embed, "Options")
         log_embed.add_field(
-          name=member.display_name,
+          name=f"{member.display_name} {'- re-voted' if re_voted else ''}",
           value=options,
           inline=False
         )
@@ -762,7 +769,6 @@ def getPitMarshalls():
 
 async def clear_pit_marshalls(guild):
   pit_marshalls = getPitMarshalls()
-  pm_role = getRole("Pit Marshall", guild.roles)
   for pm in pit_marshalls:
     member = guild.get_member(pm.member_id)
     await member.remove_roles(pm_role)
