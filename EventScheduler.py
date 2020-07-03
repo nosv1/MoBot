@@ -172,7 +172,7 @@ async def setReminder(message):
   mobot_db.connection.commit()
   mobot_db.connection.close()
 
-  await message.channel.send("**You will be reminded at " + reminder_date.strftime("%H:%M:%S UTC on %d %b %Y.") + "**")
+  await message.channel.send(f"**You will be reminded at {reminder_date.strftime("%H:%M:%S UTC on %d %B %Y.")}**\nConversion: <https://time.is/{reminder_date.strftime("%H%M_%d_%B_%Y_in_UTC")}>")
 # end setReminder
 
 
