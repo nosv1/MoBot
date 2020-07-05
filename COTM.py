@@ -930,14 +930,12 @@ async def handlePitMarshallReaction(message, payload, member):
   else:
     await message.channel.send(f"**{member.mention}, please select the division(s) before selecting the {CROWN} or the {WRENCH}.**", delete_after=7)
 
-  is_pm = False
-  for pm in getPitMarshalls():
+  for i in range(1, num_divs+1): # remove all pm roles
+    await member.remove_roles(getRole(f"Pit Marshall Division {i}", message.guild.roles))
+
+  for pm in getPitMarshalls(): # add back necesary ones
     if member.id == pm.member_id: # is pit marshall
-      is_pm = True
       await member.add_roles(getRole(f"Pit Marshall Division {pm.div}", message.guild.roles))
-  if not is_pm:
-    for i in range(1, num_divs+1):
-      await member.remove_roles(getRole(f"Pit Marshall Division {i}", message.guild.roles))
 
   await updatePitMarshallEmbed(message)
 
