@@ -882,7 +882,7 @@ async def updatePitMarshallEmbed(pm_message):
     space_char
   ]
 
-  for i in range(7):
+  for i in range(num_divs):
     embed["fields"][i]["value"] = "\n".join(div_lines)
 
   for pm in pit_marshalls:
@@ -974,7 +974,6 @@ async def clear_reserves(message):
     await message.add_reaction(div_emoji)
 
   reserves = getReserves()
-  pm_role = getRole("Pit Marshall", message.guild.roles)
 
   for r in reserves:
     member = message.guild.get_member(r.member_id)
