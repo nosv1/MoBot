@@ -9,7 +9,7 @@ async def main(args, message, client):
   if (args[2] == "open"):
     fromReaction = False
     await openTicket(message, message.author, fromReaction, client)
-  elif (args[2] == "close"):
+  #elif (args[2] == "close"):
     #await closeTicket(message)
   elif (args[2] == "add"):
     await addUserToTicket(message)
