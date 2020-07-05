@@ -1168,7 +1168,7 @@ async def handleReserveReaction(message, payload, member):
 
   member_divs = [] # get the divs the member is in
   for role in member.roles: # racing in 
-    if "Division" in role.name:
+    if "Division" in role.name and not "Pit Marshall" in role.name:
       member_divs.append(int(role.name[-1]))
   
   if not member_divs:
