@@ -904,7 +904,7 @@ async def handlePitMarshallReaction(message, payload, member):
 
   member_divs = [] # get the divs the member is in
   for role in member.roles: # racing in 
-    if "Division" in role.name:
+    if "Division" in role.name and not "Pit Marhshall" in role.name:
       member_divs.append(int(role.name[-1]))
 
   for pm in pit_marshalls: # already pit marshalling
@@ -1255,7 +1255,7 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
 
       if div_role.name not in [r.name for r in driver.roles]:
         for role in driver.roles:
-          if "Division" in role.name and "Reserve" not in role.name:
+          if "Division" in role.name and "Reserve" not in role.name and "Pit Marshall" not in role.name:
             await driver.remove_roles(role)
             await div_updates_channel.send(f"{driver.mention} has been removed from {role.name}.")
 
