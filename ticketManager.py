@@ -10,7 +10,7 @@ async def main(args, message, client):
     fromReaction = False
     await openTicket(message, message.author, fromReaction, client)
   elif (args[2] == "close"):
-    await closeTicket(message)
+    #await closeTicket(message)
   elif (args[2] == "add"):
     await addUserToTicket(message)
 
@@ -53,7 +53,7 @@ async def createTicketChannel(message, ticketLog, ticketCategory, user, fromReac
 
   async def createChannel():
     name = user.display_name
-    channel = await message.guild.create_text_channel("ticket " + name + " " + str(user.id))
+    channel = await message.guild.create_text_channel("ticket " + name)
     await channel.edit(category=ticketCategory, sync_permissions=True)
     await channel.set_permissions(user, read_messages=True, send_messages=True, attach_files=True)
     return channel
@@ -170,7 +170,7 @@ async def addUserToTicket(message):
       await message.channel.send("<@" + str(userId) + "> has been added to ticket.")
       
       print(message.channel.name + " " + str(userId))
-      await message.channel.edit(name=message.channel.name + " @" + str(userId))
+      #await message.channel.edit(name=message.channel.name + " @" + str(userId))
     except ValueError:
       continue
 # end addUserToTicket
