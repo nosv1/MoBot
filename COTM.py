@@ -771,7 +771,8 @@ async def clear_pit_marshalls(guild):
   pit_marshalls = getPitMarshalls()
   for pm in pit_marshalls:
     member = guild.get_member(pm.member_id)
-    await member.remove_roles(pm_role)
+    for i in range(1, num_divs+1):
+      await member.remove_roles(getRole(f"Pit Marshall Division {i}", guild.roles))
 
   moBotDB = connectDatabase()
   moBotDB.cursor.execute(f"""
@@ -929,11 +930,14 @@ async def handlePitMarshallReaction(message, payload, member):
   else:
     await message.channel.send(f"**{member.mention}, please select the division(s) before selecting the {CROWN} or the {WRENCH}.**", delete_after=7)
 
-  pm_role = getRole("Pit Marshall", message.guild.roles)
-  if member.id in [pm.member_id for pm in getPitMarshalls() if pm.member_id == member.id]:
-    await member.add_roles(pm_role)
-  else:
-    await member.remove_roles(pm_role)
+  is_pm = False
+  for pm in getPitMarshalls():
+    if member.id == pm.member_id: # is pit marshall
+      is_pm = True
+      await member.add_roles(getRole(f"Pit Marshall Division {pm.div}", message.guild.roles))
+  if not is_pm:
+    for i in range(1, num_divs+1):
+      await member.remove_roles(getRole(f"Pit Marshall Division {i}", message.guild.roles))
 
   await updatePitMarshallEmbed(message)
 
