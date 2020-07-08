@@ -933,7 +933,7 @@ async def handlePitMarshallReaction(message, payload, member):
   for i in range(1, num_divs+1): # remove all pm roles
     await member.remove_roles(getRole(f"Pit Marshall Division {i}", message.guild.roles))
 
-  for pm in getPitMarshalls(): # add back necesary ones
+  for pm in getPitMarshalls(): # add back necesary pm roles, sloppy but effective
     if member.id == pm.member_id: # is pit marshall
       await member.add_roles(getRole(f"Pit Marshall Division {pm.div}", message.guild.roles))
 
