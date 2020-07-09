@@ -59,6 +59,7 @@ MINI_CHAMPIONSHIPS = 630610458029588480
 DRIVER_HISTORY = 631556653174620160
 EVENT_CHAT = 527156400908926978
 VOTING = 608472349712580608
+CAR_VOTING = 730762239610585139
 VOTING_LOG = 530284914071961619
 QUALI_TIMES = 705787893364555785
 
@@ -195,11 +196,12 @@ async def main(args, message, client):
 async def mainReactionAdd(message, payload, client):
   member = message.guild.get_member(payload.user_id)
   memberPerms = message.channel.permissions_for(member)
-  qualifyingChannel = message.guild.get_channel(QUALIFYING)
-  qualiScreenshotsChannel = message.guild.get_channel(QUALI_SCREENSHOTS)
 
   if ("MoBot" not in member.name):
-    if (message.id == VOTING_CHECKMARK): # track-voting
+    if message.channel.id == CAR_VOTING:
+      await handleCarVotingReaction(message, member, payload)
+
+    if message.id == VOTING_CHECKMARK: # track-voting
       if payload.emoji.name == CHECKMARK_EMOJI:
         await openVotingChannel(message, member)
         await message.remove_reaction(payload.emoji.name, member)
@@ -482,7 +484,7 @@ async def handleQualiSubmission(message):
 
 
 
-''' VOTING '''
+''' TRACK VOTING '''
 def getTotalVotesAvail(member):
   total_avail = 2 # default
 
@@ -729,6 +731,13 @@ async def submitVotes(message, member):
     await message.channel.send(f"**<@{member.id}>, there were technical difficulties submitting your vote. Wait a copule seconds, then click the {CHECKMARK_EMOJI} again.**", delete_after=10)
     return
 # end submitVotes
+
+''' CAR VOTING '''
+async def handleCarVotingReaction(message, member, payload):
+  div = message.content.split("**")[1]
+  if div not in [role.name for role in member.roles]: # does not have div role
+    await message.remove_reaction(payload.emoji.name, member)
+# end handleCarVotingReaction
 
 
 
