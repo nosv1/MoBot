@@ -6,6 +6,7 @@ from requests_html import HTMLSession
 import RandomSupport
 import MoBotDatabase
 import re
+import traceback
 
 
 moBot = 449247895858970624
@@ -189,7 +190,10 @@ async def newGame(message, client):
               leader_name = message.guild.get_member(int(leader.user_id))
             except:
               leader_name = "unkown..."
-            await message.channel.edit(topic=f"Leader: {leader_name}\nWin %: {leader.percent_correct}%\nGames Played: {leader.games_played}")
+            try:
+              await message.channel.edit(topic=f"Leader: {leader_name}\nWin %: {leader.percent_correct}%\nGames Played: {leader.games_played}")
+            except:
+              print("CAUGHT EXCEPTION\n",traceback.format_exc())
 
     embed = discord.Embed.from_dict(embed)
     try:
