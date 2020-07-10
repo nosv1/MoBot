@@ -208,7 +208,7 @@ async def mainReactionAdd(message, payload, client):
         await message.remove_reaction(payload.emoji.name, member)
 
       if payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI:
-        await refreshVoterWeek()
+        await refreshVoterWeek(message)
         await message.remove_reaction(payload.emoji.name, member)
 
     if re.match(r"(voting)(?!.*-log)", message.channel.name): # is voting-name channel
