@@ -79,6 +79,7 @@ EVERYONE = 527156310366486529
 PEEKER_ROLE = 534230087244185601
 CHILDREN_ROLE = 529112570448183296
 EXPERT_VOTER_ROLE = 727940758627287051
+NOT_VOTED_ROLE = 731134321976672327
 
 space_char = "⠀"
 logos = {
@@ -206,10 +207,8 @@ async def mainReactionAdd(message, payload, client):
         await openVotingChannel(message, member)
         await message.remove_reaction(payload.emoji.name, member)
 
-      if payload.emoji.name == X_EMOJI:
-        role = message.guild.get_role(EXPERT_VOTER_ROLE)
-        for member in role.members:
-          await member.remove_roles(role)
+      if payload.emoji.name == ARROWS_COUNTERCLOCKWISE_EMOJI:
+        await refreshVoterWeek()
         await message.remove_reaction(payload.emoji.name, member)
 
     if re.match(r"(voting)(?!.*-log)", message.channel.name): # is voting-name channel
@@ -731,6 +730,22 @@ async def submitVotes(message, member):
     await message.channel.send(f"**<@{member.id}>, there were technical difficulties submitting your vote. Wait a copule seconds, then click the {CHECKMARK_EMOJI} again.**", delete_after=10)
     return
 # end submitVotes
+
+async def refreshVoterWeek(message):
+  guild = message.guild
+
+  role = guild.get_role(CHILDREN_ROLE)
+  for member in role.members:
+    for role in member.roles:
+      if role.id == EXPERT_VOTER_ROLE:
+        await member.remove_roles(role)
+      
+      if re.match(r"^(Division \d)", role.name): # is in a division
+        not_voted = guild.get_role(NOT_VOTED_ROLE)
+        await member.add_roles(not_voted)
+# end refreshVoterWeek
+
+
 
 ''' CAR VOTING '''
 async def handleCarVotingReaction(message, member, payload):
