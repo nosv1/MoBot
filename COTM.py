@@ -681,6 +681,7 @@ async def submitVotes(message, member):
 
         sheet.update_cells(r, value_input_option="USER_ENTERED")
         await message.channel.send("**Votes Submitted**\nThank you for voting. :)")
+        await member.remove_roles(message.guild.get_role(NOT_VOTED_ROLE))
 
         totals = [0] * 4 # getting totals
         for j in range(0, len(r), 5):
