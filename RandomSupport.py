@@ -56,7 +56,7 @@ async def sendMessageToMo(message, client, moID):
 ### --- EMBED STUFF --- ###
 
 def getDetailFromURL(url, detail):
-  return url.split(detail + "=")[1].split("/")[0]
+  return url.split(detail + "=")[1].split("/")[0].replace("%20", " ")
 # end splitOnDetail
 
 def getValueFromField(embed, fieldName):
