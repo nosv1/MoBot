@@ -245,15 +245,15 @@ async def memberRoleAdd(member, role):
 
 def startScoreSubmissionEmbed(message, user):
   moBotMember = message.guild.get_member(moBot)
-  
+
   embed = discord.Embed(color = moBotMember.roles[-1].color)
   embed.set_footer(text="| %s Reset Submission |" % RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
   embed.set_author(
     name="Templar Leagues - Season 4\nScore Submission", 
     icon_url=message.guild.icon_url,
-    url="https://google.com/userID=%s/state=getDivision/team1=-1/team2=-1/divSheetTitle=-1/scoreRange=-1" % user.id
+    url=f"https://google.com/userID={user.id}/state=getMatchID/team1=-1/team2=-1/divSheetTitle=-1/scoreRange=-1"
   )
-  embed.description = "**Which `Division` are you in?**\nClick a number, then click the %s." % RandomSupport.CHECKMARK_EMOJI
+  embed.description = "**What is the `Match ID`?**\nType your response, then click the %s." % RandomSupport.CHECKMARK_EMOJI
   return embed
 # end startScoreSubmissionEmbed
 
@@ -261,6 +261,8 @@ async def startSubmission(message, member):
   await message.channel.trigger_typing()
 
   embed = startScoreSubmissionEmbed(message, member)
+  embed = RandomSupport.updateDetailInURL(embed, "divSheetTitle", getUserDivision(await openSpreadsheet(ssIDs['Noble Leagues | League Play Sheet']), member))
+  embed.add_field(name="**Division:**", value=RandomSupport.getDetailFromURL(embed.author.url, "divSheetTitle"), inline=False)
 
   channel = await message.guild.create_text_channel(
     "submit %s" % member.display_name,
@@ -320,15 +322,7 @@ async def scoreSubmission(message, payload, client):
           return RandomSupport.numberEmojis.index(reaction.emoji)        
   # end getScoreFromEmojis
 
-  if (state == "getDivision" and isUser):
-    div = await getScoreFromEmojis()
-    if (div is not None):
-      embed.add_field(name="**Division:**", value=str(div), inline=False)
-      embed = RandomSupport.updateDetailInURL(embed, "state", "getMatchID")
-      embed.description = "**What is the `Match ID`?**\nType your response, then click the %s." % RandomSupport.CHECKMARK_EMOJI
-      await message.channel.purge(after=message)
-
-  elif (state == "getMatchID" and isUser):
+  if (state == "getMatchID" and isUser):
     matchID = None
     div = None
 
@@ -362,9 +356,9 @@ async def scoreSubmission(message, payload, client):
   elif (state == "getTeam1Score" and isUser):
     score = await getScoreFromEmojis()
     if (score is not None):
-      embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team1").replace("%20", " "), value=str(score), inline=False)
+      embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team1"), value=str(score), inline=False)
       embed = RandomSupport.updateDetailInURL(embed, "state", "getTeam2Score")
-      embed.description = "**How many games did `%s` win?**" % RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+      embed.description = "**How many games did `%s` win?**" % RandomSupport.getDetailFromURL(url, "team2")
       await message.channel.purge(after=message)
     else:
       await message.channel.send("**No Score Clicked**")
@@ -372,7 +366,7 @@ async def scoreSubmission(message, payload, client):
   elif (state == "getTeam2Score" and isUser):
     score = await getScoreFromEmojis()
     if (score is not None):
-      embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team2").replace("%20", " "), value=str(score), inline=False)
+      embed.add_field(name="**%s**:" % RandomSupport.getDetailFromURL(url, "team2"), value=str(score), inline=False)
       embed = RandomSupport.updateDetailInURL(embed, "state", "getProof")
       embed.description = "**Provide any links or screenshots, then click the %s.**\nIf you do not have a https://ballchasing.com/ link, make sure you provide a screenshot of each game." % RandomSupport.CHECKMARK_EMOJI
       await message.channel.purge(after=message)
@@ -400,8 +394,8 @@ async def scoreSubmission(message, payload, client):
 
     hasProof = True
     if (not ballChasing):
-      team1Score = int(RandomSupport.getValueFromField(embed, RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")))
-      team2Score = int(RandomSupport.getValueFromField(embed, RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")))
+      team1Score = int(RandomSupport.getValueFromField(embed, RandomSupport.getDetailFromURL(url, "team1")))
+      team2Score = int(RandomSupport.getValueFromField(embed, RandomSupport.getDetailFromURL(url, "team2")))
       numGames = sum([team1Score, team2Score])
 
       hasProof = len(links) >= numGames
@@ -441,16 +435,16 @@ async def scoreSubmission(message, payload, client):
     member = message.guild.get_member(payload.user_id)
     if (any(role.id in [gameModeratorRole, gameSupportRole, adminRole] for role in member.roles)):
       workbook = await openSpreadsheet(ssIDs["Noble Leagues | League Play Sheet"])
-      worksheet = workbook.worksheet(RandomSupport.getDetailFromURL(url, "divSheetTitle").replace("%20", " "))
+      worksheet = workbook.worksheet(RandomSupport.getDetailFromURL(url, "divSheetTitle"))
 
       r = worksheet.range(RandomSupport.getDetailFromURL(url, "scoreRange"))
       r[0].value = int(RandomSupport.getValueFromField(
         embed, 
-        RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
+        RandomSupport.getDetailFromURL(url, "team1")
       )) # set team 1 score
       r[1].value = int(RandomSupport.getValueFromField(
         embed, 
-        RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+        RandomSupport.getDetailFromURL(url, "team2")
       )) # set team 2 score
       worksheet.update_cells(r, value_input_option="USER_ENTERED") # update
 
@@ -470,15 +464,15 @@ async def scoreSubmission(message, payload, client):
     match_result_embed.description = "**Division: `%s`\nMatch ID: `%s`\n\n%s: `%s`\n%s: `%s`\n\nScreenshots: %s**\n*Click the picture icon(s) to view the screenshots.*" % (
       RandomSupport.getValueFromField(embed, "Division"),
       RandomSupport.getValueFromField(embed, "Match ID"),
-      RandomSupport.getDetailFromURL(url, "team1").replace("%20", " "),
+      RandomSupport.getDetailFromURL(url, "team1"),
       RandomSupport.getValueFromField(
         embed, 
-        RandomSupport.getDetailFromURL(url, "team1").replace("%20", " ")
+        RandomSupport.getDetailFromURL(url, "team1")
       ),
-      RandomSupport.getDetailFromURL(url, "team2").replace("%20", " "),
+      RandomSupport.getDetailFromURL(url, "team2"),
       RandomSupport.getValueFromField(
         embed, 
-        RandomSupport.getDetailFromURL(url, "team2").replace("%20", " ")
+        RandomSupport.getDetailFromURL(url, "team2")
       ),
       RandomSupport.getValueFromField(embed, "Proof").split("\n")[0]
     )
@@ -505,7 +499,7 @@ def getTeamsFromDivMatchID(workbook, div, matchID):
 
   divSheet = None
   for sheet in workbook.worksheets():
-    if (sheet.title == "D%s Results" % div):
+    if sheet.title == div:
       divSheet = sheet
       break
 
@@ -533,6 +527,17 @@ def getTeamsFromDivMatchID(workbook, div, matchID):
           gamesRange[i+2][j].value.strip(), # team 2 score, likely blank
         )
 # end getTeamsFromDivMatchID
+
+def getUserDivision(workbook, user):
+  role_ids_sheet = [sheet.id for sheet in workbook.worksheets() if sheet.id == 937402424][0]
+  role_ids = [int(f"0{c.value}") for c in role_ids_sheet.range("C3:C17")]
+  for role in user.roles:
+    try:
+      role_ids.index(role.id)
+      return role.name.replace("Division", "")
+    except ValueError: # user doesn't have role
+      continue
+# end getUserDivision
 
 async def addScoreSubmitReactions(msg, state):
   await msg.clear_reactions()
@@ -700,7 +705,7 @@ async def saveNRT(message, member):
   authorURL = embed.author.url
 
   memberID = RandomSupport.getDetailFromURL(authorURL, "memberID")
-  playerID = RandomSupport.getDetailFromURL(authorURL, "playerID").replace("%20", " ")
+  playerID = RandomSupport.getDetailFromURL(authorURL, "playerID")
   nrt = RandomSupport.getDetailFromURL(authorURL, "prt")
   platform = RandomSupport.getDetailFromURL(authorURL, "platform").lower()
   trackerID = RandomSupport.getDetailFromURL(authorURL, "trackerID")
