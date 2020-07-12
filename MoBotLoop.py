@@ -159,6 +159,7 @@ async def on_guild_channel_update(before, after):
         # await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
         pass
       else:
+        continue
         await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
 
     # user requests
