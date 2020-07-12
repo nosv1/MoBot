@@ -103,7 +103,7 @@ division_emojis = [
   702654859983454318,
   702654860478251128
 ]
-num_divs = 6 # active div count
+num_divs = 5 # active div count
 
 
 ''' CLASSES '''
