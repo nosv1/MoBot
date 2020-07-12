@@ -529,7 +529,7 @@ def getTeamsFromDivMatchID(workbook, div, matchID):
 # end getTeamsFromDivMatchID
 
 def getUserDivision(workbook, user):
-  role_ids_sheet = [sheet.id for sheet in workbook.worksheets() if sheet.id == 937402424][0]
+  role_ids_sheet = [sheet for sheet in workbook.worksheets() if sheet.id == 937402424][0]
   role_ids = [int(f"0{c.value}") for c in role_ids_sheet.range("C3:C17")]
   for role in user.roles:
     try:
