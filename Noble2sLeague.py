@@ -477,7 +477,7 @@ async def scoreSubmission(message, payload, client):
       RandomSupport.getValueFromField(embed, "Proof").split("\n")[0]
     )
     match_result_embed.set_author(
-      name="Templar Leagues - Season 4\nMatch Result",
+      name="Templar Leagues - Season V\nMatch Result",
       icon_url=message.guild.icon_url
     )
 
