@@ -74,8 +74,8 @@ spaceChar = "⠀"
 
 donations = { # donation / 2 = months providing service
   "TE Garrett#9569" : {
-    "Date" : datetime(2020, 7, 12),
-    "Donation" : 26 # $2 on 6/12, $15 on 7/9
+    "Date" : datetime(2019, 6, 12),
+    "Donation" : 38 # $2 on 6/12, $15 on 7/9
   },
   "CASE#2606" : {
     "Date" : datetime(2020, 1, 3),
@@ -145,7 +145,7 @@ async def on_message(message):
     tenMinutetime = n
 # end on_message
 
-#@client.event
+@client.event
 async def on_guild_channel_update(before, after):
   global scheduledEvents, reminders
 
@@ -159,8 +159,7 @@ async def on_guild_channel_update(before, after):
         # await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
         pass
       else:
-        pass
-        #await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+        await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
 
     # user requests
     if (currentTime < donationDateCorrection("CASE#2606")):
