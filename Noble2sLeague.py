@@ -249,7 +249,7 @@ def startScoreSubmissionEmbed(message, user):
   embed = discord.Embed(color = moBotMember.roles[-1].color)
   embed.set_footer(text="| %s Reset Submission |" % RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
   embed.set_author(
-    name="Templar Leagues - Season 4\nScore Submission", 
+    name="Templar Leagues - Season V\nScore Submission", 
     icon_url=message.guild.icon_url,
     url=f"https://google.com/userID={user.id}/state=getMatchID/team1=-1/team2=-1/divSheetTitle=-1/scoreRange=-1"
   )
