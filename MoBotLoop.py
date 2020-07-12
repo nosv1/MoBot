@@ -145,6 +145,7 @@ async def on_message(message):
     tenMinutetime = n
 # end on_message
 
+#@client.event
 async def on_guild_channel_update(before, after):
   global scheduledEvents, reminders
 
