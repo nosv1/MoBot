@@ -262,7 +262,7 @@ async def startSubmission(message, member):
 
   embed = startScoreSubmissionEmbed(message, member)
   embed = RandomSupport.updateDetailInURL(embed, "divSheetTitle", getUserDivision(await openSpreadsheet(ssIDs['Noble Leagues | League Play Sheet']), member))
-  embed.add_field(name="**Division:**", value=RandomSupport.getDetailFromURL(embed.author.url, "divSheetTitle"), inline=False)
+  embed.add_field(name="**Division:**", value=RandomSupport.getDetailFromURL(embed.author.url, "divSheetTitle"), inline=False) # these two lines are also in resertScoreSubmission
 
   channel = await message.guild.create_text_channel(
     "submit %s" % member.display_name,
@@ -301,6 +301,9 @@ async def resetScoreSubmission(message, member):
 
   await message.channel.purge(after=message)
   embed = startScoreSubmissionEmbed(message, member)
+  embed = RandomSupport.updateDetailInURL(embed, "divSheetTitle", getUserDivision(await openSpreadsheet(ssIDs['Noble Leagues | League Play Sheet']), member))
+  embed.add_field(name="**Division:**", value=RandomSupport.getDetailFromURL(embed.author.url, "divSheetTitle"), inline=False) # these two lines are also in startSubmission
+  
   await message.edit(embed=embed)
   await addScoreSubmitReactions(message, RandomSupport.getDetailFromURL(embed.author.url, "state"))
 # end resetScoreSubmission
