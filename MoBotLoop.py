@@ -2,6 +2,7 @@
 
 import discord # needed for discord
 import asyncio # needed for discord and proper delays, usually you use asyncio.sleep(seconds), but when your functions are asynchronous, you gotta use 'await asyncio.sleep(seconds)'
+import aiohttp
 from datetime import datetime, timedelta # needed for datetime stuff, timedelta lets us add and subtract dates easily
 import time # needed for non asynchronous delays as said before
 from pytz import timezone, utc # used to convert timezones
@@ -308,6 +309,10 @@ async def main(client):
         pass
       else:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
+    except aiohttp.client_exceptions.ServerDisconnectedError:
+      sys.exit()
+    except aiohttp.client_exceptions.ClientOSError:
+      sys.exit()
     except:
       try:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
