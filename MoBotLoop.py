@@ -266,8 +266,9 @@ async def main(client):
           try:
             await ClocksAndCountdowns.updateClock(client, clock, currentUTC + timedelta(seconds=5))
           except:
-            print('CAUGHT EXCEPTION')
-            print(traceback.format_exc())
+            #print('CAUGHT EXCEPTION')
+            #print(traceback.format_exc())
+            pass
         '''
         clocks = await getGuildClocks()
         countdowns = await getGuildCountdowns()
