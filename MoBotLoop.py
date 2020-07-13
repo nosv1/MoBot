@@ -316,6 +316,8 @@ async def main(client):
       sys.exit()
     except aiohttp.client_exceptions.ClientOSError:
       sys.exit()
+    except AttributeError:
+      pass
     except:
       try:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
