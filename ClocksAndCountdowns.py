@@ -269,6 +269,8 @@ def getClocks():
     try:
       clocks.append(Clock(*r))
     except ValueError: # should never happen, but likley when id is none
+      print("CAUGHT EXCEPTION")
+      print(traceback.format_exc())
       pass
 
   mobot_db.connection.close()
