@@ -288,7 +288,10 @@ async def on_message(message):
         elif ("clear" in args[1] and authorPerms.manageMessages):
           await GeneralCommands.clearMessages(message, args)
         elif ("delete" in args[1] and authorPerms.manageMessages):
-          await GeneralCommands.deleteMessages(message)
+          if "category" in args[2]:
+            await GeneralCommands.deleteCategory(message, args)
+          else:
+            await GeneralCommands.deleteMessages(message)
         # remove/add role to user
         elif ("role" in args[1] and authorPerms.manageRoles):
           await GeneralCommands.addRemoveRole(message, args)

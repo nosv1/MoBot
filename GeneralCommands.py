@@ -351,6 +351,31 @@ async def deleteMessages(message):
     await message.channel.send("**I need `Manage Messages` permissions for this command.**")
 # end deleteMessages
 
+async def deleteCategory(message, args):
+  category = None
+  for c in message.guild.categories:
+    if str(c.id) in message.content:
+      category = c
+      break
+  
+  if not category:
+    try:
+      channel = message.guild.get_channel(int(args[3]))
+      category = channel.category
+    except:
+      await message.channel.send("Cannot proceed... Likely the category_id or the channel_id you provided does not exist. If you are trying to delete all the channels in a category, use `@MoBot#0697 delete category <category_id>` `@MoBot#0697 delete category 717457000832958464`")
+      return
+
+  if category:
+    try:
+      await message.channel.send(f"Deleting channels in {category.name}.")
+      for channel in category.channels:
+        await channel.delete()
+      await message.channel.send(f"All channels have been deleted in {category.name}.")
+    except:
+      await message.channel.send(f"Cannot proceed... Likely {message.guild.get_member(moBot).mention} does not have permission to 'Manage Channels'")
+# end deleteCategory
+
 async def addRemoveRole(message, args):
   r = args[3]
   try:
