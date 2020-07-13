@@ -75,15 +75,15 @@ spaceChar = "⠀"
 donations = { # donation / 2 = months providing service
   "TE Garrett#9569" : {
     "Date" : datetime(2019, 6, 12),
-    "Donation" : 38 # $2 on 6/12, $15 on 7/9
+    "Donation" : 38 # $2 on 6/12/19, $15 on 7/9/19, $20 7/12/20
   },
   "CASE#2606" : {
     "Date" : datetime(2020, 1, 3),
-    "Donation" : 24 # $15 on 1/3
+    "Donation" : 24 # $15 on 1/3/19
   },
   "Danio#3260" : {
     "Date" : datetime(2020, 1, 19),
-    "Donation" : 34 # 20 on 1/19
+    "Donation" : 34 # 20 on 1/19/19
   }
 }
 
