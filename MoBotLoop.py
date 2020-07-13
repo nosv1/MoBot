@@ -213,6 +213,8 @@ async def on_guild_channel_update(before, after):
       pass
     else:
       await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
+  except AttributeError:
+    pass
   except:
     try:
       await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
