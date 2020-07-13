@@ -113,6 +113,8 @@ questionWords = {
   "are" : yesNoQuestionResponses,
   "am" : yesNoQuestionResponses,
   "is" : yesNoQuestionResponses,
+  "do" : yesNoQuestionResponses,
+  "would" : yesNoQuestionResponses,
 }
 
  # updated upon connectivity of MoBot
