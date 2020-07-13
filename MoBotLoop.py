@@ -215,6 +215,10 @@ async def on_guild_channel_update(before, after):
       await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
   except AttributeError:
     pass
+  except aiohttp.client_exceptions.ServerDisconnectedError:
+    sys.exit()
+  except aiohttp.client_exceptions.ClientOSError:
+    sys.exit()
   except:
     try:
       await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
