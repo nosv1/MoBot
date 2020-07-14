@@ -506,10 +506,12 @@ async def checkTEGarrettPointApplications(nowPacificTime):
 async def updateDiscordTables():
   moBotDB = MoBotTables.connectDatabase()
   tables = MoBotTables.getSavedTables(moBotDB)
+  count = 5
   for table in tables:
     if (getRandomCondition(5/len(tables))): # 5 tables every minute
       print("\nUpdating Discord Table %s\n" % table.tableID)
       try:
+        count -= 1
         await MoBotTables.sendTable(table, None, client)
       except AttributeError: # when update channel has been deleted
         print("Channel: <#%s> in Guild: %s possible deleted" % (table.channelID, table.guildID))
@@ -517,6 +519,8 @@ async def updateDiscordTables():
       except gspread.exceptions.APIError:
         print("Resource Exhausted Probably\n")
         pass
+    if count == 0:
+      break
   moBotDB.connection.close()
 # end updateDiscordTables
 
