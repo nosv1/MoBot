@@ -114,7 +114,7 @@ async def on_ready():
     print("\nMoBotLoop is online - " + str(datetime.now()) + "\n")
     isConnected = True
   else:
-    sys.exit()
+    await close(client)
   
   mobotLog = client.get_guild(moBotSupport).get_channel(604099911251787776) # mobot log
   embed = discord.Embed(color=int("0xd1d1d1", 16))
@@ -216,15 +216,15 @@ async def on_guild_channel_update(before, after):
   except AttributeError:
     pass
   except aiohttp.client_exceptions.ServerDisconnectedError:
-    sys.exit()
+    await close(client)
   except aiohttp.client_exceptions.ClientOSError:
-    sys.exit()
+    await close(client)
   except:
     try:
       await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
     except:
       print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
-      sys.exit()
+      await close(client)
 
 # end on_guild_channel_update
 
@@ -317,9 +317,9 @@ async def main(client):
       else:
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
     except aiohttp.client_exceptions.ServerDisconnectedError:
-      sys.exit()
+      await close(client)
     except aiohttp.client_exceptions.ClientOSError:
-      sys.exit()
+      await close(client)
     except AttributeError:
       pass
     except:
@@ -327,7 +327,7 @@ async def main(client):
         await RandomSupport.sendErrorToMo("MoBotLoop", client, mo)
       except:
         print("\n" + str(datetime.now()) + "\nError -- " + str(traceback.format_exc()))
-        sys.exit()
+        await close(client)
 
   # end infinte loop
 # end main
@@ -780,6 +780,11 @@ async def openRandomLogs():
   workbook = clientSS.open_by_key("1x19iRicPBE00oPjTuf6jNURpdpB2nLUASst_JPv9WyU")
   return workbook
 # end openRandomLogs
+
+async def close(client):
+  await client.close()
+  sys.exit()
+# end close
 
 print("Connecting...")
 client.run(SecretStuff.getToken("MoBotDiscordToken.txt"))
