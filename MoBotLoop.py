@@ -320,6 +320,8 @@ async def main(client):
       await close(client)
     except aiohttp.client_exceptions.ClientOSError:
       await close(client)
+    except websockets.exceptions.ConnectionClosed:
+      await close(client)
     except AttributeError:
       pass
     except:

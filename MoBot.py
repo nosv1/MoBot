@@ -122,6 +122,8 @@ reactionMessages = {}
 autoRoles = {} 
 isConnected = False
 
+clock_check = datetime.utcnow()
+
 class UserPerms:
   def __init__(self, administrator, manageMessages, manageRoles, manageChannels, changeNicknames, addReactions):
     self.administrator = administrator
@@ -439,7 +441,7 @@ async def on_message(message):
 
         ## MoBot promo commands
         elif (args[1].lower() == "donate"):
-          await message.channel.send("__If you pay, it becomes ***real***...__\n<https://venmo.com/MoBot_> - <https://paypal.me/MoShots>")
+          await message.channel.send("If you pay, it becomes ***real***...\n\n**PayPal** - <https://paypal.me/MoShots>\n**Venmo** - <https://venmo.com/MoBot_>")
         elif (args[1].lower() == "server"):
           await message.channel.send("Join my server... It's where you can see features that are in development and such, if you're into that... https://discord.gg/mqxMeTj")
 
@@ -467,6 +469,15 @@ async def on_message(message):
       except AttributeError: # some reason message.guild is none
         pass
 
+      global clock_check
+      clock_check = datetime.utcnow() if datetime.utcnow().second == 0 else clock_check
+      if datetime.utcnow().second == 1 and clock_check.second == 0:
+        try:
+          if (await ClocksAndCountdowns.clockCheck(client) - datetime.utcnow()).minutes > 5:
+            await RandomSupport.sendMessageToMo("Check MoBotLoop", client, mo)
+        except AttributeError:
+          pass
+
     # end not MoBot message
 
     if (not message.author.bot):
@@ -491,6 +502,8 @@ async def on_message(message):
           break
       except AttributeError: # when messaage is a private message... idk 
         pass
+
+    
 
   except:
     await RandomSupport.sendErrorToMo("MoBot", client, mo)

@@ -15,6 +15,8 @@ import RandomSupport
 mo = 405944496665133058
 mobot = 449247895858970624
 mobot_support_server = 467239192007671818
+mobot_timezone_channel = 607323514042712074
+mobot_timezone_message = 607323599925149706
 
 space_char = "⠀"
 
@@ -276,6 +278,14 @@ def getClocks():
   mobot_db.connection.close()
   return clocks
 #end getClocks
+
+async def clockCheck(client):
+  timezone_channel = client.get_guild(mobot_support_server).get_channel(mobot_timezone_channel)
+  timezone_msg = await timezone_channel.fetch_message(mobot_timezone_message)
+  return timezone_msg.edited_at
+# end clockCheck
+
+
 
 ''' RESOURCES '''
 def connectDatabase():
