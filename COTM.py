@@ -288,7 +288,7 @@ async def memberRemove(member, client):
   guild = client.get_guild(GUILD_ID)
   mo_member = guild.get_member(mo)
   channel = guild.get_channel(EVENT_CHAT)
-  await channel.send(f"{member.mention} (a.k.a. {member.display_name}) has lost his footing and has ragdolled his way down the mountain 🗻. {mo_member.mention}")
+  await channel.send(f"{member.name} (a.k.a. {member.display_name}) has lost his footing and has ragdolled his way down the mountain 🗻. {mo_member.mention}")
 # end memberRemove
 
 
