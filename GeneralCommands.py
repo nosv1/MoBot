@@ -559,3 +559,38 @@ async def pingRole(message, authorPerms):
         except discord.errors.Forbidden:
           await message.channel.send("**Could Not Ping Un-pingable Role**\n%s needs to create a temporary role, but it does not have have the `Manage Roles` permission.", delete_after=7)
 # end pingRole
+
+async def logChannelCategory(message, args):
+
+  def logChannel(channel):
+    return
+  # end logChannel
+
+  if "category" in message:
+    category = None
+    for c in message.guild.categories:
+      if str(c.id) in message.content:
+        category = c
+        break
+    
+    if not category:
+      try:
+        channel = message.guild.get_channel(int(args[3]))
+        category = channel.category
+      except:
+        await message.channel.send("Cannot proceed... Likely the category_id or the channel_id you provided does not exist. If you are trying to delete all the channels in a category, use `@MoBot#0697 delete category <category_id>` `@MoBot#0697 delete category 717457000832958464`")
+        return
+
+    if category:
+      try:
+        await message.channel.send(f"Deleting channels in {category.name}.")
+        for channel in category.channels:
+          await channel.delete()
+        await message.channel.send(f"All channels have been deleted in {category.name}.")
+      except:
+        await message.channel.send(f"Cannot proceed... Likely {message.guild.get_member(moBot).mention} does not have permission to 'Manage Channels'")
+
+  if "channel" in message:
+    log = logChannel(message.guild.get_channel(int(args[3])))
+    await message.channel.send(f"Log of {channel.mention}")
+# end logChannel
