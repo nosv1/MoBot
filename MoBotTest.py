@@ -149,6 +149,8 @@ async def on_message(message):
       if (args[1] == "test"):
         await message.author.add_roles(None)
         await message.channel.send("done", delete_after=3)
+      if args[1] == "role":
+        await GeneralCommands.addRemoveRole(message, args)
       elif (args[1] == "table"):
         await MoBotTables.main(args, message, client)
       elif (args[1] == "nrt"):

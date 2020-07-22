@@ -404,6 +404,18 @@ async def addRemoveRole(message, args):
               await member.remove_roles(role)
             except discord.errors.Forbidden:
               await message.channel.send("Could not add role to %s." % member.mention)
+
+        if args[2] in ["clone", "copy", "duplicate", "dupe"]:
+          color = role.colour
+          try:
+            color = discord.Colour(int(f"0x{args[4]}", 16))
+            name = " ".join(args[5:])
+          except: # likely no value inputted
+            name = " ".join(args[4:])
+
+          cloned_role = await message.guild.create_role(name=name, permissions=role.permissions, colour=color, mentionable=role.mentionable, hoist=role.hoist)
+          await message.channel.send(f"{cloned_role.mention} has been created.")
+
         await message.channel.send("Done.", delete_after=5)
         if (msg is not None):
           await msg.delete()
