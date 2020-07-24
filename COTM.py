@@ -733,6 +733,7 @@ async def submitVotes(message, member):
 # end submitVotes
 
 async def refreshVoterWeek(message):
+  await message.channel.trigger_typing()
   guild = message.guild
 
   role = guild.get_role(CHILDREN_ROLE)
