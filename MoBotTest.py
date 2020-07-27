@@ -14,6 +14,7 @@ import random
 import traceback
 import mysql.connector
 import re
+import sys
 
 import SecretStuff
 import ClocksAndCountdowns
@@ -147,7 +148,34 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await message.author.add_roles(None)
+        category = message.guild.get_channel(729440779638145116).category
+
+        log = message.guild.get_channel(737309213872750632)
+        '''c = await message.guild.create_text_channel(
+          "test",
+          overwrites = {
+            message.guild.get_role(527156310366486529) : discord.PermissionOverwrite(read_messages=False)
+          },
+          category=message.channel.category,
+          position=sys.maxsize
+        )'''
+        channel_messages = [c.history(limit=None, oldest_first=True) for c in category.channels]
+
+        mc = ""
+        for c_msgs in channel_messages:
+          for i, msg in enumerate(await c_msgs.flatten()):
+            if i == 0:
+              await log.send(f"**{msg.channel}**")
+            if msg.author.id != moBot:
+              t = f"{msg.author}: {msg.content}\n"
+              if len(mc) + len(t) < 2000:
+                mc += t
+              else:
+                await log.send(mc)
+                mc = ""
+          await log.send(mc)
+          mc = ""
+
         await message.channel.send("done", delete_after=3)
       if args[1] == "role":
         await GeneralCommands.addRemoveRole(message, args)
