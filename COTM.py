@@ -772,12 +772,13 @@ host_not_avail = [ # not actually using this, changed the restrictions...
 
 pm_not_avail = [
   [1, 4, 7], # in div 1, can't pit marshall for these
-  [2, 5],
+  [2, 5, 8],
   [3, 6],
   [1, 4, 7],
-  [2, 5],
+  [2, 5, 8],
   [3, 6],
-  [1, 4, 7]
+  [1, 4, 7],
+  [2, 5, 8]
 ]
 
 def getPitMarshalls():
