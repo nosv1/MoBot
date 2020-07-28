@@ -470,15 +470,12 @@ async def on_message(message):
         pass
 
       global clock_check
-      if (datetime.utcnow() - clock_check).seconds > 59:
+      if (datetime.utcnow() - clock_check).seconds > 60:
         clock_check = datetime.utcnow()
-        print('running check')
         try:
-          if (clock_check - await ClocksAndCountdowns.clockCheck(client)).minutes > 5:
-            print('clock error')
+          if (clock_check - await ClocksAndCountdowns.clockCheck(client)).seconds > 300:
             await RandomSupport.sendMessageToMo("Check MoBotLoop", client, mo)
         except AttributeError:
-          print(traceback.format_exc())
           pass
 
     # end not MoBot message
