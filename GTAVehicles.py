@@ -247,8 +247,6 @@ def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overa
           exec(f'vehicle._{attr} = "{prop.value}"')
         vehicle._overall_lap_time_row = i + 2 # + 2 is for headers
 
-    print(vars(vehicle))
-
   return vehicles
 # end getVehicleInfo
 
@@ -278,7 +276,6 @@ async def toggleTierList(message, tier, toggle):
 
   elif toggle == "remove":
     embed = embed.to_dict()
-    print(embed)
     for i, field in enumerate(embed["fields"]):
       if tier_name in embed["fields"][i]["name"]:
         del embed["fields"][i]
