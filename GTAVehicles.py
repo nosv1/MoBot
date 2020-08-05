@@ -131,7 +131,7 @@ async def handleUserVehicleInput(message, client):
 
     wiki_urls = getVehicleImage(vehicle)
     try:
-      embed.set_thumbnail(url=getVehicleImage(wiki_urls["image_url"]))
+      embed.set_thumbnail(url=wiki_urls["image_url"])
     except: # not sure what could go wrong here... may not find correct page i guess
       print("CAUGHT EXCEPTION")
       print(traceback.format_exc())
