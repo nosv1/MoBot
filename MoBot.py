@@ -615,7 +615,7 @@ async def on_raw_reaction_add(payload):
           await GTAWeather.mainReactionAdd(message, payload, client)
 
         elif "GTA V Vehicle Search" in embedAuthor:
-          await GTAVehicles.mainReactionRemove(message, payload, client)
+          await GTAVehicles.mainReactionAdd(message, payload, client)
 
         elif ("•" in embedFooter and "-- (" in embedFooter and ")" in embedFooter):
           if (payload.emoji.name == "⬅"):
