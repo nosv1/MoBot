@@ -614,6 +614,9 @@ async def on_raw_reaction_add(payload):
         elif ("GTA V Weather Forecast" in embedAuthor):
           await GTAWeather.mainReactionAdd(message, payload, client)
 
+        elif "GTA V Vehicle Search" in embedAuthor:
+          await GTAVehicles.mainReactionRemove(message, payload, client)
+
         elif ("•" in embedFooter and "-- (" in embedFooter and ")" in embedFooter):
           if (payload.emoji.name == "⬅"):
             await CollectionsOLD.leftRightCollection(message, "left", message.embeds[0], client)
@@ -692,7 +695,11 @@ async def on_raw_reaction_remove(payload):
     if (not member.bot or member.id == 476974462022189056):
       await ReactionRole.reactionRole(message, payload, member, "unclick")
       
-      logActionToConsole(message, member, "reactionRemove")
+      logActionToConsole(message, member, "reactionAdd")
+      if (len(message.embeds) > 0):
+
+        if "GTA V Vehicle Search" in embedAuthor:
+          await GTAVehicles.mainReactionRemove(message, payload, client)
 
       if (len(message.embeds) > 0 and "•" in embedFooter and "-- (" in embedFooter and ")" in embedFooter):
         if (payload.emoji.name == "⬅"):

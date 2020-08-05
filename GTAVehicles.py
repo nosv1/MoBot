@@ -8,6 +8,8 @@ from difflib import get_close_matches
 import traceback
 import re
 from requests_html import HTMLSession
+from bs4 import BeautifulSoup as bsoup
+import requests
 
 import SecretStuff
 import MoBotDatabase
@@ -38,11 +40,15 @@ async def main(args, message, client):
 # end main
 
 async def mainReactionAdd(message, payload, client): 
-  pass
+  letter_emojis = list(RandomSupport.letter_emojis.values())
+  if payload.emoji.name in letter_emojis:
+    await toggleTierList(message, list(RandomSupport.letter_emojis.keys())[letter_emojis.index(payload.emoji.name)], "add")
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
-  pass
+  letter_emojis = list(RandomSupport.letter_emojis.values())
+  if payload.emoji.name in letter_emojis:
+    await toggleTierList(message, list(RandomSupport.letter_emojis.keys())[letter_emojis.index(payload.emoji.name)], "remove")
 # end mainReactionRemove
 
 async def memberJoin(member):
@@ -53,11 +59,13 @@ async def memberRemove(member, client):
   pass
 # end memberRemove
 
+
+
 async def handleUserVehicleInput(message, client):
   moBotMember = message.guild.get_member(moBot) # used for role color
 
   embed = discord.Embed() # make base embed
-  embed.set_author(name="GTA V Vehicle Search", url="https://google.com/vehicle=None/", icon_url=moBotMember.avatar_url)
+  embed.set_author(name="GTA V Vehicle Search", url=f"https://google.com/vehicle=None/{'/'.join(f'tier_{c}=None' for c in 'SABCDEFGHIJ')}/", icon_url=moBotMember.avatar_url)
   embed.color = moBotMember.roles[-1].color
 
   vehicle = message.content.split("car ")[1].strip() # get vehicle update user on status
@@ -121,13 +129,14 @@ async def handleUserVehicleInput(message, client):
 
     embed = RandomSupport.updateDetailInURL(embed, "vehicle", vehicle._Vehicle)
 
+    wiki_urls = getVehicleImage(vehicle)
     try:
-      embed.set_thumbnail(url=getVehicleImage(vehicle))
+      embed.set_thumbnail(url=getVehicleImage(wiki_urls["image_url"]))
     except: # not sure what could go wrong here... may not find correct page i guess
       print("CAUGHT EXCEPTION")
       print(traceback.format_exc())
 
-    embed.description = f"**Vehicle:** {vehicle._Vehicle}\n"
+    embed.description = f"**Vehicle:** {vehicle._Vehicle} - [__wiki__]({wiki_urls['wiki_url']})\n"
     embed.description += f"**Class:** {vehicle._Class}\n"
     embed.description += f"[__Overall (Lap Time)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=60309153&range=B{vehicle._overall_lap_time_row}) - "
     embed.description += f"[__Key Info__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=1689972026&range=B{vehicle._key_info_row}) - "
@@ -161,6 +170,15 @@ async def handleUserVehicleInput(message, client):
       del embed["thumbnail"]
       await msg.edit(embed=discord.Embed.from_dict(embed))
 
+    # add tier lists to url
+    tiers = getTiers(vehicle._Class)
+    for tier in tiers:
+      detail = f"tier_{tier}"
+      value = '&'.join(tiers[tier])
+      embed = RandomSupport.updateDetailInURL(embed, detail, value)
+      await msg.add_reaction(RandomSupport.letter_emojis[tier.lower()])
+    await msg.edit(embed=embed)
+
   else:
     embed.description = f"No vehicles with a name close to `{vehicle}` could be found."
     await msg.edit(embed=embed)
@@ -171,7 +189,7 @@ def getVehicleImage(vehicle):
   url = f"https://gta.fandom.com/wiki/{vehicle._Vehicle.replace(' ', '_')}"
   r = session.get(url)
   image_url = r.html.html.split("image image-thumbnail")[1].split("src=\"")[1].split("\"")[0]
-  return image_url
+  return {"wiki_url" : url, "image_url" : image_url}
 # end getVehicleImage
 
 def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overall_lap_time_sheet, vehicles):
@@ -245,6 +263,59 @@ def searchVehicle(key_vehicle_info_sheet, vehicle):
   return poss_vehicles
 # end searchVehicle
 
+
+async def toggleTierList(message, tier, toggle):
+  url_tier = f"tier_{tier.upper()}"
+  embed = message.embeds[0]
+  cars = "\n".join(RandomSupport.getDetailFromURL(embed.author.url, url_tier).split("&"))
+  
+  tier_name = f"{tier.upper()} Tier"
+  check = RandomSupport.getValueFromField(embed, tier_name)
+  if not check: # not check is True if tier is not present
+    if toggle == "add":
+      embed.add_field(name=f"**__{tier_name}__**", value=cars)
+      await message.edit(embed=embed)
+
+  elif toggle == "remove":
+    embed = embed.to_dict()
+    print(embed)
+    for i, field in enumerate(embed["fields"]):
+      if tier_name in embed["fields"][i]["name"]:
+        del embed["fields"][i]
+        break
+    await message.edit(embed=discord.Embed.from_dict(embed))
+
+# end toggleTierList
+
+def getTiers(car_class):
+  classes = {
+    "Supers" : "supers",
+    "Sports" : "sports",
+    "Muscle" : "muscle",
+    "Sports Classics" : "classics",
+    "Coupes" : "coupes",
+    "Sedans" : "sedans",
+    "SUVs" : "suvs",
+    "Compacts" : "compacts",
+    "Vans" : "vans",
+    "Off-Road" : "offroads",
+  }
+
+  url = f"https://broughy.com/gta5{classes[car_class]}"
+  soup = bsoup(requests.get(url).text, "html.parser")
+  tier_lists = str(soup).split("<strong>")[1:]
+  tier_lists = [t.split("</div>")[0] for t in tier_lists]
+  tiers = {}
+  for t in tier_lists:
+    tier = t.split("</")[0]
+    cars = t.split("<br/>")
+    cars[-1] = cars[-1].split("</p>")[0]
+    cars[0] = cars[0].split(">")[-1]
+    tiers[tier] = cars
+
+  return tiers
+# end getTier
+
 def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
   creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
@@ -252,10 +323,3 @@ def openSpreadsheet():
   workbook = clientSS.open_by_key("1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4")
   return workbook
 # end openSpreadsheet
-
-'''workbook = openSpreadsheet()
-sheets = workbook.worksheets()
-key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
-handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
-overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
-getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overall_lap_time_sheet, [Vehicle("Sultan RS")])'''

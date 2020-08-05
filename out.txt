@@ -1,1 +1,15 @@
-Connecting...
+['S</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Gang Burrito', 'Rumpo Custom', 'Speedo Custom</p>']
+['A</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Bison', 'Minivan Custom</p>']
+['B</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Bugstars Burrito', 'Minivan', 'Paradise', 'Rumpo', 'Youga</p>']
+['C</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Bobcat XL', 'Clown Van', 'Pony', 'Speedo</p>']
+['D</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Youga Classic</p>']
+['E</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Boxville', 'Camper', 'Journey', 'Mule (Armored) [Commercial]', 'Surfer', 'Taco Van</p>']
+{'S': ['Gang Burrito', 'Rumpo Custom', 'Speedo Custom'], 'A': ['Bison', 'Minivan Custom'], 'B': ['Bugstars Burrito', 'Minivan', 'Paradise', 'Rumpo', 'Youga'], 'C': ['Bobcat XL', 'Clown Van', 'Pony', 'Speedo'], 'D': ['Youga Classic'], 'E': ['Boxville', 'Camper', 'Journey', 'Mule (Armored) [Commercial]', 'Surfer', 'Taco Van']}
+['S</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Kamacho', 'Vagrant</p>']
+['A</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Desert Raid', 'Street Blazer', 'Trophy Truck</p>']
+['B</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Bifta', 'Blazer', 'Brawler', 'Caracara 4x4', 'Dune Buggy', 'Everon', 'Hot Rod Blazer</p>']
+['C</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Bodhi', 'Freecrawler', 'Hellion', 'Injection', 'Insurgent', 'Outlaw', 'Riata</p>']
+['D</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Dubsta 6x6', 'Dune [Service]', 'Guardian [Industrial]', 'Liberator', 'Marshall', 'Mesa (Merryweather)', 'Rebel', 'Rusty Rebel', 'Sandking SWB</p>']
+['E</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Kalahari', 'Rancher XL', 'Sandking XL</p>']
+['F</strong></h2><p class="" style="text-align:center;white-space:pre-wrap;">Blazer Lifeguard', 'Duneloader</p>']
+{'S': ['Kamacho', 'Vagrant'], 'A': ['Desert Raid', 'Street Blazer', 'Trophy Truck'], 'B': ['Bifta', 'Blazer', 'Brawler', 'Caracara 4x4', 'Dune Buggy', 'Everon', 'Hot Rod Blazer'], 'C': ['Bodhi', 'Freecrawler', 'Hellion', 'Injection', 'Insurgent', 'Outlaw', 'Riata'], 'D': ['Dubsta 6x6', 'Dune [Service]', 'Guardian [Industrial]', 'Liberator', 'Marshall', 'Mesa (Merryweather)', 'Rebel', 'Rusty Rebel', 'Sandking SWB'], 'E': ['Kalahari', 'Rancher XL', 'Sandking XL'], 'F': ['Blazer Lifeguard', 'Duneloader']}
