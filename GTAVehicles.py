@@ -284,20 +284,8 @@ async def toggleTierList(message, tier, toggle):
 # end toggleTierList
 
 def getTiers(car_class):
-  classes = {
-    "Supers" : "supers",
-    "Sports" : "sports",
-    "Muscle" : "muscle",
-    "Sports Classics" : "classics",
-    "Coupes" : "coupes",
-    "Sedans" : "sedans",
-    "SUVs" : "suvs",
-    "Compacts" : "compacts",
-    "Vans" : "vans",
-    "Off-Road" : "offroads",
-  }
 
-  url = f"https://broughy.com/gta5{classes[car_class]}"
+  url = f"https://broughy.com/gta5{car_classes[car_class]}"
   soup = bsoup(requests.get(url).text, "html.parser")
   tier_lists = str(soup).split("<strong>")[1:]
   tier_lists = [t.split("</div>")[0] for t in tier_lists]
@@ -309,6 +297,7 @@ def getTiers(car_class):
     cars[0] = cars[0].split(">")[-1]
     tiers[tier] = cars
 
+  # tiers = {S : [car1, car2...], A : []}
   return tiers
 # end getTier
 
