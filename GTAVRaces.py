@@ -81,9 +81,9 @@ async def generateRandomRace(message, args, refresh):
     except IndexError:
       link = "Unknown"
     job = job.value
-    job_type = {"R" : "Regular Racing Circuit", "O" : "Off-Road/Rally/RallyX Circuit", "T" : "Themed Circuit (Stunt/Challenge/Transform", "" : ""}[tracks[i][1].value.upper()]
+    job_type = {"R" : "Regular Racing Circuit", "O" : "Off-Road/Rally/RallyX Circuit", "T" : "Themed Circuit (Stunt/Challenge/Transform)", "" : ""}[tracks[i][1].value.upper()]
 
-    s = f"Class: **{car_class}**\nTier: **{car_tier}**\nVehicle: **{car}**\nTrack: **{job}**\nLink: <{link}>\nType: **{job_type}**\n\nTracks - <https://bit.ly/cchubCatalogue>\nCars - <https://bit.ly/3fGklW8>\n\n*You can edit ur message, and it'll do the command again, plz don't spam... like really, don't spam it.*"
+    s = f"Class: **{car_class}**\nTier: **{car_tier}**\nVehicle: **{car}**\nTrack: **{job}**\nType: **{job_type}**\nLink: <{link}>\n\nTracks - <https://bit.ly/cchubCatalogue>\nCars - <https://bit.ly/3fGklW8>\n\n*You can edit ur message, and it'll do the command again, plz don't spam... like really, don't spam it.*"
     if refresh:
       await message.edit(content=s)
     else:
