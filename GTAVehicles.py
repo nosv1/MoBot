@@ -27,6 +27,19 @@ OVERALL_LAP_TIME_SHEET_ID = 60309153
 
 space_char = "⠀"
 
+car_classes = { # Spreadsheet Class : broughy website class
+  "Supers" : "supers",
+  "Sports" : "sports",
+  "Muscle" : "muscle",
+  "Sports Classics" : "classics",
+  "Coupes" : "coupes",
+  "Sedans" : "sedans",
+  "SUVs" : "suvs",
+  "Compacts" : "compacts",
+  "Vans" : "vans",
+  "Off-Road" : "offroads",
+}
+
 class Vehicle: # attributes are being added in functions
   def __init__(self, name):
     self._name = name
