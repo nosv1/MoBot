@@ -72,30 +72,35 @@ async def generateRandomRace(message, args, refresh):
     await message.channel.send("**Platform not found.**\n\n`@MoBot#0697 gtarace random <xbox, ps, pc>`\n`@MoBot#0697 gtarace random xbox`")
     return
 
-  cars = getCars()
-  tracks, plat_sheet = getTracks(platform) # tracks are cells [[track, job_type], [track, job_type]]
+  try:
+    cars = getCars()
+    tracks, plat_sheet = getTracks(platform) # tracks are cells [[track, job_type], [track, job_type]]
 
-  # get car
-  car_classes_keys = list(car_classes.keys())
-  car_class = car_classes_keys[random.randint(0, len(car_classes_keys)-1)]
-  car_tiers = getTiers(car_class)
+    # get car
+    car_classes_keys = list(car_classes.keys())
+    car_class = car_classes_keys[random.randint(0, len(car_classes_keys)-1)]
+    car_tiers = getTiers(car_class)
 
-  car_tiers_keys = list(car_tiers.keys())
-  car_tier = car_tiers_keys[random.randint(0, len(car_tiers_keys)-1)]
-  car = car_tiers[car_tier][random.randint(0, len(car_tier)-1)]
+    car_tiers_keys = list(car_tiers.keys())
+    car_tier = car_tiers_keys[random.randint(0, len(car_tiers_keys)-1)]
+    car = car_tiers[car_tier][random.randint(0, len(car_tier)-1)]
 
-  # get track
-  i = random.randint(0, len(tracks)-1)
-  job = tracks[i][0]
-  link = plat_sheet.cell(job.row, job.col, value_render_option='FORMULA').value.split('"')[1]
-  job = job.value
+    # get track
+    i = random.randint(0, len(tracks)-1)
+    job = tracks[i][0]
+    link = plat_sheet.cell(job.row, job.col, value_render_option='FORMULA').value.split('"')[1]
+    job = job.value
 
-  s = f"**__Race Generated__**\nPlatform: **{platform.title()}**\nClass: **{car_class}**\nTier: **{car_tier}**\nVehicle: **{car}**\nTrack: **{job}**\nLink: <{link}>\n\nTracks from GTACCHub Catalogue - <https://bit.ly/cchubCatalogue>\nCars from Broughy1322 Spreadsheet - <https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=999161401>\n\n*You can edit ur message, and it'll do the command again, plz don't spam... like really, don't spam it."
-  if refresh:
-    await message.edit(content=s)
-  else:
-    msg = await message.channel.send(s)
-    #await msg.add_reaction(RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
+    s = f"**__Race Generated__**\nPlatform: **{platform.title()}**\nClass: **{car_class}**\nTier: **{car_tier}**\nVehicle: **{car}**\nTrack: **{job}**\nLink: <{link}>\n\nTracks from GTACCHub Catalogue - <https://bit.ly/cchubCatalogue>\nCars from Broughy1322 Spreadsheet - <https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=999161401>\n\n*You can edit ur message, and it'll do the command again, plz don't spam... like really, don't spam it."
+    if refresh:
+      await message.edit(content=s)
+    else:
+      msg = await message.channel.send(s)
+      #await msg.add_reaction(RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
+  except: #likely resource exhausted error
+    print("CAUGHT EXCEPTION")
+    print(traceback.format_exc)
+    await message.channel.send("There were technical difficulties generating your race. Please try again in a minute or so.")
 # end generateRandomRace
 
 def getCars():
