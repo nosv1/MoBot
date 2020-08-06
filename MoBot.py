@@ -41,6 +41,7 @@ import Imperial
 import ReapersMC
 
 # importing external functions files
+import GTAVRaces
 import GTAVehicles
 import GTAWeather
 import XboxGamertags
@@ -312,6 +313,8 @@ async def on_message(message):
           await GTAVehicles.handleUserVehicleInput(message, client)
         elif ("gtaweather" in args[1] or "gta weather" in message.content):
           await GTAWeather.sendWeatherForecast(message)
+        elif ("gtarace" in args[1] and "random" in args[2]):
+          await GTAVRaces.generateRandomRace(message, args, None)
         elif (args[1] == "admin" and isMo):
           await AdminFunctions.main(args, message, client) 
         elif (args[1] == "dk" and isMo):

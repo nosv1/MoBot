@@ -4,16 +4,18 @@ from datetime import datetime
 import gspread 
 from oauth2client.service_account import ServiceAccountCredentials
 import mysql.connector
-from difflib import get_close_matches
 import traceback
 import re
 from requests_html import HTMLSession
 from bs4 import BeautifulSoup as bsoup
 import requests
+import random
 
 import SecretStuff
 import MoBotDatabase
 import RandomSupport
+
+import GTACCHub
 
 # USER IDs
 moBot = 449247895858970624
@@ -27,11 +29,18 @@ OVERALL_LAP_TIME_SHEET_ID = 60309153
 
 space_char = "⠀"
 
-class Vehicle: # attributes are being added in functions
-  def __init__(self, name):
-    self._name = name
-  pass
-# end Vehicle
+car_classes = { # Spreadsheet Class : broughy website class
+  "Supers" : "supers",
+  "Sports" : "sports",
+  "Muscle" : "muscle",
+  "Sports Classics" : "classics",
+  "Coupes" : "coupes",
+  "Sedans" : "sedans",
+  "SUVs" : "suvs",
+  "Compacts" : "compacts",
+  "Vans" : "vans",
+  "Off-Road" : "offroads",
+}
 
 async def main(args, message, client):
   now = datetime.now()
@@ -39,16 +48,12 @@ async def main(args, message, client):
     args[i].strip()
 # end main
 
-async def mainReactionAdd(message, payload, client): 
-  letter_emojis = list(RandomSupport.letter_emojis.values())
-  if payload.emoji.name in letter_emojis:
-    await toggleTierList(message, list(RandomSupport.letter_emojis.keys())[letter_emojis.index(payload.emoji.name)], "add")
+async def mainReactionAdd(message, payload, client):
+  pass
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
-  letter_emojis = list(RandomSupport.letter_emojis.values())
-  if payload.emoji.name in letter_emojis:
-    await toggleTierList(message, list(RandomSupport.letter_emojis.keys())[letter_emojis.index(payload.emoji.name)], "remove")
+  pass
 # end mainReactionRemove
 
 async def memberJoin(member):
@@ -59,6 +64,75 @@ async def memberRemove(member, client):
   pass
 # end memberRemove
 
+async def generateRandomRace(message, args, refresh):
+  await message.channel.trigger_typing()
+
+  platform = args[-1].lower()
+  if platform not in ["xbox", "ps", "pc"]:
+    await message.channel.send("**Platform not found.**\n\n`@MoBot#0697 gtarace random <xbox, ps, pc>`\n`@MoBot#0697 gtarace random xbox`")
+    return
+
+  cars = getCars()
+  tracks, plat_sheet = getTracks(platform) # tracks are cells [[track, job_type], [track, job_type]]
+
+  # get car
+  car_classes_keys = list(car_classes.keys())
+  car_class = car_classes_keys[random.randint(0, len(car_classes_keys)-1)]
+  car_tiers = getTiers(car_class)
+
+  car_tiers_keys = list(car_tiers.keys())
+  car_tier = car_tiers_keys[random.randint(0, len(car_tiers_keys)-1)]
+  car = car_tiers[car_tier][random.randint(0, len(car_tier)-1)]
+
+  # get track
+  i = random.randint(0, len(tracks)-1)
+  job = tracks[i][0]
+  link = plat_sheet.cell(job.row, job.col, value_render_option='FORMULA').value.split('"')[1]
+  job = job.value
+
+  s = f"**__Race Generated__**\nPlatform: **{platform.title()}**\nClass: **{car_class}**\nTier: **{car_tier}**\nVehicle: **{car}**\nTrack: **{job}**\nLink: <{link}>\n\nTracks from GTACCHub Catalogue - <https://bit.ly/cchubCatalogue>\nCars from Broughy1322 Spreadsheet - <https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=999161401>\n\n*You can edit ur message, and it'll do the command again, plz don't spam... like really, don't spam it."
+  if refresh:
+    await message.edit(content=s)
+  else:
+    msg = await message.channel.send(s)
+    #await msg.add_reaction(RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
+# end generateRandomRace
+
+def getCars():
+  workbook = openSpreadsheet()
+  sheets = workbook.worksheets()
+  key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
+  vehicle_names = key_vehicle_info_sheet.range(f"B4:B{key_vehicle_info_sheet.row_count}")
+  return [cell.value for cell in vehicle_names if cell.value != ""]
+# end getCars
+
+def getTracks(platform):
+  workbook = GTACCHub.openSpreadsheet()
+  sheets = workbook.worksheets()
+
+  plat_sheet = None
+  if (platform == "xbox"):
+    plat_sheet = [sheet for sheet in sheets if sheet.id == GTACCHub.XBOX_SHEET_ID][0]
+  elif (platform == "ps"):
+    plat_sheet = [sheet for sheet in sheets if sheet.id == GTACCHub.PS_SHEET_ID][0]
+  elif (platform == "pc"):
+    plat_sheet = [sheet for sheet in sheets if sheet.id == GTACCHub.PC_SHEET_ID][0]
+
+  jobs_and_types = plat_sheet.range(f"A12:B{plat_sheet.row_count-1}")
+  jobs_and_types = RandomSupport.arrayFromRange(jobs_and_types)
+  i = 0
+  while i > -1:
+    if (
+      jobs_and_types[i][0].value == "" or 
+      len(jobs_and_types[i][0].value == 1) or 
+      "Jobs by" in jobs_and_types[i][0].value or
+      "N" in jobs_and_types[i][1].value
+    ):
+      del jobs_and_types[i]
+    i -= 1
+
+  return [jobs_and_types, plat_sheet]
+# end getTracks
 
 
 async def handleUserVehicleInput(message, client):
@@ -284,20 +358,8 @@ async def toggleTierList(message, tier, toggle):
 # end toggleTierList
 
 def getTiers(car_class):
-  classes = {
-    "Supers" : "supers",
-    "Sports" : "sports",
-    "Muscle" : "muscle",
-    "Sports Classics" : "classics",
-    "Coupes" : "coupes",
-    "Sedans" : "sedans",
-    "SUVs" : "suvs",
-    "Compacts" : "compacts",
-    "Vans" : "vans",
-    "Off-Road" : "offroads",
-  }
 
-  url = f"https://broughy.com/gta5{classes[car_class]}"
+  url = f"https://broughy.com/gta5{car_classes[car_class]}"
   soup = bsoup(requests.get(url).text, "html.parser")
   tier_lists = str(soup).split("<strong>")[1:]
   tier_lists = [t.split("</div>")[0] for t in tier_lists]
@@ -309,6 +371,7 @@ def getTiers(car_class):
     cars[0] = cars[0].split(">")[-1]
     tiers[tier] = cars
 
+  # tiers = {S : [car1, car2...], A : []}
   return tiers
 # end getTier
 

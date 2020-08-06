@@ -9,6 +9,11 @@ import SecretStuff
 moBot = 449247895858970624
 spaceChar = "⠀"
 
+# GTACCHub Catalogue Sheets
+XBOX_SHEET_ID = 0
+PS_SHEET_ID = 1862312493
+PC_SHEET_ID = 1701609275
+
 # gta cc hub spreadsheet stuff
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
@@ -19,7 +24,7 @@ async def main(args, message, client):
   
   catalogue = ["catalogue", "catalog", "catelogue", "catelog", "catalogur", "catlog", "cataloge", "catalgoue"]
   if (args[0][1:].lower() in catalogue):
-    platform = ["xb1", "xbox", "ps4", "pc"]
+    platform = ["xb1", "xbox", "ps4", "ps", "pc"]
     if (len(args) > 2 and args[1].lower() in platform):
       try:
         await getJob(message, args)
@@ -46,15 +51,16 @@ async def memberRemove(member, client):
 
 async def getJob(message, args):
   await message.channel.trigger_typing()
-  workbook = await openSpreadsheet()
+  workbook = openSpreadsheet()
+  sheets = workbook.worksheets()
   platform = args[1].lower()
   platSheet = None
   if (platform == "xb1" or platform == "xbox"):
-    platSheet = workbook.worksheet("XB1")
-  elif (platform == "ps4"):
-    platSheet = workbook.worksheet("PS4")
+    platSheet = [sheet for sheet in sheets if sheet.id == XBOX_SHEET_ID][0]
+  elif (platform == "ps4" or platform == "ps"):
+    platSheet = [sheet for sheet in sheets if sheet.id == PS_SHEET_ID][0]
   elif (platform == "pc"):
-    platSheet = workbook.worksheet("PC")
+    platSheet = [sheet for sheet in sheets if sheet.id == PC_SHEET_ID][0]
     
   jobs = platSheet.range("A12:A" + str(platSheet.row_count-1))
   jobTypes = platSheet.range("B12:B" + str(platSheet.row_count-1))
@@ -168,7 +174,7 @@ async def getJob(message, args):
 
   await message.channel.send(embed=embed)
 
-async def openSpreadsheet():
+def openSpreadsheet():
   clientSS = gspread.authorize(creds)
   workbook = clientSS.open_by_key("195i7Zyf1mcZGCDhgszCjjN-8fyOTVjlg0eeW1hGaGRo")
   return workbook
