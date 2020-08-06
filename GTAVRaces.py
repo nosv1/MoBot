@@ -30,19 +30,6 @@ OVERALL_LAP_TIME_SHEET_ID = 60309153
 
 space_char = "⠀"
 
-car_classes = { # Spreadsheet Class : broughy website class
-  "Supers" : "supers",
-  "Sports" : "sports",
-  "Muscle" : "muscle",
-  "Sports Classics" : "classics",
-  "Coupes" : "coupes",
-  "Sedans" : "sedans",
-  "SUVs" : "suvs",
-  "Compacts" : "compacts",
-  "Vans" : "vans",
-  "Off-Road" : "offroads",
-}
-
 async def main(args, message, client):
   now = datetime.now()
   for i in range(len(args)):
@@ -78,7 +65,7 @@ async def generateRandomRace(message, args, refresh):
     tracks, plat_sheet = getTracks(platform) # tracks are cells [[track, job_type], [track, job_type]]
 
     # get car
-    car_classes_keys = list(car_classes.keys())
+    car_classes_keys = list(GTAVehicles.car_classes.keys())
     car_class = car_classes_keys[random.randint(0, len(car_classes_keys)-1)]
     car_tiers = GTAVehicles.getTiers(car_class)
 
@@ -89,20 +76,24 @@ async def generateRandomRace(message, args, refresh):
     # get track
     i = random.randint(0, len(tracks)-1)
     job = tracks[i][0]
-    link = plat_sheet.cell(job.row, job.col, value_render_option='FORMULA').value.split('"')[1]
+    try:
+      link = plat_sheet.cell(job.row, job.col, value_render_option='FORMULA').value.split('"')[1]
+    except IndexError:
+      link = "Unknown"
     job = job.value
-    job_type = {"R" : "Regular Racing Circuit", "O" : "Off-Road/Rally/RallyX Circuit", "T" : "Themed Circuit (Stunt/Challenge/Transform"}[tracks[i][1].upper()]
+    job_type = {"R" : "Regular Racing Circuit", "O" : "Off-Road/Rally/RallyX Circuit", "T" : "Themed Circuit (Stunt/Challenge/Transform", "" : ""}[tracks[i][1].value.upper()]
 
-    s = f"**__Race Generated__**\nPlatform: **{platform.title()}**\nClass: **{car_class}**\nTier: **{car_tier}**\nVehicle: **{car}**\nTrack: **{job}**\n\nType: **{job_type}**Link: <{link}>\n\nTracks from GTACCHub Catalogue - <https://bit.ly/cchubCatalogue>\nCars from Broughy1322 Spreadsheet - <https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=999161401>\n\n*You can edit ur message, and it'll do the command again, plz don't spam... like really, don't spam it."
+    s = f"Class: **{car_class}**\nTier: **{car_tier}**\nVehicle: **{car}**\nTrack: **{job}**\nLink: <{link}>\nType: **{job_type}**\n\nTracks - <https://bit.ly/cchubCatalogue>\nCars - <https://bit.ly/3fGklW8>\n\n*You can edit ur message, and it'll do the command again, plz don't spam... like really, don't spam it.*"
     if refresh:
       await message.edit(content=s)
     else:
       msg = await message.channel.send(s)
       #await msg.add_reaction(RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
-  except: #likely resource exhausted error
-    print("CAUGHT EXCEPTION")
-    print(traceback.format_exc)
+  except gspread.exceptions.APIError:
     await message.channel.send("There were technical difficulties generating your race. Please try again in a minute or so.")
+  except: # who knows
+    print("CAUGHT EXCEPTION")
+    print(traceback.format_exc())
 # end generateRandomRace
 
 def getCars():
