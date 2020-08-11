@@ -184,12 +184,15 @@ async def handleUserVehicleInput(message, client):
       await msg.edit(embed=discord.Embed.from_dict(embed))
 
     # add tier lists to url
-    tiers = getTiers(vehicle._Class)
-    for tier in tiers:
-      detail = f"tier_{tier}"
-      value = '&'.join(tiers[tier])
-      embed = RandomSupport.updateDetailInURL(embed, detail, value)
-      await msg.add_reaction(RandomSupport.letter_emojis[tier.lower()])
+    try:
+      tiers = getTiers(vehicle._Class)
+      for tier in tiers:
+        detail = f"tier_{tier}"
+        value = '&'.join(tiers[tier])
+        embed = RandomSupport.updateDetailInURL(embed, detail, value)
+        await msg.add_reaction(RandomSupport.letter_emojis[tier.lower()])
+    except: # likely vehicle selected is not raceable
+      pass
     await msg.edit(embed=embed)
 
   else:
