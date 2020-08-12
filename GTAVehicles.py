@@ -28,6 +28,7 @@ OVERALL_LAP_TIME_SHEET_ID = 60309153
 space_char = "⠀"
 
 car_classes = { # Spreadsheet Class : broughy website class
+  "Open Wheel" : "openwheels",
   "Supers" : "supers",
   "Sports" : "sports",
   "Muscle" : "muscle",
