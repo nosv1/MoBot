@@ -55,14 +55,24 @@ async def main(args, message, client):
 
 async def mainReactionAdd(message, payload, client): 
   letter_emojis = list(RandomSupport.letter_emojis.values())
-  if payload.emoji.name in letter_emojis:
-    await toggleTierList(message, list(RandomSupport.letter_emojis.keys())[letter_emojis.index(payload.emoji.name)], "add")
+  symbol_emojis = list(RandomSupport.symbol_emojis.values())
+  if payload.emoji.name in letter_emojis + symbol_emojis:
+    try:
+      char_clicked = list(RandomSupport.letter_emojis.keys())[letter_emojis.index(payload.emoji.name)]
+    except ValueError:
+      char_clicked = list(RandomSupport.symbol_emojis.keys())[symbol_emojis.index(payload.emoji.name)]
+    await toggleTierList(message, char_clicked, "add")
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
   letter_emojis = list(RandomSupport.letter_emojis.values())
-  if payload.emoji.name in letter_emojis:
-    await toggleTierList(message, list(RandomSupport.letter_emojis.keys())[letter_emojis.index(payload.emoji.name)], "remove")
+  symbol_emojis = list(RandomSupport.symbol_emojis.values())
+  if payload.emoji.name in letter_emojis + symbol_emojis:
+    try:
+      char_clicked = list(RandomSupport.letter_emojis.keys())[letter_emojis.index(payload.emoji.name)]
+    except ValueError:
+      char_clicked = list(RandomSupport.symbol_emojis.keys())[symbol_emojis.index(payload.emoji.name)]
+    await toggleTierList(message, char_clicked, "remove")
 # end mainReactionRemove
 
 async def memberJoin(member):
@@ -193,9 +203,9 @@ async def handleUserVehicleInput(message, client):
         try:
           embed = RandomSupport.updateDetailInURL(embed, detail, value)
           await msg.add_reaction(RandomSupport.letter_emojis[tier.lower()])
-        except KeyError: # S+ tier
+        except (KeyError, IndexError) as e: # S+ tier
           embed = RandomSupport.updateDetailInURL(embed, detail.replace("S+", "+"), value)
-          await msg.add_reaction(RandomSupport.symbol_emojis[tier])
+          await msg.add_reaction(RandomSupport.symbol_emojis[tier.replace("S+", "+")])
     except: # likely vehicle selected is not raceable
       print(traceback.format_exc())
       pass
@@ -289,6 +299,7 @@ async def toggleTierList(message, tier, toggle):
   embed = message.embeds[0]
   cars = "\n".join(RandomSupport.getDetailFromURL(embed.author.url, url_tier).split("&"))
   
+  tier = "S+" if tier == "+" else tier
   tier_name = f"{tier.upper()} Tier"
   check = RandomSupport.getValueFromField(embed, tier_name)
   if not check: # not check is True if tier is not present
