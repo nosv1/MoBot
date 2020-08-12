@@ -79,7 +79,7 @@ async def handleUserVehicleInput(message, client):
   moBotMember = message.guild.get_member(moBot) # used for role color
 
   embed = discord.Embed() # make base embed
-  embed.set_author(name="GTA V Vehicle Search", url=f"https://google.com/vehicle=None/{'/'.join(f'tier_{c}=None' for c in 'SABCDEFGHIJ')}/", icon_url=moBotMember.avatar_url)
+  embed.set_author(name="GTA V Vehicle Search", url=f"https://google.com/vehicle=None/{'/'.join(f'tier_{c}=None' for c in '+SABCDEFGHIJ')}/", icon_url=moBotMember.avatar_url)
   embed.color = moBotMember.roles[-1].color
 
   vehicle = message.content.split("car ")[1].strip() # get vehicle update user on status
@@ -190,9 +190,14 @@ async def handleUserVehicleInput(message, client):
       for tier in tiers:
         detail = f"tier_{tier}"
         value = '&'.join(tiers[tier])
-        embed = RandomSupport.updateDetailInURL(embed, detail, value)
-        await msg.add_reaction(RandomSupport.letter_emojis[tier.lower()])
+        try:
+          embed = RandomSupport.updateDetailInURL(embed, detail, value)
+          await msg.add_reaction(RandomSupport.letter_emojis[tier.lower()])
+        except KeyError: # S+ tier
+          embed = RandomSupport.updateDetailInURL(embed, detail.replace("S+", "+"), value)
+          await msg.add_reaction(RandomSupport.symbol_emojis[tier])
     except: # likely vehicle selected is not raceable
+      print(traceback.format_exc())
       pass
     await msg.edit(embed=embed)
 
