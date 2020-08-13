@@ -310,7 +310,7 @@ async def randomNiceMessage(client):
   r = RandomSupport.getRandomCondition(1/(1440/1))
   if r: # once a day
     chnl = client.get_guild(GUILD_ID).get_channel(NOT_EVENT_CHAT)
-    await chnl.send(f"> {random.randint(0, len(phrases)-1)}")
+    await chnl.send(f"> {phrases[random.randint(0, len(phrases)-1)]}")
 # end randomNiceMessage
 
 
