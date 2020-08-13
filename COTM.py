@@ -42,6 +42,7 @@ START_ORDER_EMBEDS = [
 ]
 
 # common channels
+NOT_EVENT_CHAT = 554050787462873089
 COTM_STREAMS = 527161746473877504
 QUALIFYING = 607693838642970819
 QUALI_SCREENSHOTS = 607694176133447680
@@ -290,6 +291,27 @@ async def memberRemove(member, client):
   channel = guild.get_channel(EVENT_CHAT)
   await channel.send(f"{member.name} (a.k.a. {member.display_name}) has lost his footing and has ragdolled his way down the mountain 🗻. {mo_member.mention}")
 # end memberRemove
+
+
+
+''' RANDOM '''
+async def randomNiceMessage(client):
+  phrases = [
+    "Remember to be nice. :)",
+    "Be an unlikley ally. :)",
+    "Conisder all perspectives. :)",
+    "One can be helpful and polite at the same time. :)",
+    "Toxic behaviour is only enjoyable by toxic people. :)",
+    "Support others' enjoyment (assuming unharmful). :)",
+    "All brains are roughly the same color. :)",
+    "Different mindsets are not wrong mindsets (usually). :)"
+  ]
+
+  r = RandomSupport.getRandomCondition(1/(1440/1))
+  if r: # once a day
+    chnl = client.get_guild(GUILD_ID).get_channel(NOT_EVENT_CHAT)
+    await chnl.send(f"> {random.randint(0, len(phrases)-1)}")
+# end randomNiceMessage
 
 
 

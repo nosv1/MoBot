@@ -29,6 +29,7 @@ import MoBotDatabase
 import AOR
 import MoBotTables
 import MessageScheduler
+import COTM
 
 import MoBotTimeZones
   
@@ -288,6 +289,7 @@ async def main(client):
         await on_guild_channel_update(None, None)
         await updateMoBotStatus(client)
         await updateTimeZoneList(currentTime)
+        await COTM.randomNiceMessage(client)
       # end if second == 0
 
         '''
