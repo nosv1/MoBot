@@ -385,7 +385,7 @@ async def saveCommand(message, embed):
         custom_commands.owner_name = '%s',
         custom_commands.owner_id = '%s',
         custom_commands.guild_name = '%s',
-        custom_commands.referencing_message = '%s'
+        custom_commands.referencing_message = '%s',
         custom_commands.ref_msg_channel_id = '%s'
       WHERE
         custom_commands.command_id = '%s'""" % (
