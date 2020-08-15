@@ -148,9 +148,34 @@ async def on_message(message):
       
     if (len(args) > 1):
       if (args[1] == "test"):
-        await GTAVehicles.handleUserVehicleInput(message, client)
+        msg = await message.channel.fetch_message(744225770884431902)
 
-        await message.channel.send("done", delete_after=3)
+        content = msg.content if msg.content is not "" else None
+        embed = msg.embeds[0] if msg.embeds else None
+        file_name = await RandomSupport.saveFile(msg.attachments[0]) if msg.attachments else None
+
+        if file_name:
+          f = discord.File(open(file_name, "rb"))
+        else:
+          f = None
+
+        try:
+          if embed.video.url:
+            embed=None
+        except AttributeError: # when there is no video url in embed
+          pass
+
+        await message.channel.send(
+          embed=embed,
+          content=content,
+          file=f
+        )
+
+        if file_name:
+          f.close()
+          await RandomSupport.deleteFile(file_name)
+
+        await message.channel.send("done", delete_after=3, embed=None)
       if args[1] == "role":
         await GeneralCommands.addRemoveRole(message, args)
       elif (args[1] == "table"):

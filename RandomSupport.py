@@ -181,6 +181,18 @@ async def deleteMoBotMessages(moBotMessages):
     await msg.delete()
 # end deleteMoBotMessages
 
+async def saveFile(attachment):
+  n = datetime.now()
+  file_name = f"{n.microsecond}_{attachment.filename}"
+  await attachment.save(file_name)
+  return file_name
+# end saveFile
+
+async def deleteFile(file_name):
+  os.remove(file_name)
+  return True
+# end deleteFile
+
 async def saveImageReturnURL(attachment, client):
   guild = client.get_guild(moBotSupport)
   channel = guild.get_channel(randomStorage)

@@ -6,6 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 import SecretStuff
 import MoBotDatabase
+import RandomSupport
 
 moBot = 449247895858970624
 moBotTest = 476974462022189056
@@ -101,13 +102,32 @@ async def sendCommand(message, command):
 
     if (msg is None):
       pass
+
     else:
-      if (msg.embeds and msg.content is not ""): # msg.embeds not blank and content not blank
-        await message.channel.send(embed=msg.embeds[0], content=msg.content)
-      elif (msg.embeds):
-        await message.channel.send(embed=msg.embeds[0])
-      elif (msg.content is not ""):
-        await message.channel.send(content=msg.content)
+      content = msg.content if msg.content is not "" else None
+      embed = msg.embeds[0] if msg.embeds else None
+      file_name = await RandomSupport.saveFile(msg.attachments[0]) if msg.attachments else None
+
+      if file_name:
+        f = discord.File(open(file_name, "rb"))
+      else:
+        f = None
+
+      try:
+        if embed.video.url:
+          embed=None
+      except AttributeError: # when there is no video url in embed
+        pass
+
+      await message.channel.send(
+        embed=embed,
+        content=content,
+        file=f
+      )
+
+      if file_name:
+        f.close()
+        await RandomSupport.deleteFile(file_name)
   else:
     await message.channel.send(response)
 # end sendCommand
