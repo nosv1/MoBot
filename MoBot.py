@@ -322,6 +322,8 @@ async def on_message(message):
         elif (args[1] == "avatar"):
           member = message.guild.get_member(int(args[2]))
           await message.channel.send(str(member.avatar_url))
+        elif args[1] == "guildicon":
+          await message.channel.send(message.guild.icon_url)
         elif (args[1] == "hangman"):
           await Hangman.newGame(message, client)
         elif (message.content.split("> ")[1].strip() == "2 + 2"):
