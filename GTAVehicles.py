@@ -220,7 +220,10 @@ def getVehicleImage(vehicle):
   session = HTMLSession()
   url = f"https://gta.fandom.com/wiki/{vehicle._Vehicle.replace(' ', '_')}"
   r = session.get(url)
-  image_url = r.html.html.split("image image-thumbnail")[1].split("src=\"")[1].split("\"")[0]
+  try:
+    image_url = r.html.html.split("image image-thumbnail")[1].split("src=\"")[1].split("\"")[0]
+  except IndexError:
+    image_url = "https://google.com"
   return {"wiki_url" : url, "image_url" : image_url}
 # end getVehicleImage
 
