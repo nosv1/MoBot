@@ -153,7 +153,7 @@ async def newGame(players, message, client):
       embed["fields"][1]["value"] += f"\n*{defintion}*"
 
       if len(message.mentions) <= 1:
-        player, leaderboard = await updateLeaderboard(message.author.id, message.guild.id, winner)
+        player, leaderboard = await updateLeaderboard(players[0], message.guild.id, winner)
         
         i = len(leaderboard) - 1
         while i >= 0:
