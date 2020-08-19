@@ -30,6 +30,10 @@ async def main(args, message, client):
   now = datetime.now()
   for i in range(len(args)):
     args[i].strip()
+
+  if args[1].lower() == "hangman":
+    players = [message.author.id] + [m.id for m in message.mentions[1:]]
+    await newGame(players, message, client)
 # end main
 
 async def memberJoin(member):
@@ -40,11 +44,15 @@ async def memberRemove(member, client):
   pass
 # end memberRemove
 
-async def mainReactionAdd(message, payload, cilent):
+async def mainReactionAdd(message, payload, client):
   member = message.guild.get_member(payload.user_id)
 
   if payload.emoji.name == MEDAL_EMOJI:
     await sendLeaderboard(message)
+
+  if payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI:
+    players = [member.id]
+    await newGame(players, message, client)
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
@@ -70,7 +78,7 @@ async def sendLeaderboard(message):
 # end sendLeaderboard
 
 
-async def newGame(message, client):
+async def newGame(players, message, client):
   word = await getWord()
   word = word.lower()
   try:
@@ -97,7 +105,11 @@ async def newGame(message, client):
   msg = await message.channel.send(embed=embed)
 
   def check(letterMsg):
-    return len(letterMsg.content) == 1 and (letterMsg.author == message.author or str(letterMsg.author.id) in message.content) and letterMsg.channel == message.channel
+    return (
+      len(letterMsg.content) == 1 and 
+      letterMsg.author.id in players and 
+      letterMsg.channel == message.channel
+    )
 
   correctLetters = set()
   trashLetters = "\n\n"
@@ -178,8 +190,9 @@ async def newGame(message, client):
 
         embed = discord.Embed.from_dict(embed)
         embed.add_field(name=spaceChar, value=v, inline=False)
-        embed.set_footer(text=f"| {MEDAL_EMOJI} Leaderboard |")
+        embed.set_footer(text=f"| {MEDAL_EMOJI} Leaderboard | {RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI} New Game |")
         await msg.add_reaction(MEDAL_EMOJI)
+        await msg.add_reaction(RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI)
         embed = embed.to_dict()
 
 

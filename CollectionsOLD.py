@@ -23,7 +23,7 @@ async def memberRemove(member, client):
   pass
 # end memberRemove
 
-async def mainReactionAdd(message, payload, cilent): 
+async def mainReactionAdd(message, payload, client): 
   pass
 # end mainReactionAdd
 

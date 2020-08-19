@@ -319,7 +319,7 @@ async def on_message(message):
           autoRoles = await ReactionRole.clearAutoRole(message, autoRoles)
           print(autoRoles)
       elif (args[1] == "hangman"):
-        await Hangman.newGame(message, client)
+        await Hangman.main(args, message, client)
       elif (args[1] == "reservation"):
         await Reservations.main(args, message, client)
       elif (args[1] == "rss"):
@@ -461,6 +461,8 @@ async def on_raw_reaction_add(payload):
         pass'''
       if "Reserves" in embedAuthor:
         await COTM.mainReactionAdd(message, payload, client)
+      if ("MoBot Hangman" in embedAuthor):
+        await Hangman.mainReactionAdd(message, payload, client)
     else:
       #if (message.guild.id == 527156310366486529 or "are you ready to vote" in message.content.lower() or "do you need to vote" in message.content.lower()): # cotm
         #await COTM.mainReactionAdd(message, payload, client)

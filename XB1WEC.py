@@ -31,7 +31,7 @@ async def memberRemove(member, client):
   pass
 # end memberRemove
 
-async def mainReactionAdd(message, payload, cilent):
+async def mainReactionAdd(message, payload, client):
   prepareRaceMessageId = 587522662377455627 # for pit counter channel
   pitLogChannel = 570758112286343195
 

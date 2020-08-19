@@ -25,7 +25,7 @@ async def memberRemove(member, client):
   await memberLog.send(member.name + " left.\n<@&53015536901029888>")
 # end memberRemove
 
-async def mainReactionAdd(message, payload, cilent):
+async def mainReactionAdd(message, payload, client):
   user = message.guild.get_member(payload.user_id)
   if (user.name != "MoBot"):
     if (message.channel.id == 555443974433931295): # welcome channel
