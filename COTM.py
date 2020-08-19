@@ -304,13 +304,14 @@ async def randomNiceMessage(client):
     "Toxic behaviour is only enjoyable by toxic people. :)",
     "Support others' enjoyment (assuming unharmful). :)",
     "All brains are roughly the same color. :)",
-    "Different mindsets are not wrong mindsets (usually). :)"
+    "Different mindsets are not wrong mindsets (usually). :)",
+    "Acknowledge your own ignorace. :)"
   ]
 
   r = RandomSupport.getRandomCondition(1/(1440/1))
   if r: # once a day
     chnl = client.get_guild(GUILD_ID).get_channel(NOT_EVENT_CHAT)
-    await chnl.send(f"> {phrases[random.randint(0, len(phrases)-1)]}")
+    await chnl.send(f"> {random.choice(phrases)}")
 # end randomNiceMessage
 
 
