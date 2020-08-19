@@ -325,7 +325,7 @@ async def on_message(message):
         elif args[1] == "guildicon":
           await message.channel.send(message.guild.icon_url)
         elif (args[1] == "hangman"):
-          await Hangman.newGame(players, message, client)
+          await Hangman.main(args, message, client)
         elif (message.content.split("> ")[1].strip() == "2 + 2"):
           msg = await message.channel.send("2 + 2 = 5")
           await asyncio.sleep(3)
