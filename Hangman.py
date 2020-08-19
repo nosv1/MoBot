@@ -176,7 +176,7 @@ async def newGame(players, message, client):
               server_position += "rd"
 
         v = ""
-        v += f"**Stat Line**\n"
+        v += f"**Stat Line - {message.guild.get_member(int(player.user_id)).display_name}**\n"
         v += f"Win %: `{str(player.percent_correct)}%`\n"
         v += f"Wins/Losses: `{player.wins}/{player.losses}`\n"
         v += f"Games Played: `{player.games_played}`\n"
