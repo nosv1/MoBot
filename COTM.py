@@ -308,8 +308,8 @@ async def randomNiceMessage(client):
     "Acknowledge your own ignorace. :)"
   ]
 
-  r = RandomSupport.getRandomCondition(1/(1440/1))
-  if r: # once a day
+  r = RandomSupport.getRandomCondition((1/(1440*2))) # once every 2 days
+  if r: 
     chnl = client.get_guild(GUILD_ID).get_channel(NOT_EVENT_CHAT)
     await chnl.send(f"> {random.choice(phrases)}")
 # end randomNiceMessage
