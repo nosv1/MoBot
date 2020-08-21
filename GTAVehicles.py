@@ -161,6 +161,7 @@ async def handleUserVehicleInput(message, client):
       print(traceback.format_exc())
 
     embed.description = f"**Vehicle:** {vehicle._Vehicle} - [__wiki__]({wiki_urls['wiki_url']})\n"
+    embed.description += f"**Manufacturer:** {vehicle._Manufacturer}\n"
     embed.description += f"**Class:** {vehicle._Class}\n"
     embed.description += f"[__Overall (Lap Time)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=60309153&range=B{vehicle._overall_lap_time_row}) - "
     embed.description += f"[__Key Info__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=1689972026&range=B{vehicle._key_info_row}) - "
@@ -228,7 +229,7 @@ def getVehicleImage(vehicle):
 # end getVehicleImage
 
 def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overall_lap_time_sheet, vehicles):
-  key_info_range = key_vehicle_info_sheet.range(f"A2:J{key_vehicle_info_sheet.row_count}")
+  key_info_range = key_vehicle_info_sheet.range(f"A2:K{key_vehicle_info_sheet.row_count}")
   handling_data_basic_range = handling_data_basic_info_sheet.range(f"A2:R{handling_data_basic_info_sheet.row_count}")
   overall_lap_time_range = overall_lap_time_sheet.range(f"A2:F{overall_lap_time_sheet.row_count}")
 
