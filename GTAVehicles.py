@@ -391,8 +391,11 @@ def getDetla(time_1, time_2):
     formatted += f"{seconds[:-3]}.{seconds[-3:]}"
     return formatted
   # end secondsToMinute
-
-  return secondsToMinute(round(minuteToSeconds(time_1) - minuteToSeconds(time_2), 3))
+  
+  try:
+    return secondsToMinute(round(minuteToSeconds(time_1) - minuteToSeconds(time_2), 3))
+  except:
+    return "TBD"
 # end getDetla
 
 def openSpreadsheet():
