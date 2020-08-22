@@ -309,7 +309,7 @@ async def toggleTierList(message, tier, toggle):
     car = " ".join(car[1:])
     if RandomSupport.getDetailFromURL(embed.author.url, "vehicle") == car:
       car = f"**{car}**"
-    cars[i] = f"`{delta.rjust(7, ' ')}` {car}"
+    cars[i] = f"`{delta.rjust(6, ' ')}` {car}"
   cars = "\n".join(cars)
   
   tier = "S+" if tier == "+" else tier
