@@ -67,7 +67,7 @@ async def generateRandomRace(message, args, refresh):
     # get car
     car_classes_keys = list(GTAVehicles.car_classes.keys())
     car_class = car_classes_keys[random.randint(0, len(car_classes_keys)-1)]
-    car_tiers = GTAVehicles.getTiers(car_class)
+    car_tiers = GTAVehicles.getTiersWeb(car_class)
 
     car_tiers_keys = list(car_tiers.keys())
     car_tier = car_tiers_keys[random.randint(0, len(car_tiers_keys)-1)]

@@ -105,13 +105,17 @@ async def handleUserVehicleInput(message, client):
     key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
     handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
     overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
+    
+    key_info_range = key_vehicle_info_sheet.range(f"A2:K{key_vehicle_info_sheet.row_count}")
+    handling_data_basic_range = handling_data_basic_info_sheet.range(f"A2:R{handling_data_basic_info_sheet.row_count}")
+    overall_lap_time_range = overall_lap_time_sheet.range(f"A2:F{overall_lap_time_sheet.row_count}")
 
     poss_vehicles = searchVehicle(key_vehicle_info_sheet, vehicle)
     if poss_vehicles:
       vehicles = getVehicleInfo(
-        key_vehicle_info_sheet, 
-        handling_data_basic_info_sheet, 
-        overall_lap_time_sheet,
+        key_info_range, 
+        handling_data_basic_range, 
+        overall_lap_time_range,
         [Vehicle(v) for v in poss_vehicles[:9]]
       ) # list of complete vehicle objects, just waiting for user selection now
   except: # likely issue with gspread
@@ -197,10 +201,10 @@ async def handleUserVehicleInput(message, client):
 
     # add tier lists to url
     try:
-      tiers = getTiers(vehicle._Class)
+      tiers = getTiersSpreadsheet(key_info_range, overall_lap_time_range, vehicle)
       for tier in tiers:
         detail = f"tier_{tier}"
-        value = '&'.join(tiers[tier])
+        value = '&'.join(["%20".join(a) for a in tiers[tier]]) # value is Car%20Time&...
         try:
           embed = RandomSupport.updateDetailInURL(embed, detail, value)
           await msg.add_reaction(RandomSupport.letter_emojis[tier.lower()])
@@ -228,10 +232,7 @@ def getVehicleImage(vehicle):
   return {"wiki_url" : url, "image_url" : image_url}
 # end getVehicleImage
 
-def getVehicleInfo(key_vehicle_info_sheet, handling_data_basic_info_sheet, overall_lap_time_sheet, vehicles):
-  key_info_range = key_vehicle_info_sheet.range(f"A2:K{key_vehicle_info_sheet.row_count}")
-  handling_data_basic_range = handling_data_basic_info_sheet.range(f"A2:R{handling_data_basic_info_sheet.row_count}")
-  overall_lap_time_range = overall_lap_time_sheet.range(f"A2:F{overall_lap_time_sheet.row_count}")
+def getVehicleInfo(key_info_range, handling_data_basic_range, overall_lap_time_range, vehicles):
 
   key_info = RandomSupport.arrayFromRange(key_info_range)
   key_info[1][0].value = "Class"
@@ -301,7 +302,15 @@ def searchVehicle(key_vehicle_info_sheet, vehicle):
 async def toggleTierList(message, tier, toggle):
   url_tier = f"tier_{tier.upper()}"
   embed = message.embeds[0]
-  cars = "\n".join(RandomSupport.getDetailFromURL(embed.author.url, url_tier).split("&"))
+  cars = RandomSupport.getDetailFromURL(embed.author.url, url_tier).split("&")
+  for i, car in enumerate(cars):
+    car = car.split(" ")
+    delta = car[0]
+    car = " ".join(car[1:])
+    if RandomSupport.getDetailFromURL(embed.author.url, "vehicle") == car:
+      car = f"**{car}**"
+    cars[i] = f"`{delta.rjust(7, ' ')}` {car}"
+  cars = "\n".join(cars)
   
   tier = "S+" if tier == "+" else tier
   tier_name = f"{tier.upper()} Tier"
@@ -320,23 +329,71 @@ async def toggleTierList(message, tier, toggle):
     await message.edit(embed=discord.Embed.from_dict(embed))
 # end toggleTierList
 
-def getTiers(car_class):
+def getTiersSpreadsheet(key_info_range, overall_lap_time_range, vehicle):
 
-  url = f"https://broughy.com/gta5{car_classes[car_class]}"
-  soup = bsoup(requests.get(url).text, "html.parser")
-  tier_lists = str(soup).split("<strong>")[1:]
-  tier_lists = [t.split("</div>")[0] for t in tier_lists]
+  key_info = RandomSupport.arrayFromRange(key_info_range)
+  key_info = key_info[2:] # row 3:end
+
+  overall_lap_times = RandomSupport.arrayFromRange(overall_lap_time_range)
+  overall_lap_times = overall_lap_times[2:] # row 3:end
+
+  # tiers = {S : [[car1, delta], ...], A : []} delta is difference between car and og vehicle
   tiers = {}
-  for t in tier_lists:
-    tier = t.split("</")[0]
-    cars = t.split("<br/>")
-    cars[-1] = cars[-1].split("</p>")[0]
-    cars[0] = cars[0].split(">")[-1]
-    tiers[tier] = cars
+  for i in range(len(overall_lap_times)):
+    if overall_lap_times[i][2].value != vehicle._Class: # class match
+      continue
 
-  # tiers = {S : [car1, car2...], A : []}
+    for j in range(len(key_info)):
+      if key_info[j][0].value != vehicle._Class: # class match
+        continue
+
+      veh_name = key_info[j][1].value
+      if veh_name == overall_lap_times[i][3].value: # vehicle match
+        race_tier = key_info[j][5].value
+        race_tier = "S+" if race_tier == "" else race_tier
+        if race_tier == "-":
+          break
+        if race_tier not in tiers:
+          tiers[race_tier] = []
+        tiers[race_tier].append([getDetla(overall_lap_times[i][4].value, vehicle._Lap_Time__m_ss_000_), veh_name])
   return tiers
-# end getTier
+
+def getTiersWeb(car_class):
+    url = f"https://broughy.com/gta5{car_classes[car_class]}"
+    soup = bsoup(requests.get(url).text, "html.parser")
+    tier_lists = str(soup).split("<strong>")[1:]
+    tier_lists = [t.split("</div>")[0] for t in tier_lists]
+    tiers = {}
+    for t in tier_lists:
+      tier = t.split("</")[0]
+      cars = t.split("<br/>")
+      cars[-1] = cars[-1].split("</p>")[0]
+      cars[0] = cars[0].split(">")[-1]
+      tiers[tier] = cars
+
+    # tiers = {S : [car1, car2...], A : []}
+    return tiers
+  # end getTier
+
+def getDetla(time_1, time_2):
+  def minuteToSeconds(time):
+    return int(time.split(":")[0]) * 60 + float(time.split(":")[1])
+
+  def secondsToMinute(time):
+    minutes = int(time / 60)
+    seconds = time - (minutes * 60)
+    formatted = "+" if time > 0 else "-"
+    
+    if abs(minutes) > 0:
+      formatted += f"{minutes}:"
+
+    seconds = str(int(abs(seconds) * 1000)).zfill(4)
+    formatted += f"{seconds[:-3]}.{seconds[-3:]}"
+    return formatted
+  # end secondsToMinute
+
+  return secondsToMinute(round(minuteToSeconds(time_1) - minuteToSeconds(time_2), 3))
+# end getDetla
 
 def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
