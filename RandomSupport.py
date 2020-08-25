@@ -24,6 +24,8 @@ FLOPPY_DISK_EMOJI = "💾"
 EXCLAMATION_EMOJI = "❗"
 RAIN_EMOIJI = "🌧️"
 TRASH_CAN_EMOJI = "🗑️"
+WAVE_EMOJI = "👋"
+FIST_EMOJI = "✊"
 spaceChar = "⠀"
 
 ### --- EMOJI NUMBERS ---

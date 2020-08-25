@@ -7,6 +7,7 @@ import mysql.connector
 
 import SecretStuff
 import MoBotDatabase
+import RandomSupport
 
 moBot = 449247895858970624
 moBotTest = 476974462022189056

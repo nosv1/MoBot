@@ -23,6 +23,7 @@ import mysql.connector
 import SecretStuff
 
 # importing server specific files
+import GrottiF1
 import COTM
 import COTMPS4
 import IG
@@ -700,7 +701,7 @@ async def on_raw_reaction_remove(payload):
     if (not member.bot or member.id == 476974462022189056):
       await ReactionRole.reactionRole(message, payload, member, "unclick")
       
-      logActionToConsole(message, member, "reactionAdd")
+      logActionToConsole(message, member, "reactionRemove")
       if (len(message.embeds) > 0):
 
         if "GTA V Vehicle Search" in embedAuthor:
