@@ -112,37 +112,53 @@ async def handleReserveButton(message, member, button, on_click):
 # end handleReserveButton
 
 def getReserveCombos(reserves):
+  db = connectDatabase()
   reserve_combos = [] # [driver_id, reserve_id]
 
   for i, r1 in enumerate(reserves):
+    #print("r1", vars(r1))
     if (
       r1.driver_id not in [r.driver_id for r in reserve_combos] and 
       r1.driver_id not in [r.reserve_id for r in reserve_combos]
     ): # not assigned as driver or reserve
       if r1.need_avail == 1 and r1.requested_id != 0: # needs and has reserve
+        #print("r1 needs and has")
         reserve_combos.append(ReserveCombo(r1.driver_id, r1.requested_id))
       
-      if r1.need_avail == 1 and r1.requested_id == 0: # needs doesn't have
+      elif r1.need_avail == 1 and r1.requested_id == 0: # needs doesn't have
+        #print("r1 needs doesn't have")
         reserve_found = False
-        for j in range(i, len(reserves)):
-          if j == i:
-            continue
-
-          r2 = reserves[j]
+        for r2 in reserves:
+          #print("r2", vars(r2))
           if r2.driver_id not in [r.reserve_id for r in reserve_combos]: # not already reserving
+            #print("r2 not already reserving")
             if r2.need_avail == 0 and r2.requested_id == 0: # is avail
+              #print("r2 is avail")
               reserve_found = True
               reserve_combos.append(ReserveCombo(r1.driver_id, r2.driver_id))
+              for i in [0, 1]:
+                db.cursor.execute(f"""
+                  UPDATE reserves SET 
+                    `requested_id` = '{eval(f"reserve_combos[-1].{'reserve_id' if i == 0 else 'driver_id'}")}'
+                  WHERE
+                    `driver_id` = '{eval(f"str(reserve_combos[-1].{'driver_id) + str(1)' if i == 0 else 'reserve_id) + str(0)'}")}';
+                """)
               break
 
         if not reserve_found: # need but none avail
+          #print("r1 need but none avail")
           reserve_combos.append(ReserveCombo(r1.driver_id, 0))
 
   for r1 in reserves:
+    #print("r2", vars(r1))
     if r1.need_avail == 0: # maybe avail
+      #print("r2 maybe avail")
       if r1.driver_id not in [r.reserve_id for r in reserve_combos]: # avail, but not needed
+        #print("r2 avail, but not needed")
         reserve_combos.append(ReserveCombo(0, r1.driver_id))
             
+  db.connection.commit()
+  db.connection.close()
   return reserve_combos
 # end getReserveCombos
 
@@ -171,10 +187,11 @@ async def onClick(member, button):
   db = connectDatabase()
   db.cursor.execute(f"""
     INSERT INTO reserves (
-      `driver_id`, `requested_id`
+      `driver_id`, `requested_id`, `date`
     ) VALUES (
       '{str(member.id) + ("1" if button == RandomSupport.WAVE_EMOJI else "0")}',
-      '0'
+      '0',
+      '{(datetime.utcnow() - datetime(2020, 1, 1)).total_seconds()}'
     )
   """)
   db.connection.commit()
@@ -186,6 +203,12 @@ async def onUnclick(member, button):
   db.cursor.execute(f"""
     DELETE FROM reserves
     WHERE `driver_id` = '{str(member.id) + ("1" if button == RandomSupport.WAVE_EMOJI else "0")}'
+  """)
+  db.cursor.execute(f"""
+    UPDATE reserves SET
+      `requested_id` = '0'
+    WHERE
+      `requested_id` = '{member.id}'
   """)
   db.connection.commit()
   db.connection.close()
