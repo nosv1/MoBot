@@ -70,9 +70,10 @@ async def mainReactionAdd(message, payload, client):
       ):
         await handleReserveButton(message, member, payload.emoji.name, True)
 
-      if member.id == mo and payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI:
+      elif member.id == mo and payload.emoji.name == RandomSupport.COUNTER_CLOCKWISE_ARROWS_EMOJI:
         await updateReservesEmbed(message, getReserveCombos(getReserves()))
         await message.remove_reaction(payload.emoji.name, member)
+      
       else:
         await message.remove_reaction(payload.emoji.name, member)
 # end mainReactionAdd
