@@ -28,7 +28,6 @@ import COTM
 import COTMPS4
 import IG
 import FortKnight
-import GTAVRacingEvents
 import GTACCHub
 import CreatorChallenge
 import XB1WEC
