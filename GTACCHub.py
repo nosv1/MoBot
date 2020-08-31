@@ -16,7 +16,7 @@ PC_SHEET_ID = 1701609275
 
 # gta cc hub spreadsheet stuff
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('MoBot_secret.json'), scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('GTA CC Hub_client_secret.json'), scope)
 
 catalogueLink = "https://bit.ly/cchubCatalogue"
 
