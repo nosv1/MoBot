@@ -191,6 +191,7 @@ async def handleUserVehicleInput(message, client):
     v += f"**Boost:** {vehicle._Boost}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     embed.add_field(name="**__Improvements__**", value=f"{v}{space_char}")
 
+    v = ""
     v += f"**Bouncy:** {vehicle._Bouncy}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     v += f"**Engine:** {vehicle._Engine}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     embed.add_field(name="**__Adv. Handling Flags__**", value=f"{v}{space_char}")
