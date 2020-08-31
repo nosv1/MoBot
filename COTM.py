@@ -305,7 +305,8 @@ async def randomNiceMessage(client):
     "Support others' enjoyment (assuming unharmful). :)",
     "All brains are roughly the same color. :)",
     "Different mindsets are not wrong mindsets (usually). :)",
-    "Acknowledge your own ignorance. :)"
+    "Acknowledge your own ignorance. :)",
+    "Understand you may just be angry at the situation, not the person."
   ]
 
   r = RandomSupport.getRandomCondition((1/(1440*2))) # once every 2 days
