@@ -406,7 +406,7 @@ def getDetla(time_1, time_2):
 def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
   
-  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('GTA CC Hub_client_secret.json'), scope)
+  creds = ServiceAccountCredentials.from_json_keyfile_name(SecretStuff.getJsonFilePath('cotm_client_secret.json'), scope)
   clientSS = gspread.authorize(creds)
   workbook = clientSS.open_by_key("1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4")
   return workbook
