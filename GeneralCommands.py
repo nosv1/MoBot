@@ -306,6 +306,7 @@ async def clearMessages(message, args):
       count = int(args[2]) + 1
       await message.channel.purge(limit=count)
   except discord.errors.Forbidden:
+    print(traceback.format_exc())
     await message.channel.send("**I need `Manage Messages` permissions for this command.**")
 # end clearMessages 
 

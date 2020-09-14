@@ -55,7 +55,7 @@ TOT_POS_GAIN_LOST = 628766947709812756
 DIVISION_UPDATES = 527319768911314944
 RESERVE_SEEKING = 620811051335680013
 ACTION_LOG = 527355464216739866
-PIT_MARSHALL_SIGNUP = 622831151320662036
+PIT_Marshal_SIGNUP = 622831151320662036
 MINI_CHAMPIONSHIPS = 630610458029588480
 DRIVER_HISTORY = 631556653174620160
 EVENT_CHAT = 527156400908926978
@@ -108,13 +108,13 @@ num_divs = 8 # active div count
 
 
 ''' CLASSES '''
-class Pit_Marshall:
+class Pit_Marshal:
   def __init__(self, pm_id, member_id, div, host_pm):
     self.pm_id = int(pm_id)
     self.member_id = int(member_id)
     self.div = int(div)
     self.host_pm = int(host_pm) # host = 1, pm = 0
-# end Pit_Marshall
+# end Pit_Marshal
 
 class Reserve:
   def __init__(self, reserve_id, date):
@@ -178,9 +178,9 @@ async def main(args, message, client):
           elif (args[2] == "driver" and args[3] == "history"):
             await updateDriverHistory(message, None, openSpreadsheet())
         elif (args[1] == "reset"):
-          if (args[2] == "pitmarshalls"):
+          if (args[2] == "pitmarshals"):
             await message.channel.trigger_typing()
-            await resetPitMarshalls(message.guild)
+            await resetPitMarshals(message.guild)
             await message.delete()
           elif (args[2] == "reserves"):
             await message.channel.trigger_typing()
@@ -226,13 +226,13 @@ async def mainReactionAdd(message, payload, client):
         if message.embeds[0].author.name == "New Lap Time": # roles weren't updated
           await updateQualiRoles(message)
           
-    if message.id == PIT_MARSHALL_SIGNUP:
+    if message.id == PIT_Marshal_SIGNUP:
       if payload.emoji.name in [CROWN, WRENCH]:
-        await handlePitMarshallReaction(message, payload, member)
+        await handlePitMarshalReaction(message, payload, member)
       elif payload.emoji.name in [X_EMOJI, ARROWS_COUNTERCLOCKWISE_EMOJI] and member.id == mo:
         if payload.emoji.name == X_EMOJI:
-          await clear_pit_marshalls(message.guild)
-        await updatePitMarshallEmbed(message)
+          await clear_pit_marshals(message.guild)
+        await updatePitMarshalEmbed(message)
         await message.remove_reaction(payload.emoji.name, member)
       
     if message.id == RESERVES_EMBED:
@@ -783,7 +783,7 @@ async def handleCarVotingReaction(message, member, payload):
 
 
 
-''' PIT MARSHALLS '''
+''' PIT MarshalS '''
 # what divs not available if in race
 host_not_avail = [ # not actually using this, changed the restrictions...
   [1, 4, 7], # in div 1, can't host for these
@@ -796,7 +796,7 @@ host_not_avail = [ # not actually using this, changed the restrictions...
 ]
 
 pm_not_avail = [
-  [1, 4, 7], # in div 1, can't pit marshall for these
+  [1, 4, 7], # in div 1, can't pit marshal for these
   [2, 5, 8],
   [3, 6],
   [1, 4, 7],
@@ -806,43 +806,43 @@ pm_not_avail = [
   [2, 5, 8]
 ]
 
-def getPitMarshalls():
+def getPitMarshals():
   moBotDB = connectDatabase()
-  marshalls = []
+  marshals = []
   moBotDB.cursor.execute(f"""
     SELECT *
-    FROM pit_marshalls
+    FROM pit_marshals
   """)
   for record in moBotDB.cursor:
-    marshalls.append(Pit_Marshall(*record))
+    marshals.append(Pit_Marshal(*record))
   moBotDB.connection.close()
-  return marshalls
-# end getCurrentPitMarshalls
+  return marshals
+# end getCurrentPitMarshals
 
-async def clear_pit_marshalls(guild):
-  pit_marshalls = getPitMarshalls()
-  for pm in pit_marshalls:
+async def clear_pit_marshals(guild):
+  pit_marshals = getPitMarshals()
+  for pm in pit_marshals:
     member = guild.get_member(pm.member_id)
     for i in range(1, num_divs+1):
-      await member.remove_roles(getRole(f"Pit Marshall Division {i}", guild.roles))
+      await member.remove_roles(getRole(f"Pit Marshal Division {i}", guild.roles))
 
   moBotDB = connectDatabase()
   moBotDB.cursor.execute(f"""
-    DELETE FROM pit_marshalls
+    DELETE FROM pit_marshals
   """)
   moBotDB.connection.commit()
   moBotDB.connection.close()
-# end clear_pit_marshalls
+# end clear_pit_marshals
 
-def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
+def addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs):
 
   ## remove 
-  for pm in pit_marshalls:
+  for pm in pit_marshals:
     if pm.member_id == member.id and pm.host_pm == host_pm:
       if pm.div in divs: # if previously clicked div is clicked again, remove
         moBotDB = connectDatabase()
         moBotDB.cursor.execute(f"""
-          DELETE FROM pit_marshalls
+          DELETE FROM pit_marshals
           WHERE 
             `id` = '{pm.member_id}' AND
             `div` = '{pm.div}' AND
@@ -866,20 +866,20 @@ def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
     return [i for i in range(1, num_divs+1) if i not in new_not_avail]
   # end refineAvail
 
-  is_pit_marshalling = False
+  is_pit_marshaling = False
   if host_pm == 1: # if host
     hosts_needed = list(range(1,num_divs+1)) # get the divs where a host is needed
-    for pit_marshall in pit_marshalls:
-      if pit_marshall.host_pm == 1:
-        del hosts_needed[hosts_needed.index(pit_marshall.div)]
+    for pit_marshal in pit_marshals:
+      if pit_marshal.host_pm == 1:
+        del hosts_needed[hosts_needed.index(pit_marshal.div)]
     
     for div in hosts_needed:
       if div in refineAvail(pm_not_avail, member_divs) and div in divs:
-        is_pit_marshalling = True
+        is_pit_marshaling = True
 
         moBotDB = connectDatabase()
         moBotDB.cursor.execute(f"""
-          INSERT INTO pit_marshalls (
+          INSERT INTO pit_marshals (
             `id`, `div`, `host_pm`
           ) VALUES (
             '{member.id}',
@@ -893,19 +893,19 @@ def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
 
   else: # if pm
     pm_needed = list(range(1,num_divs+1)) # get the divs where a pm is needed
-    for pit_marshall in pit_marshalls:
-      if pit_marshall.host_pm == 0:
-        del pm_needed[pm_needed.index(pit_marshall.div)]
+    for pit_marshal in pit_marshals:
+      if pit_marshal.host_pm == 0:
+        del pm_needed[pm_needed.index(pit_marshal.div)]
       
     for div in pm_needed:
       if div in refineAvail(pm_not_avail, member_divs) and div in divs:
-        is_pit_marshalling = True
+        is_pit_marshaling = True
 
         member_divs.append(div)
 
         moBotDB = connectDatabase()
         moBotDB.cursor.execute(f"""
-          INSERT INTO pit_marshalls (
+          INSERT INTO pit_marshals (
             `id`, `div`, `host_pm`
           ) VALUES (
             '{member.id}',
@@ -916,50 +916,50 @@ def addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs):
         moBotDB.connection.commit()
         moBotDB.connection.close()
 
-  return is_pit_marshalling
-# end addRemovePitMarshall
+  return is_pit_marshaling
+# end addRemovePitMarshal
 
-async def updatePitMarshallEmbed(pm_message):
+async def updatePitMarshalEmbed(pm_message):
   message = pm_message
   await message.channel.trigger_typing()
 
   embed = message.embeds[0]
-  pit_marshalls = getPitMarshalls()
+  pit_marshals = getPitMarshals()
 
   embed = embed.to_dict()
 
   div_lines = [
     "Host -",
-    "Pit Marshall -",
+    "Pit Marshal -",
     space_char
   ]
 
   for i in range(num_divs):
     embed["fields"][i]["value"] = "\n".join(div_lines)
 
-  for pm in pit_marshalls:
+  for pm in pit_marshals:
     pm_name = message.guild.get_member(pm.member_id).display_name
     div_lines = embed["fields"][pm.div-1]["value"].split("\n")
     if pm.host_pm == 1:
       div_lines[0] = f"Host - {pm_name}"
     else:
-      div_lines[1] = f"Pit Marshall - {pm_name}"
+      div_lines[1] = f"Pit Marshal - {pm_name}"
     embed["fields"][pm.div-1]["value"] = "\n".join(div_lines)
 
   await message.edit(embed=discord.Embed().from_dict(embed))
-# end updatePitMarshallEmbed
+# end updatePitMarshalEmbed
 
-async def handlePitMarshallReaction(message, payload, member):
+async def handlePitMarshalReaction(message, payload, member):
   await message.channel.trigger_typing()
 
-  pit_marshalls = getPitMarshalls()
+  pit_marshals = getPitMarshals()
 
   member_divs = [] # get the divs the member is in
   for role in member.roles: # racing in 
     if "Division" in role.name and not "Pit Marhshall" in role.name:
       member_divs.append(int(role.name[-1]))
 
-  for pm in pit_marshalls: # already pit marshalling
+  for pm in pit_marshals: # already pit marshaling
     if pm.member_id == member.id:
       member_divs.append(pm.div)
   
@@ -978,25 +978,25 @@ async def handlePitMarshallReaction(message, payload, member):
         break
         
   if divs: # if user actually selected div
-    addRemovePitMarshall(host_pm, pit_marshalls, member, member_divs, divs)
+    addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs)
   else:
     await message.channel.send(f"**{member.mention}, please select the division(s) before selecting the {CROWN} or the {WRENCH}.**", delete_after=7)
 
   for i in range(1, num_divs+1): # remove all pm roles
-    await member.remove_roles(getRole(f"Pit Marshall Division {i}", message.guild.roles))
+    await member.remove_roles(getRole(f"Pit Marshal Division {i}", message.guild.roles))
 
-  for pm in getPitMarshalls(): # add back necesary pm roles, sloppy but effective
-    if member.id == pm.member_id: # is pit marshall
-      await member.add_roles(getRole(f"Pit Marshall Division {pm.div}", message.guild.roles))
+  for pm in getPitMarshals(): # add back necesary pm roles, sloppy but effective
+    if member.id == pm.member_id: # is pit marshal
+      await member.add_roles(getRole(f"Pit Marshal Division {pm.div}", message.guild.roles))
 
-  await updatePitMarshallEmbed(message)
+  await updatePitMarshalEmbed(message)
 
   for reaction in message.reactions:
     async for user in reaction.users():
       if user.id == member.id:
         await message.remove_reaction(reaction.emoji, member)
         break
-# end handlePitMarshallReaction
+# end handlePitMarshalReaction
 
 
 
@@ -1037,7 +1037,7 @@ async def clear_reserves(message):
   """)
   moBotDB.connection.commit()
   moBotDB.connection.close()
-# end clear_pit_marshalls
+# end clear_pit_marshals
 
 def getReserveCombos(reserves):
   reserve_combos = {"need" : [], "avail" : [], "div" : []} # only complete pairs
@@ -1218,7 +1218,7 @@ async def handleReserveReaction(message, payload, member):
 
   member_divs = [] # get the divs the member is in
   for role in member.roles: # racing in 
-    if "Division" in role.name and not "Pit Marshall" in role.name:
+    if "Division" in role.name and not "Pit Marshal" in role.name:
       member_divs.append(int(role.name[-1]))
   
   if not member_divs:
@@ -1306,7 +1306,7 @@ async def updateStartOrderEmbed(guild, main_div): # also updates div roles
 
       if div_role.name not in [r.name for r in driver.roles]:
         for role in driver.roles:
-          if "Division" in role.name and "Reserve" not in role.name and "Pit Marshall" not in role.name:
+          if "Division" in role.name and "Reserve" not in role.name and "Pit Marshal" not in role.name:
             await driver.remove_roles(role)
             await div_updates_channel.send(f"{driver.mention} has been removed from {role.name}.")
 

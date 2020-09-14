@@ -307,6 +307,13 @@ async def on_message(message):
 
 
         ## random commands
+        elif ("choice" in args[1] or "choose" in args[1]):
+          try:
+            choices = message.content.split(",")[2:]
+            await message.channel.send(random.choice(choices))
+          except:
+            print(f"CAUGHT EXCEPTION\n{traceback.format_exc()}")
+            await message.channel.send("There was an error... Possibly a format error... `@MoBot#0697 choice choice1, choice2, choice3, ...`")
         elif ("corona" in args[1]): 
           await message.channel.send(RandomSupport.cornavirus())
         elif ("gtacar" in args[1] or "gta car" in message.content):

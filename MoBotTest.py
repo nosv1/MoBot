@@ -133,18 +133,8 @@ async def on_message(message):
   args = mc.split(" ")
 
   if (args[0] == "test" or str(moBotTest) in args[0]):
-    authorPerms = message.channel.permissions_for(message.author)
-    isBotSpam = message.channel.id == botSpam
-    isMo = message.author.id == mo
-    isNos = message.author.id == nosv1
-    authorPerms = UserPerms(
-      isNos or isMo or authorPerms.administrator,
-      isNos or isMo or authorPerms.manage_messages or isBotSpam,
-      isNos or isMo or authorPerms.manage_roles or isBotSpam,
-      isNos or isMo or authorPerms.manage_channels or isBotSpam,
-      isNos or isMo or authorPerms.change_nickname or isBotSpam,
-      isNos or isMo or authorPerms.add_reactions or isBotSpam,
-    )
+    choices = message.content.split(",")[2:]
+    await message.channel.send(random.choice(choices))
       
     if (len(args) > 1):
       if (args[1] == "test"):
