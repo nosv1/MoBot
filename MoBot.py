@@ -309,7 +309,7 @@ async def on_message(message):
         ## random commands
         elif ("choice" in args[1] or "choose" in args[1]):
           try:
-            choices = message.content.split(",")[2:]
+            choices = message.content.split(f"{args[0]} {args[1]}")[1].split(",")
             await message.channel.send(random.choice(choices))
           except:
             print(f"CAUGHT EXCEPTION\n{traceback.format_exc()}")
