@@ -33,9 +33,9 @@ import COTM
 
 import MoBotTimeZones
   
-client = discord.Client() # discord.Client is like the user form of the bot, it knows the guilds and permissions and stuff of the bot
+intents = discord.Intents.all()
+client = discord.Client(intents = intents) 
 
-# these are 'statuses' for the bot, futher down I've got 50/50 random gen, to change status on every message sent
 botsByMo = discord.Activity(type=discord.ActivityType.playing, name="Bots by Mo#9991")
 donate = discord.Activity(type=discord.ActivityType.watching, name="@MoBot donate")
 server = discord.Activity(type=discord.ActivityType.watching, name="@MoBot server")

@@ -69,7 +69,8 @@ import MoBotTables
 import Hangman
 import DKGetPicks
 
-client = discord.Client()
+intents = discord.Intents.all()
+client = discord.Client(intents = intents)
 
 servers = {} # server files and ids are recieved in on_ready() after database connection  
 moBotDB = None # connection is on_ready()
