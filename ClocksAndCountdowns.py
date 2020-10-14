@@ -185,7 +185,7 @@ async def createClock(message):
       '{clock.message_id}',
       '{clock.channel_id}',
       '{clock.guild_id}',
-      '{message.guild.name}',
+      '{message.guild.name.replace('\'','\'\'')}',
       '{clock.time_format.replace("_", " ")}',
       '{clock.time_zone}'
     )
