@@ -118,6 +118,7 @@ async def handleUserVehicleInput(message, client):
         overall_lap_time_range,
         [Vehicle(v) for v in poss_vehicles[:9]]
       ) # list of complete vehicle objects, just waiting for user selection now
+    poss_vehicles = [poss_vehicles[0]] if poss_vehicles[0].lower() == vehicle.lower() else poss_vehicles
   except: # likely issue with gspread
     print("CAUGHT EXCEPTION")
     print(traceback.format_exc())
