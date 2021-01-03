@@ -373,10 +373,13 @@ async def on_message(message):
           guilds = client.guilds
           guildCount = len(guilds)
           memberCount = 0
-          for i in range(len(guilds)):
-            members = guilds[i].members
-            joinDate = guilds[i].get_member(449247895858970624).joined_at
-            guilds[i] = [guilds[i].name, len(members), joinDate]
+          for i, guild in enumerate(guilds):
+            members = guild.members
+            try:
+              joinDate = guild.get_member(449247895858970624).joined_at
+              guilds[i] = [guild.name, len(members), joinDate]
+            except:
+              guilds[i] = ["unknown", "unknown", datetime.utcnow()]
             memberCount += len(members)
 
           reply = ""
