@@ -161,7 +161,8 @@ async def on_guild_channel_update(before, after):
         # await checkTEGarrettPointApplications(datetime.now() - timedelta(hours=2))
         pass
       else:
-        await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+        # await client.get_user(int(mo)).send("<@97202414490226688>'s donation has expired.")
+        pass
 
     # user requests
     if (currentTime < donationDateCorrection("CASE#2606")):
@@ -170,12 +171,14 @@ async def on_guild_channel_update(before, after):
         await clearCASEWelcomeMessages()
       #await checkCASEStreamers()
     else:
-      await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
+      # await client.get_user(int(mo)).send("<@290714422996107265>'s donation has expired.")
+      pass
     
     if (currentTime < donationDateCorrection("Danio#3260")):
       await updateDanioTables() # once an hour (random in function)
     else:
-      await client.get_user(int(mo)).send("<@547053137551163432>'s donation has expired.")
+      # await client.get_user(int(mo)).send("<@547053137551163432>'s donation has expired.")
+      pass
 
 
     if (minute % 5 is 0): # check every 5 minutes
