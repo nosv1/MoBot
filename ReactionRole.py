@@ -307,6 +307,7 @@ async def updateAutoRoles(autoRoles, workbook):
         }
       else:
         autoRoles[roles[i+1].value]["RoleIDs"] = roles[i+2].value.split(",")
+
   return autoRoles
 # end updateAutoRoles
 
