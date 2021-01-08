@@ -175,7 +175,7 @@ async def addReactionRoleMessage(message, args):
       VALUES
         ('%s', '%s', '%s', '%s', '%s', '%s', '%s')
     """ % (
-      newReactionMessage.guildName,
+      MoBotDatabase.replaceChars(newReactionMessage.guildName),
       newReactionMessage.guildID,
       newReactionMessage.channelID,
       newReactionMessage.messageID,
