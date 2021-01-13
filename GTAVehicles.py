@@ -41,6 +41,21 @@ car_classes = { # Spreadsheet Class : broughy website class
   "Off-Road" : "offroads",
 }
 
+class_aliases = [
+  ["Compacts", "comapact"],
+  ["Coupes", "coupe"],
+  ["motorcycle"],
+  ["Muscle"],
+  ["Off-Road", "offroad"],
+  ["Open Wheel", "openwheel"],
+  ["Sedans", "sedan"],
+  ["Sports", "sport"],
+  ["Sports Classics", "sports classic", "sportsclassics"],
+  ["Supers", "super"],
+  ["SUVs", "suv"],
+  ["Vans", "van"],
+]
+
 class Vehicle: # attributes are being added in functions
   def __init__(self, name):
     self._name = name
@@ -227,6 +242,51 @@ async def handleUserVehicleInput(message, client):
     await msg.edit(embed=embed)
 # end handleUserVehicleInput
 
+async def displayTier(message, args):
+
+  workbook = openSpreadsheet()
+  sheets = workbook.worksheets()
+
+  key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
+  overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
+
+  key_info_range = key_vehicle_info_sheet.range(f"A2:L{key_vehicle_info_sheet.row_count}")
+  overall_lap_time_range = overall_lap_time_sheet.range(f"A2:F{overall_lap_time_sheet.row_count}")
+
+  exec(f"Vehicle._Class = None")
+  v = Vehicle("_")
+  v._Class = None
+  v._Lap_Time__m_ss_000_ = "0:00.000"
+
+  for ca in class_aliases:
+    for c in ca:
+      if c.lower() in " ".join(args[1:-1]).lower():
+        v._Class = ca[0]
+
+  if not v._Class:
+    await message.channel.send(f"`{args[0]}` could not be found as a class alias. Edit your message, and try again.")
+    return
+
+  tiers = getTiersSpreadsheet(key_info_range, overall_lap_time_range, v)
+
+  tier = tiers[args[-1].upper()] if args[-1].upper() in tiers else None
+
+  if not tier:
+    await message.channel.send(f"`{args[-1]}` is not a tier for {v._Class}. Edit your message, and try again.")
+    return
+    
+
+  embed = discord.Embed()
+  moBotMember = message.guild.get_member(moBot) # used for role color
+  embed.color = moBotMember.roles[-1].color
+
+  embed.title = f"{v._Class} {args[-1].upper()}"
+
+  embed.description = "\n".join([f"`{getDelta(c[0], tier[0][0])}` {c[1]}" for c in tier])
+
+  await message.channel.send(embed=embed)
+# end displayTier
+
 def getVehicleImage(vehicle):
   session = HTMLSession()
   url = f"https://gta.fandom.com/wiki/{vehicle._Vehicle.replace(' ', '_')}"
@@ -361,8 +421,10 @@ def getTiersSpreadsheet(key_info_range, overall_lap_time_range, vehicle):
           break
         if race_tier not in tiers:
           tiers[race_tier] = []
-        tiers[race_tier].append([getDetla(overall_lap_times[i][4].value, vehicle._Lap_Time__m_ss_000_), veh_name])
+        tiers[race_tier].append([getDelta(overall_lap_times[i][4].value, vehicle._Lap_Time__m_ss_000_), veh_name])
   return tiers
+
+
 
 def getTiersWeb(car_class):
     url = f"https://broughy.com/gta5{car_classes[car_class]}"
@@ -381,7 +443,7 @@ def getTiersWeb(car_class):
     return tiers
   # end getTier
 
-def getDetla(time_1, time_2):
+def getDelta(time_1, time_2):
   def minuteToSeconds(time):
     return int(time.split(":")[0]) * 60 + float(time.split(":")[1])
 
@@ -402,7 +464,7 @@ def getDetla(time_1, time_2):
     return secondsToMinute(round(minuteToSeconds(time_1) - minuteToSeconds(time_2), 3))
   except:
     return "TBD"
-# end getDetla
+# end getDelta
 
 def openSpreadsheet():
   scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
