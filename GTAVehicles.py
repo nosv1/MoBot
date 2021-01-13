@@ -271,7 +271,7 @@ async def displayTier(message, args):
         v._Class = ca[0]
 
   if not v._Class:
-    await message.channel.send(f"`{args[0]}` could not be found as a class alias. Edit your message, and try again.")
+    await message.channel.send(f"`{' '.join(args[1:-1])}` could not be found as a class alias. Edit your message, and try again.")
     return
 
   tiers = getTiersSpreadsheet(key_info_range, overall_lap_time_range, v)
