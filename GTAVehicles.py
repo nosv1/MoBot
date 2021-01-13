@@ -244,14 +244,20 @@ async def handleUserVehicleInput(message, client):
 
 async def displayTier(message, args):
 
-  workbook = openSpreadsheet()
-  sheets = workbook.worksheets()
+  await message.channel.trigger_typing()
+  try:
 
-  key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
-  overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
+    workbook = openSpreadsheet()
+    sheets = workbook.worksheets()
 
-  key_info_range = key_vehicle_info_sheet.range(f"A2:L{key_vehicle_info_sheet.row_count}")
-  overall_lap_time_range = overall_lap_time_sheet.range(f"A2:F{overall_lap_time_sheet.row_count}")
+    key_vehicle_info_sheet = [sheet for sheet in sheets if sheet.id == KEY_VEHICLE_INFO_SHEET_ID][0]
+    overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
+
+    key_info_range = key_vehicle_info_sheet.range(f"A2:L{key_vehicle_info_sheet.row_count}")
+    overall_lap_time_range = overall_lap_time_sheet.range(f"A2:F{overall_lap_time_sheet.row_count}")
+  
+  except gspread.exceptions.APIError:
+    await message.channel.send("There were technical difficulties getting the tier. Please try again in a mintue or so.")
 
   exec(f"Vehicle._Class = None")
   v = Vehicle("_")
