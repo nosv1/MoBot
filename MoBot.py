@@ -320,7 +320,7 @@ async def on_message(message):
         elif ("gtacar" in args[1] or "gta car" in message.content):
           await GTAVehicles.handleUserVehicleInput(message, client)
         elif ("gtatier" in args[1] or "gta tier" in message.content):
-          await GTAVehicles.displayTier(message, client)
+          await GTAVehicles.displayTier(message, args[1:])
         elif ("gtaweather" in args[1] or "gta weather" in message.content):
           await GTAWeather.sendWeatherForecast(message)
         elif ("gtarace" in args[1] and "random" in args[2]):
