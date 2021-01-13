@@ -258,6 +258,7 @@ async def displayTier(message, args):
   
   except gspread.exceptions.APIError:
     await message.channel.send("There were technical difficulties getting the tier. Please try again in a mintue or so.")
+    return
 
   exec(f"Vehicle._Class = None")
   v = Vehicle("_")
