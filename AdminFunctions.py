@@ -51,7 +51,7 @@ async def displayRoles(message, client):
   for role in guild.roles:
     rolesString += "\n\nRole: " + role.name if ("everyone" not in role.name) else "\n\nRole: everyone"
     rolesString += "\n  ID: " + str(role.id)
-    rolesString += "\n  Color: " + str(role.color.r) + ", " + str(role.color.g) + ", " + str(role.color.b)
+    rolesString += "\n  Color: #" + str(hex(role.color.value))
 
   i = 2000
   while True:
