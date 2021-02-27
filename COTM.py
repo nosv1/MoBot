@@ -785,7 +785,7 @@ async def handleCarVotingReaction(message, member, payload):
 
 ''' PIT MarshalS '''
 # what divs not available if in race
-host_not_avail = [ # not actually using this, changed the restrictions...
+host_not_avail = [
   [1, 4, 7], # in div 1, can't host for these
   [2, 5, 1, 4, 7],
   [3, 6, 2, 5],
@@ -874,7 +874,7 @@ def addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs):
         del hosts_needed[hosts_needed.index(pit_marshal.div)]
     
     for div in hosts_needed:
-      if div in refineAvail(pm_not_avail, member_divs) and div in divs:
+      if div in refineAvail(host_not_avail, member_divs) and div in divs:
         is_pit_marshaling = True
 
         moBotDB = connectDatabase()

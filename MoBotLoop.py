@@ -247,6 +247,8 @@ async def main(client):
       pass
   except gspread.exceptions.APIError:
     pass
+
+  await updateDanioTables()
   
 
   print()
@@ -288,7 +290,6 @@ async def main(client):
         except UnboundLocalError: # when there's an error intially getting the countdowns/clocks
           pass
         '''
-        
         await on_guild_channel_update(None, None)
         await updateMoBotStatus(client)
         await updateTimeZoneList(currentTime)
@@ -341,7 +342,7 @@ async def main(client):
 
 
 async def updateDanioTables():
-  channel = client.get_channel(668312033397309440)
+  channel = client.get_channel(815004525160562728)
   class Table:
     def __init__(self, title, key, messageID):
       self.title = title
@@ -349,10 +350,10 @@ async def updateDanioTables():
       self.messageID = messageID
   # end Table
   tables = [
-    Table("S6 F1 PC",
-      "https://docs.google.com/spreadsheets/d/1xBxPBN1bU9aHakzte4XpzhCZrhLw0yk9HGUqdy6q_zc/edit#gid=70",
-      668326002598084620),
-    Table("S6 PC F2",
+    Table("S9 F1 PC",
+      "https://docs.google.com/spreadsheets/d/130OKPmOe_A6GXPQMFPpE-TDdPOhFDW3tifcU1hAflpU/edit#gid=118",
+      815363972449959987),
+    '''Table("S6 PC F2",
       "https://docs.google.com/spreadsheets/d/1nm_jHpJwzNs7eZAMy1pDUIth04aMdgyNI6ML_9bLvjw/edit#gid=118",
       668326016929759233),
     Table("S6 PS4 F1",
@@ -369,7 +370,7 @@ async def updateDanioTables():
       668326050710683658),
     Table("S6 PS4 F5",
       "https://docs.google.com/spreadsheets/d/1ZOQEYO_8dSIx30Uq-y1x4hSigzyW5nhNDH7lC0AsYRA/edit?usp=sharing",
-      668326105735757824),
+      668326105735757824),'''
   ]
 
   for table in tables:
@@ -404,6 +405,7 @@ async def updateDanioTables():
       except AttributeError: # no channel??
         pass
 # end danioTables 
+
 
 
 async def checkCASEStreamers(): # not in use for now
