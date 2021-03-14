@@ -65,9 +65,12 @@ async def displayRoles(message, client):
 # end getRoleNames
 
 async def displayRoleMembers(message):
-  role_id = message.content.split("members")[1].trim()
-  role = [r for r in message.guilds.roles if str(r.id) == role_id][0]
+
+  await message.channel.trigger_typing()
+
+  role_id = message.content.split("members")[1].strip()
+  role = [r for r in message.guild.roles if str(r.id) == role_id][0]
 
   msg = await message.channel.send('two sec')
-  await msg.edit(content="\n".join(role.members))
+  await msg.edit(content="\n".join([m.mention for m in role.members]))
 # end displayRoleMembers
