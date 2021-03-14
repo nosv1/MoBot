@@ -14,6 +14,9 @@ async def main(args, message, client):
   if (args[2] == "roles"):
     await displayRoles(message, client)
 
+  elif (args[2] == "members"):
+    await displayRoleMembers(message)
+
 # end main
 
 async def mainReactionAdd(message, payload, client): 
@@ -60,3 +63,11 @@ async def displayRoles(message, client):
       break
     i += 2000
 # end getRoleNames
+
+async def displayRoleMembers(message):
+  role_id = message.content.split("members")[1].trim()
+  role = [r for r in message.guilds.roles if str(r.id) == role_id][0]
+
+  msg = await message.channel.send('two sec')
+  await msg.edit(content="\n".join(role.members))
+# end displayRoleMembers
