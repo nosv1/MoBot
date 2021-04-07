@@ -393,19 +393,24 @@ async def addRemoveRole(message, args):
         msg = None
         if (args[2] == "add"):
           msg = await message.channel.send("**Adding `%s` to `everyone`. It may take a moment.**" % role.name)
-          for member in message.guild.members:
-            try:
-              await member.add_roles(role)
-            except discord.errors.Forbidden:
-              await message.channel.send("Could not add role to %s." % member.mention)
+
+
+          if  not [r for r in member.roles if r.name == role.name]: # member already has role
+            for member in message.guild.members:
+              try:
+                await member.add_roles(role)
+              except discord.errors.Forbidden:
+                await message.channel.send("Could not add role to %s." % member.mention)
 
         if (args[2] == "remove"):
           msg = await message.channel.send("**Removing `%s` from `everyone`. It may take a moment.**" % role.name)
-          for member in message.guild.members:
-            try:
-              await member.remove_roles(role)
-            except discord.errors.Forbidden:
-              await message.channel.send("Could not add role to %s." % member.mention)
+
+          if [r for r in member.roles if r.name == role.name]: # member doesn't have role
+            for member in message.guild.members:
+              try:
+                await member.remove_roles(role)
+              except discord.errors.Forbidden:
+                await message.channel.send("Could not add remove role from %s." % member.mention)
 
         if args[2] in ["clone", "copy", "duplicate", "dupe"]:
           color = role.colour
