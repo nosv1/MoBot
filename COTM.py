@@ -860,12 +860,10 @@ def addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs):
 
   ## add
   def refineAvail(not_avail, member_divs):
-    print(member_divs)
     new_not_avail = []
     for div in member_divs:
       new_not_avail += not_avail[div-1]
     
-    print(new_not_avail)
     return [i for i in range(1, num_divs+1) if i not in new_not_avail]
   # end refineAvail
 
@@ -876,9 +874,6 @@ def addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs):
       if pit_marshal.host_pm == 1:
         del hosts_needed[hosts_needed.index(pit_marshal.div)]
     
-    print(hosts_needed)
-    print(refineAvail(host_not_avail, member_divs))
-    print(divs)
     for div in hosts_needed:
       if div in refineAvail(host_not_avail, member_divs) and div in divs:
         is_pit_marshaling = True
@@ -962,15 +957,12 @@ async def handlePitMarshalReaction(message, payload, member):
 
   member_divs = [] # get the divs the member is in
   for role in member.roles: # racing in 
-    if "Division" in role.name and not "Pit Marhshal" in role.name:
+    if "Division" in role.name and "Pit Marhshal" not in role.name:
       member_divs.append(int(role.name[-1]))
-      print(member_divs)
 
-  print()
   for pm in pit_marshals: # already pit marshaling
     if pm.member_id == member.id:
       member_divs.append(pm.div)
-      print(member_divs)
   
   # figure out what the user wants to do, host/pm and what divs
   host_pm = -1 # host = 1 // pm = 0
