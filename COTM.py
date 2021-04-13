@@ -964,10 +964,13 @@ async def handlePitMarshalReaction(message, payload, member):
   for role in member.roles: # racing in 
     if "Division" in role.name and not "Pit Marhshal" in role.name:
       member_divs.append(int(role.name[-1]))
+      print(member_divs)
 
+  print()
   for pm in pit_marshals: # already pit marshaling
     if pm.member_id == member.id:
       member_divs.append(pm.div)
+      print(member_divs)
   
   # figure out what the user wants to do, host/pm and what divs
   host_pm = -1 # host = 1 // pm = 0
