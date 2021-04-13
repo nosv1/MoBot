@@ -860,10 +860,12 @@ def addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs):
 
   ## add
   def refineAvail(not_avail, member_divs):
+    print(member_divs)
     new_not_avail = []
     for div in member_divs:
       new_not_avail += not_avail[div-1]
     
+    print(new_not_avail)
     return [i for i in range(1, num_divs+1) if i not in new_not_avail]
   # end refineAvail
 
