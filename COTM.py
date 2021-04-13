@@ -874,6 +874,9 @@ def addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs):
       if pit_marshal.host_pm == 1:
         del hosts_needed[hosts_needed.index(pit_marshal.div)]
     
+    print(hosts_needed)
+    print(refineAvail(host_not_avail, member_divs))
+    print(divs)
     for div in hosts_needed:
       if div in refineAvail(host_not_avail, member_divs) and div in divs:
         is_pit_marshaling = True
