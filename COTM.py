@@ -787,12 +787,13 @@ async def handleCarVotingReaction(message, member, payload):
 # what divs not available if in race
 host_not_avail = [
   [1, 4, 7], # in div 1, can't host for these
-  [2, 5, 1, 4, 7],
-  [3, 6, 2, 5],
+  [2, 5, 8, 1, 4, 7],
+  [3, 6, 2, 5, 8],
   [1, 4, 7],
+  [2, 5, 8, 1, 4, 7],
+  [3, 6, 2, 5, 8],
   [1, 4, 7],
-  [3, 6, 2, 5],
-  [1, 4, 7, 2, 5]
+  [2, 5, 8, 1, 4, 7]
 ]
 
 pm_not_avail = [
