@@ -874,8 +874,9 @@ def addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs):
       if pit_marshal.host_pm == 1:
         del hosts_needed[hosts_needed.index(pit_marshal.div)]
     
+    avail = refineAvail(host_not_avail, member_divs)
     for div in hosts_needed:
-      if div in refineAvail(host_not_avail, member_divs) and div in divs:
+      if div in avail and div in divs:
         is_pit_marshaling = True
 
         moBotDB = connectDatabase()
@@ -897,9 +898,10 @@ def addRemovePitMarshal(host_pm, pit_marshals, member, member_divs, divs):
     for pit_marshal in pit_marshals:
       if pit_marshal.host_pm == 0:
         del pm_needed[pm_needed.index(pit_marshal.div)]
-      
+
+    avail = refineAvail(pm_not_avail, member_divs)
     for div in pm_needed:
-      if div in refineAvail(pm_not_avail, member_divs) and div in divs:
+      if div in avail and div in divs:
         is_pit_marshaling = True
 
         member_divs.append(div)
