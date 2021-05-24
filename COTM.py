@@ -807,6 +807,8 @@ pm_not_avail = [
   [2, 5, 8]
 ]
 
+host_not_avail = pm_not_avail # more leninent toward end of event... basically can be in race before and still host race after
+
 def getPitMarshals():
   moBotDB = connectDatabase()
   marshals = []
