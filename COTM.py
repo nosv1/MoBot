@@ -341,7 +341,7 @@ async def button_clicked(message, member):
   count = int(embed.description.split("(")[-1].split(")")[0])
   count += 1
   
-  embed.description = f"**The button was last clicked at [{utcnow.strftime('%H%M %d %B %Y UTC')}](https://time.is/{utcnow.strftime('%H%M_%d_%b_%Y_in_UTC')}).**"
+  embed.description = f"**The button was last clicked at [{utcnow.strftime('%H%M %d %B %Y UTC')}](https://time.is/{utcnow.strftime('%H:%M_%d_%b_%Y_in_UTC')}).**"
   embed.description += f"[{chr(8203)}]({count})"
 
   num_fields = int(count / 2000) + 1
