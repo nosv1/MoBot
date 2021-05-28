@@ -63,6 +63,7 @@ VOTING = 608472349712580608
 CAR_VOTING = 730762239610585139
 VOTING_LOG = 530284914071961619
 QUALI_TIMES = 705787893364555785
+CLICK_THE_BUTTON = 847910297482428446
 
 # common emojis
 X_EMOJI = "❌"
@@ -203,6 +204,9 @@ async def mainReactionAdd(message, payload, client):
     if message.channel.id == CAR_VOTING:
       await handleCarVotingReaction(message, member, payload)
 
+    if message.channel.id == CLICK_THE_BUTTON:
+      await button_clicked(message, member)
+
     if message.id == VOTING_CHECKMARK: # track-voting
       if payload.emoji.name == CHECKMARK_EMOJI:
         await openVotingChannel(message, member)
@@ -271,6 +275,9 @@ async def mainReactionRemove(message, payload, client):
     if (message.id == 622137318513442816): # message id for streamer embed
       if (payload.emoji.name in ["Twitch", "Mixer", "Youtube"]):
         await removeStreamer(message, member, payload)
+
+    if message.channel.id == CLICK_THE_BUTTON:
+      await button_clicked(message, member)
 # end mainReactionRemove
 
 async def mainMemberUpdate(before, after, client):
@@ -315,6 +322,47 @@ async def randomNiceMessage(client):
     chnl = client.get_guild(GUILD_ID).get_channel(NOT_EVENT_CHAT)
     await chnl.send(f"> {random.choice(phrases)}")
 # end randomNiceMessage
+
+async def button_clicked(message, member):
+  '''
+  '''
+
+  utcnow = datetime.utcnow()
+
+  await message.channel.send(f"{member.display_name} clicked the button.", delete_after=10)
+
+  embed = message.embeds[0].to_dict()
+  try:
+    del embed["fields"]
+  except KeyError:
+    pass
+  embed = discord.Embed().from_dict(embed)
+
+  count = int(embed.description.split("(")[-1].split(")")[0])
+  count += 1
+  
+  embed.description = f"**The button was last clicked at [{utcnow.strftime('%H%M %d %B %Y UTC')}](https://time.is/{utcnow.strftime('%H%M_%d_%b_%Y_in_UTC')}).**"
+  embed.description += f"[{chr(8203)}]({count})"
+
+  num_fields = int(count / 2000) + 1
+  for i in range(num_fields):
+    embed.add_field(name=space_char, value="")
+
+  embed = embed.to_dict()
+
+  for i in range(count):
+
+    field_index = int(i / 2000)
+    field_value = embed["fields"][field_index]["value"]
+    field_value += "|"
+    field_value = f'{field_value.replace("|||||", "||̸|| ")}'
+    embed["fields"][field_index]["value"] = field_value
+
+  for i in range(num_fields):
+    embed["fields"][i]["value"] = f'`{embed["fields"][i]["value"]}`'
+
+  await message.edit(embed=discord.Embed().from_dict(embed))
+# end button_clicked
 
 
 
