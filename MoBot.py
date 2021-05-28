@@ -210,7 +210,7 @@ async def on_message(message):
         authorPerms = None
 
       if (str(moBot) in args[0]):
-        if (len(args) is 1):
+        if (len(args) == 1):
           await message.channel.send(":eyes: Use `@MoBot#0697 help` for help...")
 
         # --- SPECALIZED COMMANDS ---
