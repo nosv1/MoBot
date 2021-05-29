@@ -340,11 +340,15 @@ async def button_clicked(message, member):
 
   count = int(embed.description.split("(")[-1].split(")")[0])
   count += 1
+
+  if count > 5001:
+    await message.clear_reactions()
+    return
   
   embed.description = f"**The button was last clicked at [{utcnow.strftime('%H:%M %d %B %Y UTC')}](https://time.is/{utcnow.strftime('%H%M_%d_%b_%Y_in_UTC')}).**"
   embed.description += f"[{chr(8203)}]({count})"
 
-  num_fields = int(count / 2000) + 1
+  num_fields = int(count / 1665) + 1 # 1665 and not 2000 because 6 chars per 5 clicks, (5 / 6) * 2000 = 1666.6, 1665 to end on a five
   for i in range(num_fields):
     embed.add_field(name=space_char, value="")
 
@@ -352,7 +356,7 @@ async def button_clicked(message, member):
 
   for i in range(count):
 
-    field_index = int(i / 2000)
+    field_index = int(i / 1665)
     field_value = embed["fields"][field_index]["value"]
     field_value += "|"
     field_value = f'{field_value.replace("|||||", "||̸|| ")}'
