@@ -145,6 +145,9 @@ async def mainReactionAdd(message, payload, client):
   except IndexError: # when there is no embed...
     pass
 
+  except TypeError:
+    pass
+
 # end mainReactionAdd
 
 async def mainReactionRemove(message, payload, client):
