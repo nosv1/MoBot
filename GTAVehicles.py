@@ -187,6 +187,7 @@ async def handleUserVehicleInput(message, client):
     embed.description += f"[__Key Info__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=1689972026&range=B{vehicle._key_info_row}) - "
     embed.description += f"[__Handling Data (Basic)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=110431106&range=D{vehicle._handling_data_basic_row})\n{space_char}\n"
 
+    print(vars(vehicle))
     v = ""
     v += f"**Drivetrain:** {vehicle._Drivetrain}\n"
     v += f"**Seats:** {vehicle._Seats}\n"
@@ -203,8 +204,9 @@ async def handleUserVehicleInput(message, client):
     v = ""
     v += f"**Spoiler:** {vehicle._Spoiler}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     v += f"**Off-Roads:** {vehicle._Off_Roads}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
-    v += f"**Camber:** {vehicle._Camber}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
+    v += f"**Suspension:** {vehicle._Suspension}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     v += f"**Boost:** {vehicle._Boost}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
+    v += f"**Drift Tyres:** {vehicle._Drift_Tyres}\n".replace("✔", RandomSupport.CHECKMARK_EMOJI)
     embed.add_field(name="**__Improvements__**", value=f"{v}{space_char}")
 
     v = ""
