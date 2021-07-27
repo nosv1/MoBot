@@ -121,7 +121,7 @@ async def handleUserVehicleInput(message, client):
     handling_data_basic_info_sheet = [sheet for sheet in sheets if sheet.id == HANDLING_DATA_BASIC_SHEET_ID][0]
     overall_lap_time_sheet = [sheet for sheet in sheets if sheet.id == OVERALL_LAP_TIME_SHEET_ID][0]
     
-    key_info_range = key_vehicle_info_sheet.range(f"A2:L{key_vehicle_info_sheet.row_count}")
+    key_info_range = key_vehicle_info_sheet.range(f"A2:M{key_vehicle_info_sheet.row_count}")
     handling_data_basic_range = handling_data_basic_info_sheet.range(f"A2:T{handling_data_basic_info_sheet.row_count}")
     overall_lap_time_range = overall_lap_time_sheet.range(f"A2:F{overall_lap_time_sheet.row_count}")
 
