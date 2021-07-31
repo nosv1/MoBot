@@ -553,7 +553,7 @@ async def updateMoBotStatus(client):
   #     await client.change_presence(activity=donate)
 
 
-  await client.change_presence(discord.Activity(type=discord.ActivityType.watching, name="DEPRECIATING THIS WINTER"))
+  await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="DEPRECIATING THIS WINTER"))
 # end updateMoBotStatus
  
 
