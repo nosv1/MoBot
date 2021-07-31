@@ -535,22 +535,25 @@ async def updateDiscordTables():
 
 
 async def updateMoBotStatus(client):
-  # changing bot status based on rand gen
-  if (getRandomCondition(0.1)): # 10%
-    await client.change_presence(activity=botsByMo)
-  elif (getRandomCondition(0.1)): # 10%
-    await client.change_presence(activity=server)
-  elif (getRandomCondition(0.1)): # 10%
-    serverCount = discord.Activity(type=discord.ActivityType.watching, name=str(len(client.guilds)) + " servers")
-    #await client.change_presence(activity=serverCount)
-    '''elif (rand < 40): # 10%
-    msgRate = discord.Activity(type=discord.ActivityType.watching, name="Msg/Sec: %.2f" % messageRate)
-    await client.change_presence(activity=msgRate)'''
-  else:
-    if (getRandomCondition(0.5)): # 50%
-      await client.change_presence(activity=moBotHelp)
-    else:
-      await client.change_presence(activity=donate)
+  # # changing bot status based on rand gen
+  # if (getRandomCondition(0.1)): # 10%
+  #   await client.change_presence(activity=botsByMo)
+  # elif (getRandomCondition(0.1)): # 10%
+  #   await client.change_presence(activity=server)
+  # elif (getRandomCondition(0.1)): # 10%
+  #   serverCount = discord.Activity(type=discord.ActivityType.watching, name=str(len(client.guilds)) + " servers")
+  #   #await client.change_presence(activity=serverCount)
+  #   '''elif (rand < 40): # 10%
+  #   msgRate = discord.Activity(type=discord.ActivityType.watching, name="Msg/Sec: %.2f" % messageRate)
+  #   await client.change_presence(activity=msgRate)'''
+  # else:
+  #   if (getRandomCondition(0.5)): # 50%
+  #     await client.change_presence(activity=moBotHelp)
+  #   else:
+  #     await client.change_presence(activity=donate)
+
+
+  await client.change_presence(discord.Activity(type=discord.ActivityType.watching, name="DEPRECIATING THIS WINTER"))
 # end updateMoBotStatus
  
 
