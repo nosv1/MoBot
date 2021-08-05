@@ -487,14 +487,14 @@ async def on_message(message):
       except AttributeError: # some reason message.guild is none
         pass
 
-      global clock_check
-      if (datetime.utcnow() - clock_check).seconds > 60:
-        clock_check = datetime.utcnow()
-        try:
-          if (clock_check - await ClocksAndCountdowns.clockCheck(client)).seconds > 300:
-            await RandomSupport.sendMessageToMo("Check MoBotLoop", client, mo)
-        except AttributeError:
-          pass
+      # global clock_check
+      # if (datetime.utcnow() - clock_check).seconds > 60:
+      #   clock_check = datetime.utcnow()
+      #   try:
+      #     if (clock_check - await ClocksAndCountdowns.clockCheck(client)).seconds > 300:
+      #       await RandomSupport.sendMessageToMo("Check MoBotLoop", client, mo)
+      #   except AttributeError:
+      #     pass
 
     # end not MoBot message
 
