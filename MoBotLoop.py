@@ -166,7 +166,7 @@ async def on_guild_channel_update(before, after):
 
     # user requests
     if (currentTime < donationDateCorrection("CASE#2606")):
-      if (hour is 3 and minute < 30): # 4:00 - 4:30am Eastern
+      if (hour == 3 and minute < 30): # 4:00 - 4:30am Eastern
         print("\nClearing CASE#2606 Welcome Messages")
         await clearCASEWelcomeMessages()
       #await checkCASEStreamers()
@@ -261,7 +261,7 @@ async def main(client):
       hour = currentTime.hour
       minute = currentTime.minute
       second = currentTime.second
-      if (lastSecond is second): # skip iteration if within same second
+      if (lastSecond == second): # skip iteration if within same second
         await asyncio.sleep(1)
         continue
       else:
@@ -270,7 +270,7 @@ async def main(client):
       sys.stdout.write("\rCurrent Time: " + str(currentTime))
       sys.stdout.flush() # allows rewriting the line above in the console, basically it keeps replacing the text instead of having a bunch of lines
 
-      if (second is 0): # check for every 60 seconds or incase we miss the 0 tick because of slowness
+      if (second == 0): # check for every 60 seconds or incase we miss the 0 tick because of slowness
         # update clocks and countdowns
         
         clocks = ClocksAndCountdowns.getClocks()
