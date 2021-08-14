@@ -142,7 +142,7 @@ async def displayFullResponse(message, embed):
 
 async def displayCommands(message, client):
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/")
+  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url_as(), url="https://google.com/SimpleCommands/")
   commandList = getGuildCommands(message.guild.id)
   commandsString = "\n__Trigger -- Response__\n"
   for command in commandList:
@@ -158,7 +158,7 @@ async def deleteCommand(args, message, client):
 
   if (command is None):
     embed = discord.Embed(color=int("0xd1d1d1", 16))
-    embed.set_author(name="MoBot Custom Commands", icon_url= client.user.avatar_url)
+    embed.set_author(name="MoBot Custom Commands", icon_url= client.user.avatar_url_as())
     embed.description = "---\n**COMMAND NOT FOUND**\nA command with the trigger `%s` was not found. To view this server's commands, use `@MoBot#0697 commands`.\n---" % trigger
     await message.channel.send(embed=embed)
     return
@@ -198,7 +198,7 @@ async def deleteCommand(args, message, client):
 
 async def editCommandSession(args, message, client): # for editing commands
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s/response_id=None/ref_msg_channel_id=None" % (message.guild.id, message.author.id))
+  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url_as(), url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s/response_id=None/ref_msg_channel_id=None" % (message.guild.id, message.author.id))
 
   mc = " ".join(args)
   trigger = mc.split("%s %s" % (args[1], args[2]))[1].strip() # split on "edit command"
@@ -229,7 +229,7 @@ async def editCommandSession(args, message, client): # for editing commands
 
 async def createCommandSession(message, client):
   embed = discord.Embed(color=int("0xd1d1d1", 16))
-  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url, url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s/response_id=None/ref_msg_channel_id=None" % (message.guild.id, message.author.id))
+  embed.set_author(name="MoBot Custom Commands", icon_url=client.user.avatar_url_as(), url="https://google.com/SimpleCommands/command_id=None/guild_id=%s/command_owner_id=%s/response_id=None/ref_msg_channel_id=None" % (message.guild.id, message.author.id))
 
   embed.description = "---\n**Follow the instructions below.**\n\nTo set your command, you will need to set a trigger and a response.\n\n__To set the trigger:__\n1. Type the trigger\n2. Click the %s\n\n__To set the response:__\n1. Type the response\n2. Click the %s\n\n__To reference a message:__\n1. Paste message ID\n2. Click the %s\n3. Click the %s\n*If you are referencing a message, then if the message is deleted or changed, the response will be affected.*\n---" % (ONE_EMOJI, TWO_EMOJI, NUMBER_SIGN_EMOJI, TWO_EMOJI)
 

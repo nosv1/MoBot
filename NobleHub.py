@@ -310,7 +310,7 @@ async def registerCoach(message, coach, fromCommand, client):
       
         reviewsChannel = message.guild.get_channel(574622480984047627)
         embed = await updateCoachEmbedFrontPage(message, values)
-        embed.set_thumbnail(url=values[0].avatar_url)
+        embed.set_thumbnail(url=values[0].avatar_url_as())
         embed.set_footer(text="Page 1/1 -- " + str(reviewsMsg.id))
         embedMsg = await reviewsChannel.send(embed=embed)
         coaches[i+3].value = str(embedMsg.id)
