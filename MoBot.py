@@ -24,7 +24,7 @@ import SecretStuff
 
 # importing server specific files
 import GrottiF1
-import COTM
+# import COTM
 import COTMPS4
 import IG
 import FortKnight
