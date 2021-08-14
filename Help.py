@@ -116,7 +116,7 @@ def commandToEmbed(message, command):
     url=("https://google.com/MoBotCommands/command=%s/" % (
     command.command,
     )).replace(" ", "_"), 
-    icon_url=moBotMember.avatar_url
+    icon_url=moBotMember.avatar
   )
 
   description = "**Command:** `@MoBot#0697 %s`\n%s\n%s" % (command.command, command.description, spaceChar)

@@ -293,7 +293,7 @@ def defaultEmbed(moBotMember, workbook, workbookKey, guildID, channelID, creator
   )
   embed.set_author(
     name="MoBot Tables (Google Sheets to Discord)", 
-    icon_url=moBotMember.avatar_url, 
+    icon_url=moBotMember.avatar, 
     url="https://google.com/mobot_tables/creatorID=%s/workbookKey=%s/worksheetID=-1/tableRange=-1/autoUpdating=0/bufferMessages=1/leftAligned=All/rightAligned=None/centered=None/headers=0/smartMerging=0/guildID=%s/channelID=%s/messageIDs=-1" % (creator.id, workbookKey, guildID, channelID)
   )
 
