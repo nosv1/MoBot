@@ -331,7 +331,7 @@ async def on_message(message):
           await DKGetPicks.main(args, message, client)
         elif (args[1] == "avatar"):
           member = message.guild.get_member(int(args[2]))
-          await message.channel.send(str(member.avatar_url_as))
+          await message.channel.send(str(member.avatar_url))
         elif args[1] == "guildicon":
           await message.channel.send(message.guild.icon_url)
         elif (args[1] == "hangman"):
@@ -410,11 +410,11 @@ async def on_message(message):
             # example embed
             moBotUser = client.get_user(int(moBot))
             embed = discord.Embed(colour=0xd1d1d1)
-            embed.set_thumbnail(url=moBotUser.avatar_url_as)
-            embed.set_author(name="Author Line", icon_url=moBotUser.avatar_url_as)
+            embed.set_thumbnail(url=moBotUser.avatar_url)
+            embed.set_author(name="Author Line", icon_url=moBotUser.avatar_url)
             embed.add_field(name="Field Name 1", value='Field Value 1\n' + spaceChar, inline=False)
             embed.add_field(name="Field Name 2", value='Field Value 2', inline=False)
-            embed.set_image(url=message.author.avatar_url_as)
+            embed.set_image(url=message.author.avatar_url)
             embed.set_footer(text="Footer")
             await message.channel.send(embed=embed)
 
@@ -437,11 +437,11 @@ async def on_message(message):
 
             moBotUser = client.get_user(int(moBot))
             embed = discord.Embed(colour=0xd1d1d1)
-            embed.set_thumbnail(url=moBotUser.avatar_url_as)
-            embed.set_author(name="Author Line", icon_url=moBotUser.avatar_url_as)
+            embed.set_thumbnail(url=moBotUser.avatar_url)
+            embed.set_author(name="Author Line", icon_url=moBotUser.avatar_url)
             embed.add_field(name="Field Name 1", value='Field Value 1\n' + spaceChar, inline=False)
             embed.add_field(name="Field Name 2", value='Field Value 2', inline=False)
-            embed.set_image(url=message.author.avatar_url_as)
+            embed.set_image(url=message.author.avatar_url)
             embed.set_footer(text="Footer")
             await message.channel.send(embed=embed, content=content)
         elif (args[1] == "bug"):
