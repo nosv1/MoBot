@@ -180,9 +180,7 @@ async def handleUserVehicleInput(message, client):
       print("CAUGHT EXCEPTION")
       print(traceback.format_exc())
 
-    embed.description = ":boom: MoBot's GTA functions are being depreciated in the winter. Invite the bot version of [GTALens](https://discord.com/api/oauth2/authorize?client_id=872899427457716234&permissions=36507511808&scope=bot) for similar functionailty (tracks/cars/weather...).\n\n"
-
-    embed.description += f"**Vehicle:** {vehicle._Vehicle} - [__wiki__]({wiki_urls['wiki_url']})\n"
+    embed.description = f"**Vehicle:** {vehicle._Vehicle} - [__wiki__]({wiki_urls['wiki_url']})\n"
     embed.description += f"**Manufacturer:** {vehicle._Manufacturer}\n"
     embed.description += f"**Class:** {vehicle._Class}\n"
     embed.description += f"[__Overall (Lap Time)__](https://docs.google.com/spreadsheets/d/1nQND3ikiLzS3Ij9kuV-rVkRtoYetb79c52JWyafb4m4/edit#gid=60309153&range=B{vehicle._overall_lap_time_row}) - "
