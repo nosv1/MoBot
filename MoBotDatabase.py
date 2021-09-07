@@ -9,7 +9,7 @@ def connectDatabase(dbName):
   # end MoBotDB
 
   dbConnection = mysql.connector.connect(
-    host="10.0.0.227",
+    host="10.0.0.28",
     user="MoBot",
     passwd=SecretStuff.getToken("MoBotDatabaseToken.txt"),
     database=dbName,
