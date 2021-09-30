@@ -333,7 +333,21 @@ async def on_message(message):
           member = message.guild.get_member(int(args[2]))
           await message.channel.send(str(member.avatar))
         elif args[1] == "guildicon":
-          await message.channel.send(message.guild.icon_url)
+          await message.channel.send(message.guild.icon)
+        elif args[1] == "venn":
+          guild_1 = client.get_guild(int(args[2]))
+          guild_2 = client.get_guild(int(args[3]))
+          guild_1_members = guild_1.members
+          guild_2_members = guild_2.members
+          guild_1_unique = [m for m in guild_1_members if m not in guild_2_members]
+          guild_2_unique = [m for m in guild_2_members if m not in guild_1_members]
+          both = [m for m in guild_1_members if m in guild_2_members] + [m for m in guild_2_members if m in guild_1_members]
+
+          await message.channel.send(
+            content=f"{guild_1.name}: {len(guild_1_unique)} / {len(guild_1_members)}\n" \
+                    f"{guild_2.name}: {len(guild_2_unique)} / {len(guild_2_members)}\n" \
+                    f"Both: {len(both)} / {len(guild_1_members) + len(guild_2_members)}"
+          )
         elif (args[1] == "hangman"):
           await Hangman.main(args, message, client)
         elif (message.content.split("> ")[1].strip() == "2 + 2"):
