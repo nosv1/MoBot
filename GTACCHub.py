@@ -68,7 +68,7 @@ async def getJob(message, args):
 
   moBotMember = message.guild.get_member(moBot)
   embed = discord.Embed(color=moBotMember.roles[-1].color)
-  embed.set_author(name="Catalogue Search Results", icon_url=moBotMember.avatar, url=catalogueLink)
+  embed.set_author(name="Catalogue Search Results", icon_url=moBotMember.avatar_url, url=catalogueLink)
   embed.set_thumbnail(url=message.guild.icon_url)
   embed.description = "[__Creation Catalogue Spreadsheet__](%s)" % catalogueLink
 

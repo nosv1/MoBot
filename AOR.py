@@ -316,7 +316,7 @@ async def editDriverProfileOverviewEmbed(message, driverProfile):
   except IndexError: # when there was only one name in search for similar names
     moBotMember = message.guild.get_member(moBot)
     embed = discord.Embed(color=moBotMember.roles[-1].color)
-    embed.set_author(name="AOR F1 Driver Profile: Overview", icon_url=moBotMember.avatar, url="https://google.com/user_id=%s/" % message.author.id)
+    embed.set_author(name="AOR F1 Driver Profile: Overview", icon_url=moBotMember.avatar_url_url, url="https://google.com/user_id=%s/" % message.author.id)
     embed.set_thumbnail(url=message.guild.icon_url)
 
   embed.add_field(name="Name(s)", value="%s\n%s" % (", ".join(driverProfile.names), spaceChar))
@@ -335,7 +335,7 @@ async def openDriverProfileEmbed(message):
   msg = await message.channel.send("**Searching for similar names...**")
   moBotMember = message.guild.get_member(moBot)
   embed = discord.Embed(color=moBotMember.roles[-1].color)
-  embed.set_author(name="AOR F1 Driver Profile: Select Name(s)", icon_url=moBotMember.avatar, url="https://google.com/user_id=%s/" % message.author.id)
+  embed.set_author(name="AOR F1 Driver Profile: Select Name(s)", icon_url=moBotMember.avatar_url, url="https://google.com/user_id=%s/" % message.author.id)
   embed.set_thumbnail(url=message.guild.icon_url)
 
   names = getSimilarDriverNames(lookupName)

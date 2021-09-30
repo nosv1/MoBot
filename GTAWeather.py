@@ -165,7 +165,7 @@ async def handleFutureCast(message, member):
 
   moBotMember = message.guild.get_member(moBot)
   embed = discord.Embed(color=moBotMember.roles[-1].color)
-  embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar)
+  embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar_url)
 
   futurecast = "**4-Hour Futurecast for `%s`:**```%s```" % (n.strftime("%a %b %d %H:%M UTC"), getFuturecast(n))
 
@@ -178,7 +178,7 @@ async def sendWeatherForecast(message):
 
   moBotMember = message.guild.get_member(moBot)
   embed = discord.Embed(color=moBotMember.roles[-1].color)
-  embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar)
+  embed.set_author(name="GTA V Weather Forecast", icon_url=moBotMember.avatar_url)
 
   currentWeather = getForecast(n)
   currentWeatherStr = "**The in-game time is `%s`, and it is currently `%s` %s.**" % (currentWeather.gameTimeStr, currentWeather.currentWeatherDescription.lower(), currentWeather.currentWeatherEmoji)

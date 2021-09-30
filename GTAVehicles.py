@@ -104,7 +104,7 @@ async def handleUserVehicleInput(message, client):
   moBotMember = message.guild.get_member(moBot) # used for role color
 
   embed = discord.Embed() # make base embed
-  embed.set_author(name="GTA V Vehicle Search", url=f"https://google.com/vehicle=None/{'/'.join(f'tier_{c}=None' for c in '+SABCDEFGHIJ')}/", icon_url=moBotMember.avatar)
+  embed.set_author(name="GTA V Vehicle Search", url=f"https://google.com/vehicle=None/{'/'.join(f'tier_{c}=None' for c in '+SABCDEFGHIJ')}/", icon_url=moBotMember.avatar_url)
   embed.color = moBotMember.roles[-1].color
 
   vehicle = message.content.split("car ")[1].strip() # get vehicle update user on status
