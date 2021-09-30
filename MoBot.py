@@ -333,7 +333,7 @@ async def on_message(message):
           member = message.guild.get_member(int(args[2]))
           await message.channel.send(str(member.avatar))
         elif args[1] == "guildicon":
-          await message.channel.send(message.guild.icon)
+          await message.channel.send(message.guild.icon_url)
         elif args[1] == "venn":
           guild_1 = client.get_guild(int(args[2]))
           guild_2 = client.get_guild(int(args[3]))
