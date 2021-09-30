@@ -341,7 +341,8 @@ async def on_message(message):
           guild_2_members = guild_2.members
           guild_1_unique = [m for m in guild_1_members if m not in guild_2_members]
           guild_2_unique = [m for m in guild_2_members if m not in guild_1_members]
-          both = [m for m in guild_1_members if m in guild_2_members] + [m for m in guild_2_members if m in guild_1_members]
+          both = [m for m in guild_1_members if m in guild_2_members]
+          both += [m for m in guild_2_members if m not in both and m in guild_1_members]
 
           await message.channel.send(
             content=f"{guild_1.name}: {len(guild_1_unique)} / {len(guild_1_members)}\n" \
